@@ -498,11 +498,11 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     }
     scene.add(keyLight);
 
-    const rimLight = new THREE.PointLight(0xff4791, 3.6, 18);
+    const rimLight = new THREE.PointLight(0x4e946b, 3.6, 18);
     rimLight.position.set(-5.5, 4.5, -4);
     scene.add(rimLight);
 
-    const accentLight = new THREE.PointLight(0x00d2b8, 3.2, 16);
+    const accentLight = new THREE.PointLight(0x38bdf8, 3.2, 16);
     accentLight.position.set(5, 3.8, 3.5);
     scene.add(accentLight);
 
@@ -513,7 +513,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     // Ground Toy Diorama Platform
     const platformGeo = new THREE.CylinderGeometry(6.8, 7.15, 0.5, 64);
     const platformMat = new THREE.MeshStandardMaterial({
-      color: propsRef.current.themeMode === 'light' ? 0xffffff : 0x131b2e,
+      color: propsRef.current.themeMode === 'light' ? 0xfcf9f2 : 0x0b1c2c,
       roughness: 0.55,
       metalness: 0.08,
     });
@@ -526,8 +526,8 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     const stageRingGeo = new THREE.TorusGeometry(6.92, 0.055, 20, 72);
     stageRingGeo.rotateX(Math.PI / 2);
     const stageRingMat = new THREE.MeshStandardMaterial({
-      color: 0xff4791,
-      emissive: 0xff4791,
+      color: 0x4e946b,
+      emissive: 0x4e946b,
       emissiveIntensity: 0.7,
       roughness: 0.25,
     });
@@ -542,10 +542,10 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     turntableGroup.position.set(-0.95, 0, 0.35);
     stageGroup.add(turntableGroup);
 
-    // Part 1: Plinth Deck Base (adapts between warm cream in Light Mode and midnight slate in Dark Mode)
+    // Part 1: Plinth Deck Base (adapts between warm oat-birch in Light Mode and deep aero-sapphire in Dark Mode)
     const plinthGeo = new THREE.BoxGeometry(4.2, 0.48, 3.45);
     const plinthMat = new THREE.MeshStandardMaterial({
-      color: propsRef.current.themeMode === 'light' ? 0xf3efe6 : 0x192236,
+      color: propsRef.current.themeMode === 'light' ? 0xefe9dd : 0x0e2235,
       roughness: 0.32,
       metalness: 0.25,
     });
@@ -558,7 +558,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     // Part 2: Anodized Top Plate Trim
     const topPlateGeo = new THREE.BoxGeometry(3.96, 0.06, 3.22);
     const topPlateMat = new THREE.MeshStandardMaterial({
-      color: propsRef.current.themeMode === 'light' ? 0xe5e0d5 : 0x24304a,
+      color: propsRef.current.themeMode === 'light' ? 0xe0d8c8 : 0x16324c,
       roughness: 0.25,
       metalness: 0.55,
     });
@@ -1211,9 +1211,9 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       _targetBgColor.set(
         isLight ? currentProps.mood.bgLightHex : currentProps.mood.bgDarkHex
       );
-      _targetStageColor.set(isLight ? 0xffffff : 0x131b2e);
-      _targetPlinthColor.set(isLight ? 0xf4f0e8 : 0x182236);
-      _targetTopPlateColor.set(isLight ? 0xe5dfd3 : 0x25324c);
+      _targetStageColor.set(isLight ? 0xfcf9f2 : 0x0b1c2c);
+      _targetPlinthColor.set(isLight ? 0xefe9dd : 0x0e2235);
+      _targetTopPlateColor.set(isLight ? 0xe0d8c8 : 0x16324c);
 
       scene.background = (scene.background as THREE.Color).lerp(_targetBgColor, dt * 4.5);
       if (scene.fog instanceof THREE.FogExp2) {

@@ -146,22 +146,22 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 pointer-events-auto"
     >
       <div
-        className={`relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[30px] border p-5 shadow-2xl ${
+        className={`relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[28px] border p-5 shadow-2xl ${
           isLight
-            ? 'border-stone-200 bg-[#FAF7F2] text-stone-900'
-            : 'border-white/15 bg-[#0e1626] text-white'
+            ? 'border-[#E2DBD0] bg-[#FCF9F2] text-[#231C18]'
+            : 'border-[#38BDF8]/25 bg-[#091826] text-[#F0F9FF]'
         }`}
       >
         <div
           className={`flex items-center justify-between border-b pb-3.5 ${
-            isLight ? 'border-stone-200' : 'border-white/10'
+            isLight ? 'border-[#E6DFD3]' : 'border-[#38BDF8]/15'
           }`}
         >
           <div>
             <h2 id="account-modal-title" className="text-lg font-extrabold tracking-tight">
               Spotify &amp; Apple Music Sync
             </h2>
-            <p className={`text-xs ${isLight ? 'text-stone-500' : 'text-slate-400'}`}>
+            <p className={`text-xs ${isLight ? 'text-[#6E6259]' : 'text-sky-200/70'}`}>
               Generate custom 30-second game crates from your listening history
             </p>
           </div>
@@ -174,8 +174,8 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
             aria-label="Close music account modal"
             className={`flex h-10 w-10 items-center justify-center rounded-2xl transition-colors ${
               isLight
-                ? 'bg-stone-200/80 text-stone-700 hover:bg-stone-300/80'
-                : 'bg-white/10 text-slate-200 hover:bg-white/20'
+                ? 'bg-[#EDE6DA] text-[#231C18] hover:bg-[#E2D9C8]'
+                : 'bg-[#38BDF8]/15 text-sky-100 hover:bg-[#38BDF8]/25'
             }`}
           >
             <X weight="bold" className="h-5 w-5" />
@@ -190,7 +190,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                 <CheckCircle weight="fill" className="h-5 w-5 text-emerald-500 shrink-0" />
                 <div>
                   <div className="text-sm font-bold">{connectedProfile.displayName}</div>
-                  <div className={`text-xs ${isLight ? 'text-stone-600' : 'text-slate-300'}`}>
+                  <div className={`text-xs ${isLight ? 'text-[#5C5046]' : 'text-sky-200/80'}`}>
                     {connectedProfile.favoriteSummary} · {connectedProfile.customTracks.length} songs
                   </div>
                 </div>
@@ -217,7 +217,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
             <label
               htmlFor="taste-artists-input"
               className={`block text-xs font-bold ${
-                isLight ? 'text-stone-700' : 'text-slate-300'
+                isLight ? 'text-[#574C44]' : 'text-sky-200/80'
               }`}
             >
               Favorite Artists, Genres, or Listening History Seed
@@ -230,8 +230,8 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
               placeholder="e.g. Daft Punk, SZA, Tyla, Outkast"
               className={`mt-1.5 w-full rounded-2xl border px-3.5 py-2.5 text-sm focus:outline-none ${
                 isLight
-                  ? 'border-stone-300 bg-white text-stone-900 placeholder-stone-400 focus:border-[#FF4791]'
-                  : 'border-white/15 bg-black/40 text-white placeholder-slate-500 focus:border-[#00D2B8]'
+                  ? 'border-[#DCD4C6] bg-white text-[#231C18] placeholder-[#9A8E82] focus:border-[#4E946B]'
+                  : 'border-[#38BDF8]/20 bg-[#06101A] text-white placeholder-slate-500 focus:border-[#38BDF8]'
               }`}
             />
           </div>
@@ -239,7 +239,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
           <div>
             <span
               className={`block text-xs font-bold ${
-                isLight ? 'text-stone-700' : 'text-slate-300'
+                isLight ? 'text-[#574C44]' : 'text-sky-200/80'
               }`}
             >
               Preferred Release Era
@@ -255,10 +255,12 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                   }}
                   className={`min-h-[38px] rounded-xl text-xs font-bold transition-colors ${
                     selectedEra === era
-                      ? 'bg-[#FF4791] text-white shadow-sm'
+                      ? isLight
+                        ? 'bg-[#4E946B] text-white shadow-xs'
+                        : 'bg-[#0EA5E9] text-slate-950 shadow-xs'
                       : isLight
-                      ? 'bg-stone-200/70 text-stone-700 hover:bg-stone-300/70'
-                      : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                      ? 'bg-[#EDE6DA] text-[#574C44] hover:bg-[#E2D9C8]'
+                      : 'bg-[#38BDF8]/10 text-sky-100 hover:bg-[#38BDF8]/20'
                   }`}
                 >
                   {era}
@@ -295,7 +297,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
             className={`mt-3 rounded-2xl px-3.5 py-2 text-xs font-bold ${
               isLight
                 ? 'bg-emerald-100 text-emerald-800'
-                : 'bg-white/10 text-[#00D2B8]'
+                : 'bg-[#38BDF8]/15 text-[#38BDF8]'
             }`}
           >
             {statusMessage}
@@ -306,13 +308,13 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
         <div
           className={`mt-4 rounded-2xl border p-3.5 text-xs space-y-2 ${
             isLight
-              ? 'border-stone-200 bg-white/80 text-stone-600'
-              : 'border-white/10 bg-white/[0.03] text-slate-300'
+              ? 'border-[#E6DFD3] bg-white/80 text-[#5C5046]'
+              : 'border-[#38BDF8]/15 bg-[#06101A]/70 text-sky-200/75'
           }`}
         >
           <div
             className={`flex items-center gap-2 font-bold ${
-              isLight ? 'text-stone-900' : 'text-white'
+              isLight ? 'text-[#231C18]' : 'text-white'
             }`}
           >
             <ShieldCheck weight="fill" className="h-4 w-4 text-emerald-500 shrink-0" />
@@ -326,7 +328,9 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
           {oauthInfo && (
             <div
               className={`pt-1 text-[11px] border-t ${
-                isLight ? 'border-stone-200 text-stone-500' : 'border-white/10 text-slate-400'
+                isLight
+                  ? 'border-[#E6DFD3] text-[#6E6259]'
+                  : 'border-[#38BDF8]/15 text-sky-200/60'
               }`}
             >
               <span>OAuth Callback URI: </span>

@@ -23,6 +23,7 @@ interface AppleMusicCoverCardProps {
   isRevealed: boolean;
   isPlaying: boolean;
   compact?: boolean;
+  artistHintText?: string | null;
   onSaveTrack?: (provider: 'spotify' | 'apple', song: SongTrack) => void;
 }
 
@@ -33,6 +34,7 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
   isRevealed,
   isPlaying,
   compact = false,
+  artistHintText,
   onSaveTrack,
 }) => {
   const [imgError, setImgError] = useState(false);
@@ -55,16 +57,16 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-[24px] border transition-all duration-300 ${
+      className={`relative overflow-hidden rounded-[22px] border transition-all duration-300 ${
         isLight
-          ? 'border-stone-200/90 bg-white/90 text-stone-900 shadow-[0_8px_24px_rgba(28,25,23,0.06)]'
-          : 'border-white/15 bg-[#0e1626]/90 text-white shadow-2xl'
+          ? 'border-[#E3DCD0] bg-[#FAF7F0]/95 text-[#231C18] shadow-[0_8px_24px_rgba(35,28,24,0.06)]'
+          : 'border-[#38BDF8]/20 bg-[#091826]/90 text-[#F0F9FF] shadow-2xl'
       } ${compact ? 'p-2.5' : 'p-3.5'}`}
     >
       {/* Dynamic Apple Music-style Fluid Mood Aura */}
       <div
         className={`pointer-events-none absolute -inset-8 transition-transform duration-700 ${
-          isLight ? 'opacity-20' : 'opacity-35'
+          isLight ? 'opacity-20' : 'opacity-30'
         }`}
         style={{
           background: `radial-gradient(circle at 25% 25%, ${mood.primaryHex} 0%, transparent 55%), radial-gradient(circle at 80% 75%, ${mood.secondaryHex} 0%, transparent 60%), radial-gradient(circle at 50% 50%, ${mood.accentHex} 0%, transparent 65%)`,
@@ -75,8 +77,8 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
       <div className="relative z-10 flex items-center gap-3">
         {/* Squircle Animated Album Cover Container */}
         <div
-          className={`relative shrink-0 overflow-hidden rounded-[18px] border shadow-md transition-transform duration-500 ${
-            isLight ? 'border-stone-200/80' : 'border-white/20'
+          className={`relative shrink-0 overflow-hidden rounded-[16px] border shadow-md transition-transform duration-500 ${
+            isLight ? 'border-[#DCD4C6]' : 'border-[#38BDF8]/25'
           } ${compact ? 'h-14 w-14' : 'h-18 w-18'} ${
             isPlaying ? 'scale-[1.04]' : 'scale-100'
           }`}
@@ -113,7 +115,7 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                'linear-gradient(145deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 48%, rgba(0,0,0,0.25) 100%)',
+                'linear-gradient(145deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 48%, rgba(0,0,0,0.22) 100%)',
             }}
           />
         </div>
@@ -124,7 +126,7 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
             <>
               <div
                 className={`flex items-center gap-1.5 text-[11px] font-semibold whitespace-nowrap overflow-hidden ${
-                  isLight ? 'text-stone-500' : 'text-slate-300'
+                  isLight ? 'text-[#6E6259]' : 'text-sky-200/75'
                 }`}
               >
                 <span className="shrink-0">{song.genre}</span>
@@ -135,18 +137,18 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
               </div>
               <h3
                 className={`truncate text-sm font-extrabold tracking-tight ${
-                  isLight ? 'text-stone-900' : 'text-white'
+                  isLight ? 'text-[#231C18]' : 'text-white'
                 }`}
               >
                 {song.title}
               </h3>
               <p
                 className={`truncate text-xs font-semibold ${
-                  isLight ? 'text-stone-600' : 'text-slate-200'
+                  isLight ? 'text-[#574C44]' : 'text-sky-100/85'
                 }`}
               >
                 {song.artist} —{' '}
-                <span className={isLight ? 'text-stone-400' : 'text-slate-400'}>
+                <span className={isLight ? 'text-[#85776C]' : 'text-sky-200/60'}>
                   {song.album}
                 </span>
               </p>
@@ -155,7 +157,7 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
             <>
               <div
                 className={`flex items-center gap-1.5 text-[11px] font-bold ${
-                  isLight ? 'text-stone-600' : 'text-slate-300'
+                  isLight ? 'text-[#5C5046]' : 'text-sky-200/80'
                 }`}
               >
                 <Waveform
@@ -169,14 +171,14 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
               </div>
               <h3
                 className={`mt-0.5 truncate text-sm font-extrabold tracking-tight ${
-                  isLight ? 'text-stone-900' : 'text-white'
+                  isLight ? 'text-[#231C18]' : 'text-white'
                 }`}
               >
-                Listen &amp; Guess the Track
+                {artistHintText ? artistHintText : 'Listen & Guess the Track'}
               </h3>
               <p
                 className={`truncate text-xs font-medium ${
-                  isLight ? 'text-stone-500' : 'text-slate-300'
+                  isLight ? 'text-[#6E6259]' : 'text-sky-200/70'
                 }`}
               >
                 Era: {song.decade} · Genre: {song.genre}

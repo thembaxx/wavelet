@@ -7,6 +7,9 @@ import {
   buildQuizOptions,
   filterAndSelectSongs,
   advanceRoundState,
+  calculateVinylTier,
+  createInitialProgression,
+  updateProgressionAfterRound,
   type SongTrack,
   type GameSessionState,
 } from './game-rules.ts';
@@ -74,12 +77,19 @@ const SAMPLE_SONGS: SongTrack[] = [
   },
 ];
 
-test('calculateRoundPoints rewards shorter snippets and higher streaks', () => {
+test('calculateRoundPoints rewards shorter snippets, fever streaks, and 2x boost', () => {
   const fast1s = calculateRoundPoints({
     correct: true,
     snippetSeconds: 1,
     streak: 2,
     timeRemainingRatio: 1,
+  });
+  const boosted1s = calculateRoundPoints({
+    correct: true,
+    snippetSeconds: 1,
+    streak: 2,
+    timeRemainingRatio: 1,
+    doubleBoost: true,
   });
   const slow30s = calculateRoundPoints({
     correct: true,
@@ -96,7 +106,8 @@ test('calculateRoundPoints rewards shorter snippets and higher streaks', () => {
 
   assert.equal(wrong.points, 0);
   assert.ok(fast1s.points > slow30s.points, '1s snippet with streak should score higher than 30s');
-  assert.equal(fast1s.multiplier, 1.5);
+  assert.equal(fast1s.isFever, true);
+  assert.equal(boosted1s.points, fast1s.points * 2);
 });
 
 test('deriveSongMood maps genres and artists to distinct color/rhythm profiles', () => {
@@ -166,4 +177,26 @@ test('advanceRoundState increments score, streak, and transitions to gameover on
   assert.equal(afterRound2.streak, 0);
   assert.equal(afterRound2.bestStreak, 1);
   assert.equal(afterRound2.history.length, 2);
+});
+
+test('calculateVinylTier and updateProgressionAfterRound award XP, coins, quests, and badges', () => {
+  const initial = createInitialProgression();
+  const tier = calculateVinylTier(initial.xp);
+  assert.equal(tier.level, 2);
+  assert.equal(tier.name, 'Blue Tier Selector');
+
+  const { next, xpGained, newlyCompletedQuests } = updateProgressionAfterRound(initial, {
+    correct: true,
+    pointsEarned: 500,
+    snippetSeconds: 1,
+    newStreak: 3,
+    isSetComplete: true,
+    setPerfect: true,
+  });
+
+  assert.ok(xpGained > 350);
+  assert.ok(newlyCompletedQuests.length >= 2);
+  assert.ok(next.unlockedBadges.includes('speed-prodigy'));
+  assert.ok(next.unlockedBadges.includes('fever-streak'));
+  assert.ok(next.unlockedBadges.includes('perfect-set'));
 });
