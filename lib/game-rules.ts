@@ -20,23 +20,23 @@ export const MASCOT_CHARACTERS: MascotCharacterProfile[] = [
   {
     id: 'pebble',
     name: 'Pebble',
-    tagline: 'Peanut Cozy & Scooter Groove',
+    tagline: 'Peanut Cozy · Scooter Groove',
     avatarImg: '/assets/aistudio/IMG_5611_8f13d014.jpeg',
-    accentColor: '#E06D85',
+    accentColor: '#309F92',
   },
   {
     id: 'bobacat',
     name: 'BobaCat',
-    tagline: 'Blue Beanie Bass Kitty',
+    tagline: 'Blue Beanie · Bass Kitty',
     avatarImg: '/assets/aistudio/IMG_5644_58cdf86c.jpeg',
-    accentColor: '#5C8EC2',
+    accentColor: '#4F5BD5',
   },
   {
     id: 'sprout',
     name: 'Sprout',
-    tagline: 'Sage Bucket Sunshine',
+    tagline: 'Sage Bucket · Sunshine',
     avatarImg: '/assets/aistudio/IMG_5583_ad7fd435.jpeg',
-    accentColor: '#4E946B',
+    accentColor: '#E8734A',
   },
 ];
 
@@ -57,7 +57,7 @@ export interface SongMoodProfile {
   bgDarkHex: string;
   bgLightHex: string;
   bpm: number;
-  energy: number; // 0.3 to 1.0
+  energy: number;
 }
 
 export interface SongTrack {
@@ -115,6 +115,7 @@ export interface GameSessionState {
 export interface VinylTierInfo {
   level: number;
   name: string;
+  grade: string;
   minXp: number;
   nextTierXp: number;
   progressRatio: number;
@@ -151,12 +152,12 @@ export interface PlayerProgressionState {
 }
 
 export const VINYL_TIERS = [
-  { level: 1, name: 'Crate Digger', minXp: 0, nextXp: 600, badgeHex: '#68A378' },
-  { level: 2, name: 'Blue Tier Selector', minXp: 600, nextXp: 1500, badgeHex: '#38BDF8' },
-  { level: 3, name: 'Sage Groove DJ', minXp: 1500, nextXp: 3000, badgeHex: '#4E946B' },
-  { level: 4, name: 'Amber Platter Pro', minXp: 3000, nextXp: 5500, badgeHex: '#F59E0B' },
-  { level: 5, name: 'Rose Gold Maestro', minXp: 5500, nextXp: 9000, badgeHex: '#E06D85' },
-  { level: 6, name: 'Infinite Skies Legend', minXp: 9000, nextXp: 15000, badgeHex: '#2DD4BF' },
+  { level: 1, name: 'Crate Digger', grade: 'Grade C', minXp: 0, nextXp: 600, badgeHex: '#309F92' },
+  { level: 2, name: 'Blue Tier Selector', grade: 'Grade B', minXp: 600, nextXp: 1500, badgeHex: '#309F92' },
+  { level: 3, name: 'Teal Groove Architect', grade: 'Grade A', minXp: 1500, nextXp: 3000, badgeHex: '#309F92' },
+  { level: 4, name: 'Lime Platter Pro', grade: 'Grade A+', minXp: 3000, nextXp: 5500, badgeHex: '#000000' },
+  { level: 5, name: 'Cobalt Studio Master', grade: 'Grade S', minXp: 5500, nextXp: 9000, badgeHex: '#4F5BD5' },
+  { level: 6, name: '365 Vinyl Legend', grade: 'Grade S+', minXp: 9000, nextXp: 15000, badgeHex: '#309F92' },
 ] as const;
 
 export function calculateVinylTier(xp: number): VinylTierInfo {
@@ -175,6 +176,7 @@ export function calculateVinylTier(xp: number): VinylTierInfo {
   return {
     level: active.level,
     name: active.name,
+    grade: active.grade,
     minXp: active.minXp,
     nextTierXp: active.nextXp,
     progressRatio,
@@ -185,7 +187,7 @@ export function calculateVinylTier(xp: number): VinylTierInfo {
 
 export function createInitialProgression(): PlayerProgressionState {
   return {
-    xp: 650, // Starts in Blue Tier Selector (like IMG_5843!) so player sees live progress immediately
+    xp: 650,
     coins: 150,
     totalCorrect: 3,
     totalGamesPlayed: 1,
@@ -332,73 +334,74 @@ export function updateProgressionAfterRound(
 }
 
 // ============================================================================
-// REDESIGNED THEME & MOOD PALETTES (Matcha/Oat Daylight & Aero-Cyan Dark Glass)
+// EDITORIAL PALETTE SYSTEM (Inspired directly by IMG_5845, IMG_5847, IMG_5813)
+// #000000 · #D1D1D1 · #F1F1F1 · #FFFFFF · #309F92 · #EDFF8C
 // ============================================================================
 
 export const MOOD_PROFILES: Record<MoodId, SongMoodProfile> = {
   'euphoric-pop': {
     id: 'euphoric-pop',
-    label: 'Matcha & Rose Pop',
-    primaryHex: '#4E946B',
-    secondaryHex: '#E06D85',
-    accentHex: '#38BDF8',
-    bgDarkHex: '#07131E',
-    bgLightHex: '#F4F1EA',
+    label: 'Teal & Acid Lime Pop',
+    primaryHex: '#309F92',
+    secondaryHex: '#EDFF8C',
+    accentHex: '#FF7A59',
+    bgDarkHex: '#0B0F12',
+    bgLightHex: '#F1F1F1',
     bpm: 122,
     energy: 0.88,
   },
   'velvet-rnb': {
     id: 'velvet-rnb',
-    label: 'Velvet Indigo & Honey',
-    primaryHex: '#5C8EC2',
-    secondaryHex: '#8B72BE',
-    accentHex: '#E59A42',
-    bgDarkHex: '#081523',
-    bgLightHex: '#F3F1ED',
+    label: 'Cobalt & Warm Blush R&B',
+    primaryHex: '#4F5BD5',
+    secondaryHex: '#309F92',
+    accentHex: '#EDFF8C',
+    bgDarkHex: '#0B0D14',
+    bgLightHex: '#F2F1F4',
     bpm: 96,
     energy: 0.65,
   },
   'neon-synth': {
     id: 'neon-synth',
-    label: 'Aero Cyan French Touch',
-    primaryHex: '#28A9C9',
-    secondaryHex: '#4E946B',
-    accentHex: '#E06D85',
-    bgDarkHex: '#061520',
-    bgLightHex: '#EEF4F3',
+    label: 'Studio Teal & Chartreuse',
+    primaryHex: '#309F92',
+    secondaryHex: '#4F5BD5',
+    accentHex: '#EDFF8C',
+    bgDarkHex: '#091012',
+    bgLightHex: '#EEF2F1',
     bpm: 126,
     energy: 0.94,
   },
   'golden-hiphop': {
     id: 'golden-hiphop',
-    label: 'Peanut Gold Boom-Bap',
-    primaryHex: '#D98A3C',
-    secondaryHex: '#4E946B',
-    accentHex: '#5C8EC2',
-    bgDarkHex: '#10151C',
-    bgLightHex: '#F7F2E8',
+    label: 'Warm Amber & Lime Beat',
+    primaryHex: '#E07A47',
+    secondaryHex: '#309F92',
+    accentHex: '#EDFF8C',
+    bgDarkHex: '#100E0C',
+    bgLightHex: '#F4F2ED',
     bpm: 92,
     energy: 0.78,
   },
   'afro-pulse': {
     id: 'afro-pulse',
-    label: 'Sage & Terracotta Groove',
-    primaryHex: '#45936B',
-    secondaryHex: '#D98A3C',
-    accentHex: '#28A9C9',
-    bgDarkHex: '#071717',
-    bgLightHex: '#F0F5EE',
+    label: 'Seafoam & Sunburst Rhythm',
+    primaryHex: '#309F92',
+    secondaryHex: '#E07A47',
+    accentHex: '#EDFF8C',
+    bgDarkHex: '#0A1110',
+    bgLightHex: '#F0F3F0',
     bpm: 113,
     energy: 0.85,
   },
   'indie-amber': {
     id: 'indie-amber',
-    label: 'Warm Rose & Vinyl Oat',
-    primaryHex: '#DF6C83',
-    secondaryHex: '#5C8EC2',
-    accentHex: '#D98A3C',
-    bgDarkHex: '#0D131F',
-    bgLightHex: '#F7F1EE',
+    label: 'Coral Starburst & Cream',
+    primaryHex: '#E86F52',
+    secondaryHex: '#4F5BD5',
+    accentHex: '#309F92',
+    bgDarkHex: '#110D10',
+    bgLightHex: '#F4F1EF',
     bpm: 116,
     energy: 0.72,
   },
@@ -429,7 +432,7 @@ export function calculateRoundPoints(params: {
 
   const base = BASE_POINTS_BY_DURATION[params.snippetSeconds] ?? 150;
   const clampedStreak = Math.max(0, Math.min(params.streak, 6));
-  const isFever = clampedStreak >= 2; // 3rd correct answer in a row triggers Fever!
+  const isFever = clampedStreak >= 2;
   const feverBonus = isFever ? 0.25 : 0;
   const multiplier = Number((1 + clampedStreak * 0.25 + feverBonus).toFixed(2));
   const clampedRatio = Math.max(0, Math.min(params.timeRemainingRatio ?? 0.5, 1));

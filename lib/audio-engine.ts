@@ -11,6 +11,8 @@ export interface AudioSpectrumFrame {
   durationSec: number;
 }
 
+export type HapticPattern = 'selection' | 'light' | 'medium' | 'heavy' | 'success' | 'error';
+
 class VinylAudioEngine {
   private ctx: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
@@ -30,7 +32,9 @@ class VinylAudioEngine {
   private ensureContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
     if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
         this.analyser = this.ctx.createAnalyser();
@@ -45,6 +49,34 @@ class VinylAudioEngine {
     return this.ctx;
   }
 
+  public triggerHaptic(pattern: HapticPattern = 'light') {
+    if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+    try {
+      switch (pattern) {
+        case 'selection':
+          navigator.vibrate(5);
+          break;
+        case 'light':
+          navigator.vibrate(10);
+          break;
+        case 'medium':
+          navigator.vibrate(18);
+          break;
+        case 'heavy':
+          navigator.vibrate([24, 30, 16]);
+          break;
+        case 'success':
+          navigator.vibrate([12, 35, 22, 35, 30]);
+          break;
+        case 'error':
+          navigator.vibrate([35, 45, 50]);
+          break;
+      }
+    } catch {
+      // Ignore on unsupported browsers
+    }
+  }
+
   public setMuted(muted: boolean) {
     this.isMuted = muted;
     if (this.audioEl) {
@@ -56,41 +88,78 @@ class VinylAudioEngine {
     return this.isMuted;
   }
 
-  public playUiTick(pitchMultiplier = 1) {
+  /**
+   * Tactile micro-interaction sound + synchronized haptic pulse.
+   * Crafted like a warm acoustic woodblock / mechanical switch click.
+   */
+  public playUiTick(pitchMultiplier = 1, haptic: HapticPattern = 'selection') {
+    this.triggerHaptic(haptic);
     if (this.isMuted) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
 
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
+    const filter = ctx.createBiquadFilter();
     const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(520 * pitchMultiplier, now);
-    osc.frequency.exponentialRampToValueAtTime(180 * pitchMultiplier, now + 0.045);
 
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(640 * pitchMultiplier, now);
+    osc.frequency.exponentialRampToValueAtTime(210 * pitchMultiplier, now + 0.036);
 
-    osc.connect(gain);
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1800, now);
+
+    gain.gain.setValueAtTime(0.11, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.038);
+
+    osc.connect(filter);
+    filter.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.05);
+    osc.stop(now + 0.042);
+  }
+
+  /**
+   * Two-note warm harmonic pop for tab switches and drawer openings.
+   */
+  public playTabSwitch(opening = true) {
+    this.triggerHaptic('light');
+    if (this.isMuted) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const freqs = opening ? [440, 587.33] : [587.33, 440];
+    freqs.forEach((f, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      const t = now + idx * 0.035;
+      osc.frequency.setValueAtTime(f, t);
+      gain.gain.setValueAtTime(0.08, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.075);
+    });
   }
 
   public playNeedleDrop() {
+    this.triggerHaptic('medium');
     if (this.isMuted) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
 
     const now = ctx.currentTime;
-    // Soft thud + vinyl pop
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(160, now);
-    osc.frequency.exponentialRampToValueAtTime(42, now + 0.12);
+    osc.frequency.setValueAtTime(175, now);
+    osc.frequency.exponentialRampToValueAtTime(44, now + 0.12);
 
-    gain.gain.setValueAtTime(0.24, now);
+    gain.gain.setValueAtTime(0.22, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
 
     osc.connect(gain);
@@ -100,32 +169,39 @@ class VinylAudioEngine {
   }
 
   public playCorrectFanfare(streak = 1) {
+    this.triggerHaptic('success');
     if (this.isMuted) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
 
     const now = ctx.currentTime;
     const rootShift = Math.min(streak, 5) * 18;
-    const freqs = [523.25 + rootShift, 659.25 + rootShift, 783.99 + rootShift, 1046.5 + rootShift];
+    const freqs = [
+      523.25 + rootShift,
+      659.25 + rootShift,
+      783.99 + rootShift,
+      1046.5 + rootShift,
+    ];
 
     freqs.forEach((f, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'triangle';
-      const start = now + idx * 0.055;
+      const start = now + idx * 0.052;
       osc.frequency.setValueAtTime(f, start);
 
-      gain.gain.setValueAtTime(0.16, start);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.28);
+      gain.gain.setValueAtTime(0.15, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.26);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(start);
-      osc.stop(start + 0.3);
+      osc.stop(start + 0.28);
     });
   }
 
   public playWrongScratch() {
+    this.triggerHaptic('error');
     if (this.isMuted) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
@@ -134,17 +210,17 @@ class VinylAudioEngine {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(310, now);
-    osc.frequency.linearRampToValueAtTime(140, now + 0.12);
-    osc.frequency.exponentialRampToValueAtTime(55, now + 0.32);
+    osc.frequency.setValueAtTime(290, now);
+    osc.frequency.linearRampToValueAtTime(135, now + 0.12);
+    osc.frequency.exponentialRampToValueAtTime(55, now + 0.3);
 
-    gain.gain.setValueAtTime(0.18, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.35);
+    osc.stop(now + 0.33);
   }
 
   public playSnippet(params: {
@@ -175,7 +251,6 @@ class VinylAudioEngine {
         this.usingFallbackSynth = false;
 
         audio.play().catch(() => {
-          // If external preview is blocked or offline, trigger rhythmic synth groove
           this.startProceduralGroove(ctx, params.mood);
         });
       } catch {
@@ -202,14 +277,13 @@ class VinylAudioEngine {
       if (!this.isPlayingSnippet || this.isMuted || !this.ctx) return;
       const now = this.ctx.currentTime;
 
-      // Kick on even steps
       if (step % 2 === 0) {
         const kickOsc = this.ctx.createOscillator();
         const kickGain = this.ctx.createGain();
         kickOsc.type = 'sine';
         kickOsc.frequency.setValueAtTime(135, now);
         kickOsc.frequency.exponentialRampToValueAtTime(42, now + 0.14);
-        kickGain.gain.setValueAtTime(0.22, now);
+        kickGain.gain.setValueAtTime(0.2, now);
         kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
         kickOsc.connect(kickGain);
         if (this.analyser) kickGain.connect(this.analyser);
@@ -218,13 +292,12 @@ class VinylAudioEngine {
         kickOsc.stop(now + 0.17);
       }
 
-      // Synth chord stab
       const note = scale[(step * 2 + Math.floor(mood.energy * 5)) % scale.length];
       const synthOsc = this.ctx.createOscillator();
       const synthGain = this.ctx.createGain();
       synthOsc.type = step % 4 === 0 ? 'sawtooth' : 'triangle';
       synthOsc.frequency.setValueAtTime(note, now);
-      synthGain.gain.setValueAtTime(0.08, now);
+      synthGain.gain.setValueAtTime(0.075, now);
       synthGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
       synthOsc.connect(synthGain);
       if (this.analyser) synthGain.connect(this.analyser);
@@ -270,7 +343,6 @@ class VinylAudioEngine {
       : 0;
 
     if (!this.isPlayingSnippet) {
-      // Gentle idle breathing wave when waiting
       for (let i = 0; i < 16; i++) {
         this.bins[i] = 0.08 + 0.05 * Math.sin(timeSec * 2.2 + i * 0.45);
       }
@@ -286,7 +358,6 @@ class VinylAudioEngine {
       };
     }
 
-    // Rhythmic pulse synchronized to current BPM
     const beatFreq = (this.currentBpm / 60) * Math.PI * 2;
     const beatPulse = Math.pow(0.5 + 0.5 * Math.sin(timeSec * beatFreq), 2);
     const offbeatPulse = Math.pow(0.5 + 0.5 * Math.cos(timeSec * beatFreq * 2), 2);

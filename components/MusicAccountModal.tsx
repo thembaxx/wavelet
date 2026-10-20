@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   SpotifyLogo,
   AppleLogo,
@@ -81,10 +82,8 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
     return () => window.removeEventListener('message', handleMessage);
   }, [onConnectSuccess]);
 
-  if (!isOpen) return null;
-
   const handleSpotifyOAuthPopup = async () => {
-    audioEngine.playUiTick(1.1);
+    audioEngine.playUiTick(1.1, 'medium');
     setStatusMessage(null);
     try {
       const origin = window.location.origin;
@@ -105,7 +104,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
   };
 
   const handleGeneratePersonalCrate = async (provider: 'spotify' | 'apple-music') => {
-    audioEngine.playUiTick(1.2);
+    audioEngine.playUiTick(1.2, 'medium');
     setIsSyncing(true);
     setStatusMessage(null);
     try {
@@ -122,14 +121,14 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
         provider,
         displayName:
           provider === 'spotify' ? 'Spotify Taste Crate' : 'Apple Music Replay Crate',
-        favoriteSummary: `${tasteInput} (${selectedEra})`,
+        favoriteSummary: `${tasteInput} · ${selectedEra}`,
         customTracks: tracks,
         connectedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       });
       setStatusMessage(
         `Synced ${tracks.length} real song snippets from your ${
           provider === 'spotify' ? 'Spotify' : 'Apple Music'
-        } taste profile!`
+        } taste profile.`
       );
     } catch {
       setStatusMessage('Unable to reach music catalog — using offline curated tracks.');
@@ -139,206 +138,220 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="account-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 pointer-events-auto"
-    >
-      <div
-        className={`relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[28px] border p-5 shadow-2xl ${
-          isLight
-            ? 'border-[#E2DBD0] bg-[#FCF9F2] text-[#231C18]'
-            : 'border-[#38BDF8]/25 bg-[#091826] text-[#F0F9FF]'
-        }`}
-      >
-        <div
-          className={`flex items-center justify-between border-b pb-3.5 ${
-            isLight ? 'border-[#E6DFD3]' : 'border-[#38BDF8]/15'
-          }`}
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="account-modal-title"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-3 pointer-events-auto"
         >
-          <div>
-            <h2 id="account-modal-title" className="text-lg font-extrabold tracking-tight">
-              Spotify &amp; Apple Music Sync
-            </h2>
-            <p className={`text-xs ${isLight ? 'text-[#6E6259]' : 'text-sky-200/70'}`}>
-              Generate custom 30-second game crates from your listening history
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              audioEngine.playUiTick(0.9);
-              onClose();
-            }}
-            aria-label="Close music account modal"
-            className={`flex h-10 w-10 items-center justify-center rounded-2xl transition-colors ${
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.98 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className={`relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[28px] border p-5 shadow-2xl ${
               isLight
-                ? 'bg-[#EDE6DA] text-[#231C18] hover:bg-[#E2D9C8]'
-                : 'bg-[#38BDF8]/15 text-sky-100 hover:bg-[#38BDF8]/25'
+                ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
+                : 'border-white/15 bg-[#12161D] text-[#FFFFFF]'
             }`}
           >
-            <X weight="bold" className="h-5 w-5" />
-          </button>
-        </div>
+            {/* Drag Handle for Mobile Sheet Ergonomics */}
+            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[#D1D1D1] dark:bg-white/20 sm:hidden" />
 
-        {/* Connected Profile Banner */}
-        {connectedProfile && (
-          <div className="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <CheckCircle weight="fill" className="h-5 w-5 text-emerald-500 shrink-0" />
-                <div>
-                  <div className="text-sm font-bold">{connectedProfile.displayName}</div>
-                  <div className={`text-xs ${isLight ? 'text-[#5C5046]' : 'text-sky-200/80'}`}>
-                    {connectedProfile.favoriteSummary} · {connectedProfile.customTracks.length} songs
+            <div
+              className={`flex items-center justify-between border-b pb-3.5 ${
+                isLight ? 'border-[#F1F1F1]' : 'border-white/10'
+              }`}
+            >
+              <div>
+                <h2 id="account-modal-title" className="text-lg font-bold tracking-tight">
+                  Music Account Sync
+                </h2>
+                <p className={`text-xs ${isLight ? 'text-[#000000]/60' : 'text-white/60'}`}>
+                  Curate 30-second vinyl rounds from your listening history
+                </p>
+              </div>
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.92 }}
+                onClick={() => {
+                  audioEngine.playUiTick(0.9, 'light');
+                  onClose();
+                }}
+                aria-label="Close music account modal"
+                className={`flex h-11 w-11 items-center justify-center rounded-full border transition-colors ${
+                  isLight
+                    ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                    : 'border-white/15 bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                <X weight="bold" className="h-4 w-4" />
+              </motion.button>
+            </div>
+
+            {connectedProfile && (
+              <div
+                className={`mt-4 rounded-[22px] border p-3.5 ${
+                  isLight
+                    ? 'border-[#000000]/10 bg-[#EDFF8C] text-[#000000]'
+                    : 'border-[#EDFF8C]/35 bg-[#EDFF8C]/15 text-white'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <CheckCircle weight="fill" className="h-5 w-5 text-[#309F92] shrink-0" />
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-bold">{connectedProfile.displayName}</div>
+                      <div className="truncate text-xs opacity-75">
+                        {connectedProfile.favoriteSummary} · {connectedProfile.customTracks.length} songs
+                      </div>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      audioEngine.playUiTick(0.8, 'medium');
+                      onDisconnect();
+                    }}
+                    aria-label="Disconnect music account and purge data"
+                    className="inline-flex min-h-[38px] items-center gap-1 rounded-full bg-[#000000] px-3 py-1 text-xs font-bold text-[#FFFFFF]"
+                  >
+                    <Trash weight="bold" className="h-3.5 w-3.5" />
+                    <span>Revoke</span>
+                  </button>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  audioEngine.playUiTick(0.8);
-                  onDisconnect();
-                }}
-                aria-label="Disconnect music account and purge data"
-                className="inline-flex min-h-[36px] items-center gap-1 rounded-xl bg-rose-500/20 px-2.5 py-1 text-xs font-bold text-rose-500 hover:bg-rose-500/30"
-              >
-                <Trash weight="bold" className="h-3.5 w-3.5" />
-                <span>Revoke</span>
-              </button>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* Taste Seed / Listening History Generator */}
-        <div className="mt-4 space-y-3">
-          <div>
-            <label
-              htmlFor="taste-artists-input"
-              className={`block text-xs font-bold ${
-                isLight ? 'text-[#574C44]' : 'text-sky-200/80'
-              }`}
-            >
-              Favorite Artists, Genres, or Listening History Seed
-            </label>
-            <input
-              id="taste-artists-input"
-              type="text"
-              value={tasteInput}
-              onChange={(e) => setTasteInput(e.target.value)}
-              placeholder="e.g. Daft Punk, SZA, Tyla, Outkast"
-              className={`mt-1.5 w-full rounded-2xl border px-3.5 py-2.5 text-sm focus:outline-none ${
-                isLight
-                  ? 'border-[#DCD4C6] bg-white text-[#231C18] placeholder-[#9A8E82] focus:border-[#4E946B]'
-                  : 'border-[#38BDF8]/20 bg-[#06101A] text-white placeholder-slate-500 focus:border-[#38BDF8]'
-              }`}
-            />
-          </div>
-
-          <div>
-            <span
-              className={`block text-xs font-bold ${
-                isLight ? 'text-[#574C44]' : 'text-sky-200/80'
-              }`}
-            >
-              Preferred Release Era
-            </span>
-            <div className="mt-1.5 grid grid-cols-5 gap-1.5">
-              {['1980s', '1990s', '2000s', '2010s', '2020s'].map((era) => (
-                <button
-                  key={era}
-                  type="button"
-                  onClick={() => {
-                    audioEngine.playUiTick();
-                    setSelectedEra(era);
-                  }}
-                  className={`min-h-[38px] rounded-xl text-xs font-bold transition-colors ${
-                    selectedEra === era
-                      ? isLight
-                        ? 'bg-[#4E946B] text-white shadow-xs'
-                        : 'bg-[#0EA5E9] text-slate-950 shadow-xs'
-                      : isLight
-                      ? 'bg-[#EDE6DA] text-[#574C44] hover:bg-[#E2D9C8]'
-                      : 'bg-[#38BDF8]/10 text-sky-100 hover:bg-[#38BDF8]/20'
+            <div className="mt-4 space-y-3.5">
+              <div>
+                <label
+                  htmlFor="taste-artists-input"
+                  className={`block text-xs font-semibold ${
+                    isLight ? 'text-[#000000]/75' : 'text-white/75'
                   }`}
                 >
-                  {era}
-                </button>
-              ))}
+                  Favorite Artists, Genres, or Listening Seed
+                </label>
+                <input
+                  id="taste-artists-input"
+                  type="text"
+                  value={tasteInput}
+                  onChange={(e) => setTasteInput(e.target.value)}
+                  placeholder="e.g. Daft Punk, SZA, Tyla, Outkast"
+                  className={`mt-1.5 w-full rounded-2xl border px-3.5 py-2.5 text-sm focus:outline-none ${
+                    isLight
+                      ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000] placeholder-[#000000]/40 focus:border-[#309F92] focus:bg-[#FFFFFF]'
+                      : 'border-white/15 bg-black/40 text-white placeholder-white/40 focus:border-[#309F92]'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <span
+                  className={`block text-xs font-semibold ${
+                    isLight ? 'text-[#000000]/75' : 'text-white/75'
+                  }`}
+                >
+                  Release Decade
+                </span>
+                <div className="mt-1.5 grid grid-cols-5 gap-1.5">
+                  {['1980s', '1990s', '2000s', '2010s', '2020s'].map((era) => (
+                    <motion.button
+                      key={era}
+                      type="button"
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        audioEngine.playUiTick(1.05, 'selection');
+                        setSelectedEra(era);
+                      }}
+                      className={`min-h-[40px] rounded-full text-xs font-bold transition-colors ${
+                        selectedEra === era
+                          ? isLight
+                            ? 'bg-[#000000] text-[#FFFFFF]'
+                            : 'bg-[#EDFF8C] text-[#000000]'
+                          : isLight
+                          ? 'bg-[#F1F1F1] text-[#000000]/75 hover:bg-[#E5E5E5]'
+                          : 'bg-white/10 text-white/80 hover:bg-white/15'
+                      }`}
+                    >
+                      {era}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2.5 pt-1 sm:grid-cols-2">
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.97 }}
+                  disabled={isSyncing}
+                  onClick={handleSpotifyOAuthPopup}
+                  className="flex min-h-[46px] items-center justify-center gap-2 rounded-full bg-[#000000] px-4 py-2.5 text-sm font-bold text-[#FFFFFF] transition-colors whitespace-nowrap"
+                >
+                  <SpotifyLogo weight="fill" className="h-5 w-5 text-[#1DB954] shrink-0" />
+                  <span>{isSyncing ? 'Syncing...' : 'Sync Spotify'}</span>
+                </motion.button>
+
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.97 }}
+                  disabled={isSyncing}
+                  onClick={() => handleGeneratePersonalCrate('apple-music')}
+                  className={`flex min-h-[46px] items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-sm font-bold transition-colors whitespace-nowrap ${
+                    isLight
+                      ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                      : 'border-white/15 bg-white/10 text-white hover:bg-white/20'
+                  }`}
+                >
+                  <AppleLogo weight="fill" className="h-5 w-5 text-[#FA243C] shrink-0" />
+                  <span>{isSyncing ? 'Syncing...' : 'Sync Apple Music'}</span>
+                </motion.button>
+              </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 gap-2.5 pt-1 sm:grid-cols-2">
-            <button
-              type="button"
-              disabled={isSyncing}
-              onClick={handleSpotifyOAuthPopup}
-              className="flex min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-[#1DB954] px-4 py-2.5 text-sm font-extrabold text-slate-950 shadow-md hover:bg-[#1ED760] transition-transform active:scale-[0.98] whitespace-nowrap"
-            >
-              <SpotifyLogo weight="fill" className="h-5 w-5 shrink-0" />
-              <span>{isSyncing ? 'Syncing...' : 'Sync with Spotify'}</span>
-            </button>
+            {statusMessage && (
+              <div
+                className={`mt-3 rounded-2xl px-3.5 py-2 text-xs font-semibold ${
+                  isLight
+                    ? 'bg-[#EDFF8C] text-[#000000]'
+                    : 'bg-[#309F92]/25 text-[#EDFF8C]'
+                }`}
+              >
+                {statusMessage}
+              </div>
+            )}
 
-            <button
-              type="button"
-              disabled={isSyncing}
-              onClick={() => handleGeneratePersonalCrate('apple-music')}
-              className="flex min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-[#FA243C] px-4 py-2.5 text-sm font-extrabold text-white shadow-md hover:bg-[#FF3B52] transition-transform active:scale-[0.98] whitespace-nowrap"
-            >
-              <AppleLogo weight="fill" className="h-5 w-5 shrink-0" />
-              <span>{isSyncing ? 'Syncing...' : 'Sync Apple Music'}</span>
-            </button>
-          </div>
-        </div>
-
-        {statusMessage && (
-          <div
-            className={`mt-3 rounded-2xl px-3.5 py-2 text-xs font-bold ${
-              isLight
-                ? 'bg-emerald-100 text-emerald-800'
-                : 'bg-[#38BDF8]/15 text-[#38BDF8]'
-            }`}
-          >
-            {statusMessage}
-          </div>
-        )}
-
-        {/* Privacy & OAuth Redirect Info */}
-        <div
-          className={`mt-4 rounded-2xl border p-3.5 text-xs space-y-2 ${
-            isLight
-              ? 'border-[#E6DFD3] bg-white/80 text-[#5C5046]'
-              : 'border-[#38BDF8]/15 bg-[#06101A]/70 text-sky-200/75'
-          }`}
-        >
-          <div
-            className={`flex items-center gap-2 font-bold ${
-              isLight ? 'text-[#231C18]' : 'text-white'
-            }`}
-          >
-            <ShieldCheck weight="fill" className="h-4 w-4 text-emerald-500 shrink-0" />
-            <span>Data Privacy &amp; Ephemeral Session Guarantee</span>
-          </div>
-          <p className="leading-relaxed">
-            Vinyl Rush processes your listening history strictly in memory to build 30-second song
-            quiz rounds. No personal identifiers or tokens are persisted to external databases, and
-            you can revoke access with one tap.
-          </p>
-          {oauthInfo && (
             <div
-              className={`pt-1 text-[11px] border-t ${
+              className={`mt-4 rounded-2xl border p-3.5 text-xs space-y-1.5 ${
                 isLight
-                  ? 'border-[#E6DFD3] text-[#6E6259]'
-                  : 'border-[#38BDF8]/15 text-sky-200/60'
+                  ? 'border-[#D1D1D1] bg-[#F1F1F1]/70 text-[#000000]/75'
+                  : 'border-white/10 bg-black/30 text-white/70'
               }`}
             >
-              <span>OAuth Callback URI: </span>
-              <code className="break-all font-mono">{oauthInfo.redirectUri}</code>
+              <div className="flex items-center gap-2 font-bold text-[#309F92]">
+                <ShieldCheck weight="fill" className="h-4 w-4 shrink-0" />
+                <span>Ephemeral In-Memory Privacy</span>
+              </div>
+              <p className="leading-relaxed">
+                Listening history is used solely in-memory to build song rounds. No personal
+                tokens are stored on external servers.
+              </p>
+              {oauthInfo && (
+                <div className="pt-1 text-[11px] opacity-75">
+                  <span>Redirect URI: </span>
+                  <code className="break-all font-mono">{oauthInfo.redirectUri}</code>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

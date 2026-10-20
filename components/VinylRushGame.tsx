@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Play,
   Pause,
@@ -24,7 +25,6 @@ import {
   Moon,
   SlidersHorizontal,
   FilmStrip,
-  VinylRecord,
   Trophy,
   Fire,
   Lightning,
@@ -32,9 +32,9 @@ import {
   Scissors,
   Medal,
   Coins,
-  Sparkle,
   CheckCircle,
   LockSimple,
+  ArrowUpRight,
 } from '@phosphor-icons/react';
 import {
   type SnippetDuration,
@@ -76,18 +76,204 @@ const QUICK_VIBE_CRATES: Array<{
   value: string;
 }> = [
   { id: 'all', label: 'All Hits', mode: 'genre', value: 'All' },
-  { id: 'pop', label: 'Pop Glow', mode: 'genre', value: 'Pop' },
-  { id: 'rnb', label: 'Velvet R&B', mode: 'genre', value: 'R&B/Soul' },
+  { id: 'pop', label: 'Pop', mode: 'genre', value: 'Pop' },
+  { id: 'rnb', label: 'R&B / Soul', mode: 'genre', value: 'R&B/Soul' },
   { id: 'hiphop', label: 'Hip-Hop', mode: 'genre', value: 'Hip-Hop/Rap' },
   { id: 'afro', label: 'Afrobeats', mode: 'genre', value: 'Afrobeats' },
   { id: 'electro', label: 'Electronic', mode: 'genre', value: 'Electronic' },
   { id: '2020s', label: '2020s', mode: 'year', value: '2020s' },
   { id: '2000s', label: '2000s', mode: 'year', value: '2000s' },
-  { id: '1990s', label: '90s Gold', mode: 'year', value: '1990s' },
+  { id: '1990s', label: '1990s', mode: 'year', value: '1990s' },
 ];
 
+/**
+ * 9-Dot (3x3) Geometric Brand Mark with #309F92 center dot (Inspired directly by IMG_5844 & IMG_5846!)
+ */
+const NineDotBrandMark: React.FC<{ isLight: boolean }> = ({ isLight }) => (
+  <div
+    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border transition-colors ${
+      isLight
+        ? 'border-[#D1D1D1] bg-[#FFFFFF] shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
+        : 'border-white/15 bg-[#12161D]'
+    }`}
+    aria-hidden="true"
+  >
+    <div className="grid grid-cols-3 gap-1">
+      {Array.from({ length: 9 }).map((_, idx) => {
+        const isCenter = idx === 4;
+        return (
+          <span
+            key={idx}
+            className={`h-1.5 w-1.5 rounded-full ${
+              isCenter
+                ? 'bg-[#309F92]'
+                : isLight
+                ? 'bg-[#000000]'
+                : 'bg-[#FFFFFF]'
+            }`}
+          />
+        );
+      })}
+    </div>
+  </div>
+);
+
+/**
+ * Radial Tick-Mark Arc Gauge ("Lead Score 90 · Grade A · → Steady" from IMG_5846 & IMG_5847!)
+ */
+const SegmentedTickArcGauge: React.FC<{
+  value: number;
+  gradeLabel: string;
+  statusLabel: string;
+  isLight: boolean;
+}> = ({ value, gradeLabel, statusLabel, isLight }) => {
+  const clamped = Math.max(0, Math.min(100, Math.round(value)));
+  const totalTicks = 44;
+  const activeTicks = Math.round((clamped / 100) * totalTicks);
+
+  return (
+    <div
+      className={`relative flex items-center justify-between rounded-[24px] border p-4 ${
+        isLight
+          ? 'border-[#D1D1D1] bg-[#FFFFFF]'
+          : 'border-white/12 bg-[#12161D]'
+      }`}
+    >
+      {/* Left: Radial Tick-Mark Oval Ring + Big Urbanist Number */}
+      <div className="relative flex h-24 w-48 items-center justify-center">
+        <svg
+          viewBox="0 0 200 104"
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          aria-hidden="true"
+        >
+          {Array.from({ length: totalTicks }).map((_, i) => {
+            const angle = (i / totalTicks) * Math.PI * 2 - Math.PI / 2;
+            const rx = 86;
+            const ry = 40;
+            const cx = 100;
+            const cy = 52;
+            const x1 = cx + Math.cos(angle) * (rx - 6);
+            const y1 = cy + Math.sin(angle) * (ry - 6);
+            const x2 = cx + Math.cos(angle) * (rx + 2);
+            const y2 = cy + Math.sin(angle) * (ry + 2);
+            const isFilled = i < activeTicks;
+            return (
+              <line
+                key={i}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke={
+                  isFilled
+                    ? '#309F92'
+                    : isLight
+                    ? '#E2E2E2'
+                    : 'rgba(255,255,255,0.14)'
+                }
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              />
+            );
+          })}
+        </svg>
+
+        <div className="relative z-10 flex items-center gap-2.5">
+          <span className="text-4xl font-bold tracking-tight tabular-nums">
+            {clamped}
+          </span>
+          <div className="flex flex-col items-start">
+            <span
+              className={`text-[11px] font-semibold ${
+                isLight ? 'text-[#000000]/70' : 'text-white/70'
+              }`}
+            >
+              {gradeLabel}
+            </span>
+            <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-[#EDFF8C] px-2 py-0.5 text-[10px] font-bold text-[#000000]">
+              <span>→ {statusLabel}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right: Key Performance Breakdown */}
+      <div className="hidden sm:flex flex-col items-end text-right">
+        <span
+          className={`text-xs font-semibold ${
+            isLight ? 'text-[#000000]/55' : 'text-white/55'
+          }`}
+        >
+          Rhythm Index
+        </span>
+        <span className="text-sm font-bold text-[#309F92]">Top Ear Tier</span>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Horizontal Round Process Capsule (Inspired directly by "Opportunity Sales Process" in IMG_5847!)
+ */
+const RoundStepProcessBar: React.FC<{
+  totalRounds: number;
+  currentIndex: number;
+  history: GameSessionState['history'];
+  isLight: boolean;
+}> = ({ totalRounds, currentIndex, history, isLight }) => {
+  // Show up to 6 visible nodes so mobile layout stays spacious
+  const displayCount = Math.min(totalRounds, 6);
+
+  return (
+    <div
+      className={`flex items-center justify-between gap-1.5 rounded-full p-1.5 ${
+        isLight
+          ? 'bg-gradient-to-r from-[#309F92]/25 via-[#309F92]/15 to-[#EDFF8C]/55 border border-[#000000]/8'
+          : 'bg-gradient-to-r from-[#309F92]/30 via-[#12161D] to-[#EDFF8C]/20 border border-white/10'
+      }`}
+    >
+      {Array.from({ length: displayCount }).map((_, idx) => {
+        const pastItem = history[idx];
+        const isCurrent = idx === currentIndex;
+        const isCompleted = idx < currentIndex;
+
+        return (
+          <div
+            key={idx}
+            className="flex flex-1 items-center justify-center"
+          >
+            <div
+              className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-mono font-bold tabular-nums transition-all ${
+                isCurrent
+                  ? 'bg-[#FFFFFF] text-[#000000] shadow-sm ring-2 ring-[#309F92]'
+                  : isCompleted
+                  ? pastItem?.correct
+                    ? 'bg-[#309F92] text-[#FFFFFF]'
+                    : 'bg-[#000000]/75 text-[#FFFFFF]'
+                  : isLight
+                  ? 'bg-[#FFFFFF]/75 text-[#000000]/45'
+                  : 'bg-white/10 text-white/40'
+              }`}
+            >
+              {isCompleted ? (
+                pastItem?.correct ? (
+                  <Check weight="bold" className="h-3.5 w-3.5" />
+                ) : (
+                  <X weight="bold" className="h-3.5 w-3.5" />
+                )
+              ) : (
+                idx + 1
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export const VinylRushGame: React.FC = () => {
-  // Light ("Matcha & Oat Studio") / Dark ("Infinite Skies Aero-Glass") Theme & Companion State
+  // Theme & Companion State (Defaults to clean #F1F1F1 / #FFFFFF Light Mode from IMG_5845)
   const [themeMode, setThemeMode] = useState<ThemeMode>('light');
   const [characterId, setCharacterId] = useState<MascotCharacterId>('pebble');
   const [showCameoVideo, setShowCameoVideo] = useState<boolean>(false);
@@ -142,7 +328,7 @@ export const VinylRushGame: React.FC = () => {
   const [isDockCollapsed, setIsDockCollapsed] = useState<boolean>(false);
   const [mascotState, setMascotState] = useState<MascotMoodState>('idle');
   const [mascotSpeech, setMascotSpeech] = useState<string>(
-    'Tap me to dance or spin the vinyl! Earn XP & climb the Vinyl Pass tiers!'
+    'Tap the vinyl or mascot to groove. Choose your snippet time and drop the needle.'
   );
   const [roundFeedback, setRoundFeedback] = useState<{
     answered: boolean;
@@ -153,7 +339,7 @@ export const VinylRushGame: React.FC = () => {
     selectedSongId?: string;
   } | null>(null);
 
-  // Desktop / Tablet Mobile-Only Disclaimer & Mobile Viewport Frame simulator
+  // Desktop / Tablet Mobile-First Disclaimer & Mobile Viewport Frame simulator
   const [isDesktopViewport, setIsDesktopViewport] = useState<boolean>(false);
   const [mobileFrameLocked, setMobileFrameLocked] = useState<boolean>(true);
   const [showDesktopBanner, setShowDesktopBanner] = useState<boolean>(true);
@@ -304,7 +490,7 @@ export const VinylRushGame: React.FC = () => {
     setIsPlayingSnippet(true);
     setMascotState('listening');
     setMascotSpeech(
-      `Dancing to a ${durationSec}s cut (${mood.bpm} BPM)... Feel that ${song.genre} groove!`
+      `Spinning ${durationSec}s cut · ${mood.bpm} BPM · ${song.genre}`
     );
 
     audioEngine.playSnippet({
@@ -316,7 +502,7 @@ export const VinylRushGame: React.FC = () => {
         setSnippetProgress(0);
         setMascotState('idle');
         setMascotSpeech(
-          `Needle lifted! Did you recognize that ${song.decade} ${song.genre} track?`
+          `Needle lifted. Did you recognize that ${song.decade} ${song.genre} track?`
         );
       },
     });
@@ -337,7 +523,6 @@ export const VinylRushGame: React.FC = () => {
     return () => clearInterval(interval);
   }, [isPlayingSnippet, snippetDuration]);
 
-  // Reset per-round power-ups
   const resetRoundPowerUps = useCallback(() => {
     setArtistHintText(null);
     setEliminatedOptionIds([]);
@@ -350,7 +535,7 @@ export const VinylRushGame: React.FC = () => {
       if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
-      audioEngine.playUiTick(1.3);
+      audioEngine.playUiTick(1.3, 'medium');
 
       let activePool = overridePool || songPool;
       if (customSearchTerm.trim().length > 1 && !overridePool) {
@@ -413,10 +598,10 @@ export const VinylRushGame: React.FC = () => {
     }
   }, [startNewGame]);
 
-  // Gamified Power-Up 1: Artist Clue
+  // Power-Up 1: Artist Clue
   const handleUseArtistHint = useCallback(() => {
     if (artistHintText || roundFeedback?.answered) return;
-    audioEngine.playUiTick(1.35);
+    audioEngine.playUiTick(1.35, 'medium');
     const maskedArtist = currentSong.artist
       .split(' ')
       .map((w) => (w.length > 2 ? `${w[0]}${'·'.repeat(Math.min(4, w.length - 1))}` : w))
@@ -425,13 +610,13 @@ export const VinylRushGame: React.FC = () => {
     setArtistHintText(clue);
     setProgression((p) => ({ ...p, coins: Math.max(0, p.coins - 15) }));
     setMascotState('hyped');
-    setMascotSpeech(`Psst! ${clue} — dropped on "${currentSong.album}"!`);
+    setMascotSpeech(`${clue} · Album: ${currentSong.album}`);
   }, [artistHintText, roundFeedback?.answered, currentSong]);
 
-  // Gamified Power-Up 2: 50/50 Cut (switches to 4-Choice if needed and removes 2 wrong answers)
+  // Power-Up 2: 50/50 Cut
   const handleUseFiftyFifty = useCallback(() => {
     if (eliminatedOptionIds.length > 0 || roundFeedback?.answered) return;
-    audioEngine.playUiTick(1.4);
+    audioEngine.playUiTick(1.4, 'medium');
     if (playMode !== 'quiz-4choice') {
       setPlayMode('quiz-4choice');
     }
@@ -442,17 +627,17 @@ export const VinylRushGame: React.FC = () => {
     setEliminatedOptionIds(wrongIds);
     setProgression((p) => ({ ...p, coins: Math.max(0, p.coins - 25) }));
     setMascotState('hyped');
-    setMascotSpeech(`50/50 Cut! Scratching 2 wrong records off the deck!`);
+    setMascotSpeech('50/50 Cut applied — 2 wrong tracks removed.');
   }, [eliminatedOptionIds.length, roundFeedback?.answered, playMode, quizOptions, currentSong.id]);
 
-  // Gamified Power-Up 3: 2x Double Drop Booster
+  // Power-Up 3: 2x Double Drop Booster
   const handleUseDoubleBoost = useCallback(() => {
     if (doubleBoostActive || roundFeedback?.answered) return;
     audioEngine.playCorrectFanfare(1);
     setDoubleBoostActive(true);
     setProgression((p) => ({ ...p, coins: Math.max(0, p.coins - 30) }));
     setMascotState('celebrating');
-    setMascotSpeech(`2x Double Drop Activated! Nail this track for double points & XP!`);
+    setMascotSpeech('2x Score Booster active for this round.');
   }, [doubleBoostActive, roundFeedback?.answered]);
 
   // Handle player answering Right or Wrong
@@ -490,7 +675,7 @@ export const VinylRushGame: React.FC = () => {
 
       if (newlyCompletedQuests.length > 0) {
         setLastXpToast(
-          `Quest Complete: ${newlyCompletedQuests[0].title} (+${newlyCompletedQuests[0].rewardXp} XP!)`
+          `Quest Complete · ${newlyCompletedQuests[0].title} (+${newlyCompletedQuests[0].rewardXp} XP)`
         );
         setTimeout(() => setLastXpToast(null), 3500);
       }
@@ -499,15 +684,15 @@ export const VinylRushGame: React.FC = () => {
         audioEngine.playCorrectFanfare(newStreak);
         setMascotState('celebrating');
         setMascotSpeech(
-          `${isFever ? 'FEVER COMBO! ' : ''}+${points} pts & +${xpGained} XP! "${
-            currentSong.title
-          }" by ${currentSong.artist}!`
+          `${isFever ? 'Fever Streak · ' : ''}+${points} pts · "${currentSong.title}" by ${
+            currentSong.artist
+          }`
         );
       } else {
         audioEngine.playWrongScratch();
         setMascotState('sympathy');
         setMascotSpeech(
-          `Aww, close one! That was "${currentSong.title}" by ${currentSong.artist} (+${xpGained} XP).`
+          `Track was "${currentSong.title}" by ${currentSong.artist} (+${xpGained} XP)`
         );
       }
 
@@ -539,7 +724,7 @@ export const VinylRushGame: React.FC = () => {
   // Advance to the next song round or finish session
   const handleNextRound = useCallback(() => {
     if (!roundFeedback) return;
-    audioEngine.playUiTick(1.15);
+    audioEngine.playUiTick(1.15, 'medium');
 
     const nextState = advanceRoundState(session, {
       correct: roundFeedback.correct,
@@ -555,7 +740,7 @@ export const VinylRushGame: React.FC = () => {
       setMascotState('celebrating');
       audioEngine.playCorrectFanfare(4);
       setMascotSpeech(
-        `Encore complete! ${nextState.score} pts · Level ${tierInfo.level} (${tierInfo.name})!`
+        `Session complete · ${nextState.score} pts · Level ${tierInfo.level} ${tierInfo.name}`
       );
     } else {
       const nextSong = nextState.playlist[nextState.currentIndex];
@@ -577,18 +762,18 @@ export const VinylRushGame: React.FC = () => {
 
   // Toggle Light / Dark Theme
   const toggleThemeMode = useCallback(() => {
-    audioEngine.playUiTick(1.22);
+    audioEngine.playTabSwitch(themeMode === 'dark');
     setThemeMode((prev) => (prev === 'light' ? 'dark' : 'light'));
-  }, []);
+  }, [themeMode]);
 
   // Cycle Mascot Character ('pebble' -> 'bobacat' -> 'sprout')
   const cycleMascotCharacter = useCallback(() => {
-    audioEngine.playUiTick(1.32);
+    audioEngine.playUiTick(1.32, 'medium');
     setCharacterId((prev) => {
       const idx = MASCOT_CHARACTERS.findIndex((c) => c.id === prev);
       const next = MASCOT_CHARACTERS[(idx + 1) % MASCOT_CHARACTERS.length];
       setMascotState('hyped');
-      setMascotSpeech(`Hi! I'm ${next.name} (${next.tagline})! Let's spin some tracks!`);
+      setMascotSpeech(`${next.name} active · ${next.tagline}`);
       setTimeout(() => setMascotState(isPlayingSnippet ? 'listening' : 'idle'), 1600);
       return next.id;
     });
@@ -644,9 +829,8 @@ export const VinylRushGame: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [session.status, isAccountModalOpen, isPassModalOpen, startNewGame, toggleThemeMode]);
 
-  // Select Filter Category Handler
   const handleSelectFilterValue = async (mode: FilterMode, val: string) => {
-    audioEngine.playUiTick(1.08);
+    audioEngine.playUiTick(1.08, 'selection');
     setFilterMode(mode);
     setFilterValue(val);
     setCustomSearchTerm('');
@@ -665,30 +849,37 @@ export const VinylRushGame: React.FC = () => {
 
   const emotionBadgeText = useMemo(() => {
     if (mascotState === 'listening') return 'Dancing';
-    if (mascotState === 'celebrating') return 'Beaming!';
+    if (mascotState === 'celebrating') return 'Beaming';
     if (mascotState === 'sympathy') return 'Pouting';
-    if (mascotState === 'hyped') return 'Grooving!';
-    return 'Smiling';
+    if (mascotState === 'hyped') return 'Grooving';
+    return 'Ready';
   }, [mascotState]);
 
   const isFeverActive = session.streak >= 2;
   const activeBgHex = isLight ? currentMood.bgLightHex : currentMood.bgDarkHex;
+
+  // Circular Icon Button style matching IMG_5846 & IMG_5847
+  const circleBtnClass = isLight
+    ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000] hover:bg-[#F1F1F1]'
+    : 'border-white/15 bg-[#12161D] text-[#FFFFFF] hover:bg-white/10';
+
+  // Primary Action Button style matching IMG_5845 & IMG_5847 (#000000 in Light Mode, #EDFF8C in Dark Mode)
   const primaryBtnClasses = isLight
-    ? 'border-b-4 border-[#2E6F4E] bg-[#468E68] hover:bg-[#529E76] text-white shadow-[0_8px_22px_rgba(70,142,104,0.32)]'
-    : 'border-b-4 border-[#0369A1] bg-[#0EA5E9] hover:bg-[#38BDF8] text-slate-950 shadow-[0_8px_24px_rgba(14,165,233,0.35)]';
+    ? 'bg-[#000000] text-[#FFFFFF] hover:bg-[#1A1A1A] shadow-[0_10px_24px_rgba(0,0,0,0.14)]'
+    : 'bg-[#EDFF8C] text-[#000000] hover:bg-[#F4FFAD] shadow-[0_10px_24px_rgba(237,255,140,0.2)]';
 
   return (
     <main
       className={`relative h-dvh w-screen overflow-hidden select-none transition-colors duration-500 ${
-        isLight ? 'text-[#231C18]' : 'text-[#F0F9FF]'
+        isLight ? 'text-[#000000]' : 'text-[#FFFFFF]'
       }`}
       style={{
         background: isLight
-          ? `radial-gradient(circle at 50% 18%, ${currentMood.primaryHex}1C 0%, ${activeBgHex} 72%)`
-          : `radial-gradient(circle at 50% 18%, ${currentMood.accentHex}24 0%, ${activeBgHex} 74%)`,
+          ? `radial-gradient(circle at 22% 12%, #EDFF8C45 0%, transparent 45%), radial-gradient(circle at 82% 18%, ${currentMood.primaryHex}18 0%, ${activeBgHex} 72%)`
+          : `radial-gradient(circle at 50% 18%, ${currentMood.primaryHex}22 0%, ${activeBgHex} 74%)`,
       }}
     >
-      {/* Full-Viewport 3D Isometric Three.js Vinyl & Smooth Kawaii Toy Mascot World */}
+      {/* Full-Viewport 3D Isometric Three.js Vinyl & Smooth Mascot Stage */}
       <IsometricVinylStage
         mood={currentMood}
         mascotState={mascotState}
@@ -699,209 +890,193 @@ export const VinylRushGame: React.FC = () => {
         onMascotInteract={() => {
           setMascotState('hyped');
           setMascotSpeech(
-            `Wheee! Complete Daily Groove Quests in your Vinyl Pass for bonus XP!`
+            'Complete Daily Groove Quests in your Vinyl Pass for bonus XP.'
           );
           setTimeout(() => setMascotState(isPlayingSnippet ? 'listening' : 'idle'), 1800);
         }}
         onTurntableInteract={() => {
           setMascotSpeech(
-            `Wicka-wicka scratch! Tuned to ${currentMood.label} (${currentMood.bpm} BPM).`
+            `Turntable scratch · ${currentMood.label} · ${currentMood.bpm} BPM`
           );
         }}
       />
 
       {/* Quest / XP Achievement Toast */}
-      {lastXpToast && (
-        <div className="pointer-events-none fixed top-16 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-amber-400/50 bg-[#1B1610]/95 px-4 py-2 text-xs font-extrabold text-amber-300 shadow-2xl">
-          <Trophy weight="fill" className="h-4 w-4 text-amber-400 shrink-0" />
-          <span>{lastXpToast}</span>
-        </div>
-      )}
+      <AnimatePresence>
+        {lastXpToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -12, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            className="pointer-events-none fixed top-16 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#000000] px-4 py-2 text-xs font-bold text-[#EDFF8C] shadow-xl"
+          >
+            <Trophy weight="fill" className="h-4 w-4 shrink-0" />
+            <span>{lastXpToast}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Offline PWA Connectivity Toast */}
       {!isOnline && (
-        <div className="fixed top-3 left-1/2 z-50 -translate-x-1/2 rounded-2xl border border-amber-400/50 bg-amber-950/95 px-4 py-1.5 text-xs font-bold text-amber-200 shadow-lg">
-          Offline Mode Active — Playing Cached Curated Crate
+        <div className="fixed top-3 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[#000000] px-4 py-1.5 text-xs font-bold text-[#EDFF8C] shadow-lg">
+          Offline Mode · Playing Cached Curated Crate
         </div>
       )}
 
-      {/* Desktop / Tablet Mobile-Only Disclaimer Bar */}
+      {/* Desktop / Tablet Mobile-First Preview Bar */}
       {isDesktopViewport && showDesktopBanner && (
         <div
           role="region"
           aria-label="Mobile-only experience notice"
-          className={`pointer-events-auto fixed top-2.5 left-1/2 z-40 flex w-[min(94vw,760px)] -translate-x-1/2 items-center justify-between gap-3 rounded-2xl border px-4 py-2 text-xs shadow-xl transition-colors ${
+          className={`pointer-events-auto fixed top-2.5 left-1/2 z-40 flex w-[min(94vw,720px)] -translate-x-1/2 items-center justify-between gap-3 rounded-full border px-4 py-1.5 text-xs shadow-sm transition-colors ${
             isLight
-              ? 'border-[#E2DBD0] bg-[#FCF9F2]/95 text-[#574C44]'
-              : 'border-[#38BDF8]/22 bg-[#091826]/95 text-sky-100'
+              ? 'border-[#D1D1D1] bg-[#FFFFFF]/95 text-[#000000]'
+              : 'border-white/15 bg-[#12161D]/95 text-white'
           }`}
         >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <DeviceMobile
-              weight="duotone"
-              className="h-5 w-5 shrink-0"
-              style={{ color: currentMood.primaryHex }}
-            />
-            <p className="truncate">
-              <strong className={isLight ? 'text-[#231C18]' : 'text-white'}>
-                Mobile-First 3D Party Game:
-              </strong>{' '}
-              Crafted for handheld thumb gestures. Previewing in Mobile Frame mode.
+          <div className="flex items-center gap-2 min-w-0">
+            <DeviceMobile weight="duotone" className="h-4 w-4 text-[#309F92] shrink-0" />
+            <p className="truncate font-medium">
+              <strong>Mobile-First 3D Experience</strong> · Designed for handheld thumb gestures
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={() => {
-                audioEngine.playUiTick();
+                audioEngine.playUiTick(1.05, 'light');
                 setMobileFrameLocked((prev) => !prev);
               }}
-              className={`inline-flex min-h-[32px] items-center gap-1.5 rounded-xl px-3 py-1 font-bold transition-colors whitespace-nowrap ${
+              className={`inline-flex min-h-[30px] items-center gap-1.5 rounded-full px-3 py-1 font-bold transition-colors whitespace-nowrap ${
                 isLight
-                  ? 'bg-[#EDE6DA] text-[#231C18] hover:bg-[#E2D9C8]'
-                  : 'bg-[#38BDF8]/15 text-sky-100 hover:bg-[#38BDF8]/25'
+                  ? 'bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                  : 'bg-white/10 text-white hover:bg-white/20'
               }`}
             >
               <Desktop weight="bold" className="h-3.5 w-3.5" />
-              <span>{mobileFrameLocked ? 'Expand Full Width' : 'Mobile Frame (430px)'}</span>
+              <span>{mobileFrameLocked ? 'Expand Canvas' : 'Mobile Frame'}</span>
             </button>
             <button
               type="button"
               onClick={() => {
-                audioEngine.playUiTick(0.9);
+                audioEngine.playUiTick(0.9, 'light');
                 setShowDesktopBanner(false);
               }}
               aria-label="Dismiss desktop disclaimer"
-              className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors ${
+              className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
                 isLight
-                  ? 'bg-[#EDE6DA] text-[#6E6259] hover:bg-[#E2D9C8] hover:text-[#231C18]'
-                  : 'bg-white/5 text-slate-400 hover:bg-white/15 hover:text-white'
+                  ? 'bg-[#F1F1F1] text-[#000000]/70 hover:bg-[#E5E5E5]'
+                  : 'bg-white/10 text-white/70 hover:bg-white/20'
               }`}
             >
-              <X weight="bold" className="h-4 w-4" />
+              <X weight="bold" className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Responsive Game Shell Container */}
+      {/* Responsive Mobile-First Shell Container */}
       <div
         className={`pointer-events-none relative mx-auto flex h-full w-full flex-col justify-between transition-all duration-300 ${
           isDesktopViewport && mobileFrameLocked
             ? isLight
-              ? 'max-w-[430px] border-x border-[#DFD8CA] shadow-[0_0_80px_rgba(35,28,24,0.1)]'
-              : 'max-w-[430px] border-x border-[#38BDF8]/15 shadow-[0_0_90px_rgba(0,0,0,0.85)]'
+              ? 'max-w-[430px] border-x border-[#D1D1D1]/80 shadow-[0_0_60px_rgba(0,0,0,0.06)]'
+              : 'max-w-[430px] border-x border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.75)]'
             : 'max-w-5xl'
-        } ${isDesktopViewport && showDesktopBanner ? 'pt-15' : 'pt-3'} pb-3 px-3`}
+        } ${isDesktopViewport && showDesktopBanner ? 'pt-14' : 'pt-3.5'} pb-3.5 px-3.5`}
       >
         {/* =====================================================================
-            STATE 1: TITLE SCREEN STAGE (CLEAN NINTENDO 3D CAPSULE UI)
+            STATE 1: TITLE SCREEN STAGE (MINIMAL BAUHAUS / URBANIST MOBILE UI)
            ===================================================================== */}
         {session.status === 'title' && (
           <>
-            {/* Top Header Bar: Phosphor Brand Badge + Gamified Vinyl Pass Pill + Theme Switch + Sync + Mute */}
-            <div className="pointer-events-auto flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-1.5">
-                {/* Brand Lockup using 100% Phosphor Icons */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <div
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border shadow-xs ${
-                      isLight
-                        ? 'border-[#DFD7C8] bg-[#FCF9F2]'
-                        : 'border-[#38BDF8]/30 bg-[#091826]'
-                    }`}
-                  >
-                    <VinylRecord
-                      weight="duotone"
-                      className="h-5 w-5"
-                      style={{ color: currentMood.primaryHex }}
-                    />
-                  </div>
-                  <div className="leading-tight whitespace-nowrap">
-                    <div className="text-sm font-black tracking-tight">
-                      VINYL RUSH
+            {/* Minimal Top Header + Compact Companion Pill */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="pointer-events-auto flex flex-col gap-2"
+            >
+              <div className="flex items-center justify-between gap-2">
+                {/* Zone 1: 9-Dot Brand Mark + Clean Wordmark */}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <NineDotBrandMark isLight={isLight} />
+                  <div className="min-w-0 leading-tight">
+                    <div className="text-base font-bold tracking-tight truncate">
+                      Vinyl Rush
                     </div>
                     <div
-                      className="font-mono text-[9.5px] font-extrabold tracking-wider uppercase"
-                      style={{ color: currentMood.primaryHex }}
+                      className={`flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap ${
+                        isLight ? 'text-[#000000]/60' : 'text-white/60'
+                      }`}
                     >
-                      3D BEAT PARTY
+                      <span>Lv.{tierInfo.level}</span>
+                      <span aria-hidden="true">·</span>
+                      <span className="font-mono tabular-nums">{progression.xp} XP</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Top Right Tactile Utility Buttons: Vinyl Pass Gamification Pill, Theme Switch, Sync, Mute */}
-                <div className="flex items-center gap-1 shrink-0">
-                  {/* Gamification Tier & XP Pass Button */}
-                  <button
+                {/* Zone 2: Tactile Circular Utility Controls (Matching IMG_5846 & IMG_5847) */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Vinyl Pass & Rhythm Score Gauge Trigger */}
+                  <motion.button
                     type="button"
+                    whileTap={{ scale: 0.94 }}
                     data-testid="vinyl-pass-btn"
                     onClick={() => {
-                      audioEngine.playUiTick(1.18);
+                      audioEngine.playTabSwitch(true);
                       setIsPassModalOpen(true);
                     }}
-                    className={`inline-flex min-h-[38px] items-center gap-1 rounded-2xl border px-2 py-1 text-xs font-extrabold transition-all active:scale-95 whitespace-nowrap shrink-0 ${
+                    className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition-colors whitespace-nowrap ${
                       isLight
-                        ? 'border-[#DFD7C8] bg-[#FCF9F2] text-[#231C18] shadow-xs hover:bg-[#F2ECE0]'
-                        : 'border-[#38BDF8]/25 bg-[#091826]/90 text-sky-100 shadow-md hover:bg-[#0F2438]'
+                        ? 'border-[#000000]/12 bg-[#EDFF8C] text-[#000000]'
+                        : 'border-[#EDFF8C]/35 bg-[#EDFF8C] text-[#000000]'
                     }`}
                   >
-                    <Trophy weight="fill" className="h-3.5 w-3.5 text-amber-500" />
-                    <span className="font-mono text-[11px] tabular-nums">Lv.{tierInfo.level}</span>
-                    <span
-                      className={`rounded-md px-1 py-0.5 font-mono text-[10px] tabular-nums ${
-                        isLight
-                          ? 'bg-[#4E946B]/15 text-[#2E6F4E]'
-                          : 'bg-[#38BDF8]/20 text-[#38BDF8]'
-                      }`}
-                    >
-                      {progression.xp}pt
-                    </span>
-                  </button>
+                    <Trophy weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
+                    <span className="font-mono tabular-nums">{tierInfo.grade}</span>
+                    <ArrowUpRight weight="bold" className="h-3 w-3 opacity-70" />
+                  </motion.button>
 
-                  {/* Light / Dark Mode Theme Switcher */}
-                  <button
+                  {/* Theme Switcher */}
+                  <motion.button
                     type="button"
+                    whileTap={{ scale: 0.92 }}
                     data-testid="theme-toggle-btn"
                     onClick={toggleThemeMode}
                     aria-label={isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
                     title={isLight ? 'Switch to Dark Mode [T]' : 'Switch to Light Mode [T]'}
-                    className={`flex h-[38px] w-[38px] items-center justify-center rounded-2xl border transition-all active:scale-95 shrink-0 ${
-                      isLight
-                        ? 'border-[#DFD7C8] bg-[#FCF9F2] text-amber-500 shadow-xs hover:bg-[#F2ECE0]'
-                        : 'border-[#38BDF8]/25 bg-[#091826]/90 text-[#38BDF8] shadow-md hover:bg-[#0F2438]'
-                    }`}
+                    className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${circleBtnClass}`}
                   >
                     {isLight ? (
-                      <Sun weight="fill" className="h-4 w-4" />
+                      <Sun weight="bold" className="h-4 w-4" />
                     ) : (
-                      <Moon weight="fill" className="h-4 w-4" />
+                      <Moon weight="bold" className="h-4 w-4 text-[#EDFF8C]" />
                     )}
-                  </button>
+                  </motion.button>
 
-                  {/* Spotify & Apple Music Sync Button */}
-                  <button
+                  {/* Spotify & Apple Music Account Sync */}
+                  <motion.button
                     type="button"
+                    whileTap={{ scale: 0.92 }}
                     onClick={() => {
-                      audioEngine.playUiTick(1.1);
+                      audioEngine.playTabSwitch(true);
                       setIsAccountModalOpen(true);
                     }}
                     aria-label="Sync Spotify or Apple Music"
-                    className={`inline-flex min-h-[38px] items-center gap-1 rounded-2xl border px-2 py-1.5 text-xs font-bold transition-all active:scale-95 whitespace-nowrap shrink-0 ${
-                      isLight
-                        ? 'border-[#DFD7C8] bg-[#FCF9F2] text-[#231C18] shadow-xs hover:bg-[#F2ECE0]'
-                        : 'border-[#38BDF8]/25 bg-[#091826]/90 text-white shadow-md hover:bg-[#0F2438]'
-                    }`}
+                    className={`flex h-10 items-center gap-1 rounded-full border px-2.5 transition-colors ${circleBtnClass}`}
                   >
                     <SpotifyLogo weight="fill" className="h-4 w-4 text-[#1DB954]" />
                     <AppleLogo weight="fill" className="h-4 w-4 text-[#FA243C]" />
-                  </button>
+                  </motion.button>
 
                   {!isInstalled && (isInstallable || isIOS) && (
-                    <button
+                    <motion.button
                       type="button"
+                      whileTap={{ scale: 0.92 }}
                       onClick={() => {
-                        audioEngine.playUiTick(1.15);
+                        audioEngine.playUiTick(1.15, 'light');
                         if (isInstallable) {
                           install();
                         } else {
@@ -909,41 +1084,31 @@ export const VinylRushGame: React.FC = () => {
                         }
                       }}
                       aria-label="Install Vinyl Rush PWA"
-                      className={`flex h-[38px] w-[38px] items-center justify-center rounded-2xl border transition-all shrink-0 ${
-                        isLight
-                          ? 'border-[#DFD7C8] bg-[#FCF9F2] text-[#231C18] shadow-xs hover:bg-[#F2ECE0]'
-                          : 'border-[#38BDF8]/25 bg-[#091826]/90 text-[#38BDF8] hover:bg-[#0F2438]'
-                      }`}
+                      className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${circleBtnClass}`}
                     >
                       <DownloadSimple weight="bold" className="h-4 w-4" />
-                    </button>
+                    </motion.button>
                   )}
 
                   {/* Mute Toggle */}
-                  <button
+                  <motion.button
                     type="button"
+                    whileTap={{ scale: 0.92 }}
                     onClick={() => {
+                      audioEngine.triggerHaptic('light');
                       const next = !isMuted;
                       setIsMuted(next);
                       audioEngine.setMuted(next);
                     }}
                     aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
-                    className={`flex h-[38px] w-[38px] items-center justify-center rounded-2xl border transition-all shrink-0 ${
-                      isLight
-                        ? 'border-[#DFD7C8] bg-[#FCF9F2] text-[#574C44] shadow-xs hover:bg-[#F2ECE0]'
-                        : 'border-[#38BDF8]/25 bg-[#091826]/90 text-sky-100 hover:bg-[#0F2438]'
-                    }`}
+                    className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${circleBtnClass}`}
                   >
                     {isMuted ? (
                       <SpeakerSlash weight="bold" className="h-4 w-4 text-rose-500" />
                     ) : (
-                      <SpeakerHigh
-                        weight="bold"
-                        className="h-4 w-4"
-                        style={{ color: currentMood.primaryHex }}
-                      />
+                      <SpeakerHigh weight="bold" className="h-4 w-4 text-[#309F92]" />
                     )}
-                  </button>
+                  </motion.button>
                 </div>
               </div>
 
@@ -951,8 +1116,8 @@ export const VinylRushGame: React.FC = () => {
                 <div
                   className={`rounded-2xl border p-3 text-xs font-medium ${
                     isLight
-                      ? 'border-[#DFD7C8] bg-[#FCF9F2] text-[#574C44]'
-                      : 'border-[#38BDF8]/25 bg-[#091826]/95 text-sky-100'
+                      ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
+                      : 'border-white/15 bg-[#12161D] text-white'
                   }`}
                 >
                   To install on iOS: tap <strong>Share</strong> in Safari and choose{' '}
@@ -960,105 +1125,105 @@ export const VinylRushGame: React.FC = () => {
                 </div>
               )}
 
-              {/* Expressive Mascot Companion Bar with Character Switcher & Emotion Pill */}
+              {/* Minimal Companion Strip (Inspired by IMG_5847 Contact Header Card) */}
               <div
-                className={`flex items-center justify-between gap-2 rounded-2xl border px-2.5 py-1.5 text-xs shadow-xs transition-colors ${
+                className={`flex items-center justify-between gap-2 rounded-full border py-1.5 pl-2 pr-2.5 text-xs transition-colors ${
                   isLight
-                    ? 'border-[#E2DBD0] bg-[#FCF9F2]/92 text-[#574C44]'
-                    : 'border-[#38BDF8]/20 bg-[#091826]/88 text-sky-100'
+                    ? 'border-[#D1D1D1] bg-[#FFFFFF]/90 text-[#000000]'
+                    : 'border-white/12 bg-[#12161D]/90 text-white'
                 }`}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <button
+                  <motion.button
                     type="button"
+                    whileTap={{ scale: 0.92 }}
                     onClick={cycleMascotCharacter}
-                    title="Tap to switch vinyl character"
-                    className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#4E946B]/40 bg-stone-100 shadow-xs active:scale-95 transition-transform"
+                    title="Tap to switch 3D companion"
+                    className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-[#309F92]"
                   >
                     <img
                       src={activeCharacter.avatarImg}
                       alt={activeCharacter.name}
                       className="h-full w-full object-cover"
                     />
-                  </button>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={cycleMascotCharacter}
-                        className={`font-extrabold hover:underline ${
-                          isLight ? 'text-[#231C18]' : 'text-white'
-                        }`}
-                      >
-                        {activeCharacter.name}
-                      </button>
-                      <span
-                        className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold text-white"
-                        style={{ backgroundColor: activeCharacter.accentColor }}
-                      >
-                        <Sparkle weight="fill" className="h-2.5 w-2.5" />
-                        <span>{emotionBadgeText}</span>
-                      </span>
-                    </div>
-                    <p className="truncate text-[11px] opacity-90">{mascotSpeech}</p>
+                  </motion.button>
+                  <div className="min-w-0 flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={cycleMascotCharacter}
+                      className="font-bold hover:underline shrink-0"
+                    >
+                      {activeCharacter.name}
+                    </button>
+                    <span aria-hidden="true" className="opacity-40">
+                      ·
+                    </span>
+                    <span className="truncate opacity-75">{mascotSpeech}</span>
                   </div>
                 </div>
 
-                {/* Toggle Cameo Dance Video Preview */}
-                <button
+                <motion.button
                   type="button"
+                  whileTap={{ scale: 0.94 }}
                   onClick={() => {
-                    audioEngine.playUiTick();
+                    audioEngine.playUiTick(1.1, 'light');
                     setShowCameoVideo((v) => !v);
                   }}
                   aria-label="Toggle 3D Mascot Dance Video"
-                  className={`inline-flex min-h-[30px] shrink-0 items-center gap-1 rounded-xl px-2 py-1 text-[11px] font-bold transition-colors ${
+                  className={`inline-flex h-7 shrink-0 items-center gap-1 rounded-full px-2.5 text-[11px] font-bold transition-colors ${
                     showCameoVideo
-                      ? 'bg-[#4E946B] text-white'
+                      ? 'bg-[#309F92] text-[#FFFFFF]'
                       : isLight
-                      ? 'bg-[#EDE6DA] text-[#574C44] hover:bg-[#E2D9C8]'
-                      : 'bg-[#38BDF8]/15 text-sky-100 hover:bg-[#38BDF8]/25'
+                      ? 'bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                      : 'bg-white/10 text-white hover:bg-white/15'
                   }`}
                 >
                   <FilmStrip weight="bold" className="h-3.5 w-3.5" />
-                  <span>Dance Cam</span>
-                </button>
+                  <span>{emotionBadgeText}</span>
+                </motion.button>
               </div>
 
-              {/* Optional Floating Cameo Dance Video Card */}
-              {showCameoVideo && (
-                <div
-                  className={`self-end overflow-hidden rounded-2xl border p-1.5 shadow-xl ${
-                    isLight
-                      ? 'border-[#E2DBD0] bg-[#FCF9F2]'
-                      : 'border-[#38BDF8]/25 bg-[#091826]'
-                  }`}
-                >
-                  <video
-                    src="/assets/aistudio/gemini_generated_video_7AE59D01_39556c31.mp4"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="h-28 w-28 rounded-xl object-cover"
-                  />
-                </div>
-              )}
-            </div>
+              <AnimatePresence>
+                {showCameoVideo && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.92, y: -6 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.92, y: -6 }}
+                    className={`self-end overflow-hidden rounded-[22px] border p-1.5 shadow-xl ${
+                      isLight
+                        ? 'border-[#D1D1D1] bg-[#FFFFFF]'
+                        : 'border-white/15 bg-[#12161D]'
+                    }`}
+                  >
+                    <video
+                      src="/assets/aistudio/gemini_generated_video_7AE59D01_39556c31.mp4"
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="h-28 w-28 rounded-[16px] object-cover"
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
 
-            {/* Center Viewport left 100% unobstructed for the 3D Isometric Turntable & Kawaii Mascot */}
+            {/* Unobstructed 3D Center Stage (80%+ Viewport Whitespace & 3D Presence) */}
             <div className="pointer-events-none flex-1" />
 
-            {/* Bottom Uncluttered Nintendo-Style Capsule Dock */}
-            <section
+            {/* Bottom Minimal Card Dock (Inspired directly by IMG_5847 & IMG_5815) */}
+            <motion.section
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
               aria-label="Game Configuration Dock"
-              className={`pointer-events-auto rounded-[28px] border p-3 shadow-2xl transition-all duration-300 space-y-2.5 ${
+              className={`pointer-events-auto rounded-[28px] border p-3.5 transition-all duration-300 space-y-3 ${
                 isLight
-                  ? 'border-[#DFD7C8] bg-[#FCF9F2]/96 text-[#231C18] shadow-[0_16px_40px_rgba(35,28,24,0.09)]'
-                  : 'border-[#38BDF8]/22 bg-[#091826]/95 text-[#F0F9FF] shadow-2xl'
+                  ? 'border-[#D1D1D1] bg-[#FFFFFF]/96 text-[#000000] shadow-[0_16px_40px_rgba(0,0,0,0.06)]'
+                  : 'border-white/12 bg-[#12161D]/96 text-[#FFFFFF] shadow-2xl'
               }`}
             >
-              {/* Row 1: Quick Vibe Pills + "Tune Rules" Progressive Disclosure Toggle */}
+              {/* Row 1: Horizontal Crate Selector Tabs + Progressive Disclosure "Tune Rules" Pill */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar flex-1 min-w-0">
                   {QUICK_VIBE_CRATES.map((crate) => {
@@ -1067,298 +1232,317 @@ export const VinylRushGame: React.FC = () => {
                       filterValue === crate.value &&
                       !customSearchTerm;
                     return (
-                      <button
+                      <motion.button
                         key={crate.id}
                         type="button"
+                        whileTap={{ scale: 0.95 }}
                         onClick={() => handleSelectFilterValue(crate.mode, crate.value)}
-                        className={`min-h-[34px] shrink-0 rounded-xl px-3 py-1 text-xs font-extrabold transition-all whitespace-nowrap ${
+                        className={`min-h-[36px] shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors whitespace-nowrap ${
                           isSelected
                             ? isLight
-                              ? 'bg-[#468E68] text-white shadow-xs'
-                              : 'bg-[#0EA5E9] text-slate-950 shadow-xs'
+                              ? 'bg-[#000000] text-[#FFFFFF]'
+                              : 'bg-[#EDFF8C] text-[#000000]'
                             : isLight
-                            ? 'bg-[#EDE6DA] text-[#574C44] hover:bg-[#E2D9C8]'
-                            : 'bg-[#38BDF8]/10 text-sky-100 hover:bg-[#38BDF8]/20'
+                            ? 'bg-[#F1F1F1] text-[#000000]/75 hover:bg-[#E5E5E5]'
+                            : 'bg-white/8 text-white/80 hover:bg-white/15'
                         }`}
                       >
                         {crate.label}
-                      </button>
+                      </motion.button>
                     );
                   })}
 
-                  <button
+                  <motion.button
                     type="button"
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => {
-                      audioEngine.playUiTick();
+                      audioEngine.playUiTick(1.1, 'light');
                       if (!connectedProfile) {
                         setIsAccountModalOpen(true);
                       } else {
                         handleSelectFilterValue('account', 'Synced');
                       }
                     }}
-                    className={`min-h-[34px] shrink-0 rounded-xl px-3 py-1 text-xs font-extrabold transition-all whitespace-nowrap ${
+                    className={`min-h-[36px] shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors whitespace-nowrap ${
                       filterMode === 'account'
-                        ? 'bg-[#1DB954] text-slate-950'
+                        ? 'bg-[#309F92] text-[#FFFFFF]'
                         : isLight
-                        ? 'bg-[#EDE6DA] text-[#574C44] hover:bg-[#E2D9C8]'
-                        : 'bg-[#38BDF8]/10 text-sky-100 hover:bg-[#38BDF8]/20'
+                        ? 'bg-[#F1F1F1] text-[#000000]/75 hover:bg-[#E5E5E5]'
+                        : 'bg-white/8 text-white/80 hover:bg-white/15'
                     }`}
                   >
                     My Crate
-                  </button>
+                  </motion.button>
                 </div>
 
-                {/* Tune Rules Button (Progressive Disclosure) */}
-                <button
+                {/* Tune Rules Button */}
+                <motion.button
                   type="button"
+                  whileTap={{ scale: 0.94 }}
                   data-testid="tune-rules-btn"
                   onClick={() => {
-                    audioEngine.playUiTick(1.12);
+                    audioEngine.playTabSwitch(!isRulesDrawerOpen);
                     setIsRulesDrawerOpen((prev) => !prev);
                   }}
                   aria-expanded={isRulesDrawerOpen}
-                  className={`inline-flex min-h-[34px] shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs font-extrabold transition-colors whitespace-nowrap ${
+                  className={`inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors whitespace-nowrap ${
                     isRulesDrawerOpen
-                      ? isLight
-                        ? 'border-[#468E68] bg-[#468E68]/15 text-[#2E6F4E]'
-                        : 'border-[#38BDF8] bg-[#38BDF8]/20 text-[#38BDF8]'
+                      ? 'border-[#309F92] bg-[#309F92] text-[#FFFFFF]'
                       : isLight
-                      ? 'border-[#DCD4C6] bg-[#EDE6DA] text-[#231C18] hover:bg-[#E2D9C8]'
-                      : 'border-[#38BDF8]/20 bg-[#38BDF8]/10 text-sky-100 hover:bg-[#38BDF8]/20'
+                      ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                      : 'border-white/15 bg-white/10 text-white hover:bg-white/15'
                   }`}
                 >
                   <SlidersHorizontal weight="bold" className="h-3.5 w-3.5" />
                   <span>{isRulesDrawerOpen ? 'Done' : `${snippetDuration}s · ${songCount}`}</span>
-                </button>
+                </motion.button>
               </div>
 
               {/* Progressive Disclosure Studio Customizer Drawer */}
-              {isRulesDrawerOpen && (
-                <div
-                  className={`rounded-2xl border p-3 space-y-2.5 transition-all ${
-                    isLight
-                      ? 'border-[#E2DBD0] bg-[#F5F0E6]'
-                      : 'border-[#38BDF8]/15 bg-[#06101A]/80'
-                  }`}
-                >
-                  {/* Mascot Character Selector Row */}
-                  <div>
-                    <span
-                      className={`block text-[11px] font-bold mb-1 ${
-                        isLight ? 'text-[#5C5046]' : 'text-sky-200/80'
-                      }`}
-                    >
-                      3D Vinyl Companion
-                    </span>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {MASCOT_CHARACTERS.map((char) => (
-                        <button
-                          key={char.id}
-                          type="button"
-                          onClick={() => {
-                            audioEngine.playUiTick(1.25);
-                            setCharacterId(char.id);
-                            setMascotState('hyped');
-                            setMascotSpeech(`Picked ${char.name}! Ready to dance!`);
-                          }}
-                          className={`flex items-center gap-1.5 rounded-xl border px-2 py-1.5 text-left text-[11px] font-extrabold transition-all whitespace-nowrap ${
-                            characterId === char.id
-                              ? isLight
-                                ? 'border-[#468E68] bg-[#468E68]/15 text-[#231C18]'
-                                : 'border-[#38BDF8] bg-[#38BDF8]/20 text-white'
-                              : isLight
-                              ? 'border-[#DCD4C6] bg-white hover:bg-[#EDE6DA]'
-                              : 'border-[#38BDF8]/15 bg-white/5 hover:bg-white/10'
-                          }`}
-                        >
-                          <img
-                            src={char.avatarImg}
-                            alt={char.name}
-                            className="h-5 w-5 rounded-md object-cover shrink-0"
-                          />
-                          <span>{char.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Snippet Duration Selector (1s, 3s, 5s, 10s, 15s, 30s) */}
-                  <div>
-                    <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span
-                        className={`font-bold ${
-                          isLight ? 'text-[#5C5046]' : 'text-sky-200/80'
-                        }`}
-                      >
-                        Snippet Play Time
-                      </span>
-                      <span
-                        className="font-mono font-bold tabular-nums"
-                        style={{ color: currentMood.primaryHex }}
-                      >
-                        Up to +{potentialPoints} pts/song
-                      </span>
-                    </div>
+              <AnimatePresence>
+                {isRulesDrawerOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    className="overflow-hidden"
+                  >
                     <div
-                      className={`grid grid-cols-6 gap-1 rounded-xl p-1 ${
-                        isLight ? 'bg-[#E5DECFE6]' : 'bg-black/40'
+                      className={`rounded-[22px] border p-3 space-y-3 ${
+                        isLight
+                          ? 'border-[#D1D1D1] bg-[#F1F1F1]/75'
+                          : 'border-white/10 bg-black/40'
                       }`}
                     >
-                      {SNIPPET_OPTIONS.map((sec) => (
-                        <button
-                          key={sec}
-                          type="button"
-                          onClick={() => {
-                            audioEngine.playUiTick(1 + (30 - sec) * 0.01);
-                            setSnippetDuration(sec);
-                          }}
-                          className={`min-h-[32px] rounded-lg text-xs font-mono font-extrabold tabular-nums transition-colors ${
-                            snippetDuration === sec
-                              ? isLight
-                                ? 'bg-[#468E68] text-white shadow-xs'
-                                : 'bg-[#0EA5E9] text-slate-950 shadow-xs'
-                              : isLight
-                              ? 'text-[#574C44] hover:text-[#231C18]'
-                              : 'text-sky-200/75 hover:text-white'
+                      {/* Mascot Companion Selector */}
+                      <div>
+                        <span
+                          className={`block text-[11px] font-semibold mb-1.5 ${
+                            isLight ? 'text-[#000000]/65' : 'text-white/65'
                           }`}
                         >
-                          {sec}s
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                          3D Vinyl Companion
+                        </span>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {MASCOT_CHARACTERS.map((char) => (
+                            <motion.button
+                              key={char.id}
+                              type="button"
+                              whileTap={{ scale: 0.96 }}
+                              onClick={() => {
+                                audioEngine.playUiTick(1.25, 'selection');
+                                setCharacterId(char.id);
+                                setMascotState('hyped');
+                                setMascotSpeech(`${char.name} ready · ${char.tagline}`);
+                              }}
+                              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-left text-xs font-bold transition-all whitespace-nowrap ${
+                                characterId === char.id
+                                  ? isLight
+                                    ? 'border-[#000000] bg-[#EDFF8C] text-[#000000]'
+                                    : 'border-[#EDFF8C] bg-[#EDFF8C] text-[#000000]'
+                                  : isLight
+                                  ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
+                                  : 'border-white/10 bg-white/5 text-white'
+                              }`}
+                            >
+                              <img
+                                src={char.avatarImg}
+                                alt={char.name}
+                                className="h-5 w-5 rounded-full object-cover shrink-0"
+                              />
+                              <span>{char.name}</span>
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
 
-                  {/* Song Count & Judge Mode */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <span
-                        className={`block text-[11px] font-bold mb-1 ${
-                          isLight ? 'text-[#5C5046]' : 'text-sky-200/80'
-                        }`}
-                      >
-                        Songs (Rounds)
-                      </span>
-                      <div
-                        className={`grid grid-cols-3 gap-1 rounded-xl p-1 ${
-                          isLight ? 'bg-[#E5DECFE6]' : 'bg-black/40'
-                        }`}
-                      >
-                        {SONG_COUNT_OPTIONS.map((count) => (
-                          <button
-                            key={count}
-                            type="button"
-                            onClick={() => {
-                              audioEngine.playUiTick();
-                              setSongCount(count);
-                            }}
-                            className={`min-h-[32px] rounded-lg text-xs font-mono font-extrabold tabular-nums transition-colors ${
-                              songCount === count
-                                ? isLight
-                                  ? 'bg-[#D98A3C] text-white'
-                                  : 'bg-[#2DD4BF] text-slate-950'
-                                : isLight
-                                ? 'text-[#574C44] hover:text-[#231C18]'
-                                : 'text-sky-200/75 hover:text-white'
+                      {/* Snippet Duration Selector (1s, 3s, 5s, 10s, 15s, 30s) */}
+                      <div>
+                        <div className="flex items-center justify-between text-[11px] mb-1">
+                          <span
+                            className={`font-semibold ${
+                              isLight ? 'text-[#000000]/65' : 'text-white/65'
                             }`}
                           >
-                            {count}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <span
-                        className={`block text-[11px] font-bold mb-1 ${
-                          isLight ? 'text-[#5C5046]' : 'text-sky-200/80'
-                        }`}
-                      >
-                        Judge Mode
-                      </span>
-                      <div
-                        className={`grid grid-cols-2 gap-1 rounded-xl p-1 ${
-                          isLight ? 'bg-[#E5DECFE6]' : 'bg-black/40'
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            audioEngine.playUiTick();
-                            setPlayMode('party-30s');
-                          }}
-                          className={`min-h-[32px] rounded-lg text-[11px] font-extrabold transition-colors whitespace-nowrap px-1.5 ${
-                            playMode === 'party-30s'
-                              ? isLight
-                                ? 'bg-[#468E68] text-white'
-                                : 'bg-[#0EA5E9] text-slate-950'
-                              : isLight
-                              ? 'text-[#574C44] hover:text-[#231C18]'
-                              : 'text-sky-200/75 hover:text-white'
+                            Snippet Play Time
+                          </span>
+                          <span className="font-mono font-bold tabular-nums text-[#309F92]">
+                            Up to +{potentialPoints} pts
+                          </span>
+                        </div>
+                        <div
+                          className={`grid grid-cols-6 gap-1 rounded-full p-1 ${
+                            isLight ? 'bg-[#FFFFFF] border border-[#D1D1D1]' : 'bg-black/50'
                           }`}
                         >
-                          30s Judge
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            audioEngine.playUiTick();
-                            setPlayMode('quiz-4choice');
-                          }}
-                          className={`min-h-[32px] rounded-lg text-[11px] font-extrabold transition-colors whitespace-nowrap px-1.5 ${
-                            playMode === 'quiz-4choice'
-                              ? isLight
-                                ? 'bg-[#468E68] text-white'
-                                : 'bg-[#0EA5E9] text-slate-950'
-                              : isLight
-                              ? 'text-[#574C44] hover:text-[#231C18]'
-                              : 'text-sky-200/75 hover:text-white'
+                          {SNIPPET_OPTIONS.map((sec) => (
+                            <button
+                              key={sec}
+                              type="button"
+                              onClick={() => {
+                                audioEngine.playUiTick(1 + (30 - sec) * 0.01, 'selection');
+                                setSnippetDuration(sec);
+                              }}
+                              className={`min-h-[32px] rounded-full text-xs font-mono font-bold tabular-nums transition-colors ${
+                                snippetDuration === sec
+                                  ? isLight
+                                    ? 'bg-[#000000] text-[#FFFFFF]'
+                                    : 'bg-[#EDFF8C] text-[#000000]'
+                                  : isLight
+                                  ? 'text-[#000000]/70 hover:text-[#000000]'
+                                  : 'text-white/70 hover:text-white'
+                              }`}
+                            >
+                              {sec}s
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Song Count & Judge Mode */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <span
+                            className={`block text-[11px] font-semibold mb-1 ${
+                              isLight ? 'text-[#000000]/65' : 'text-white/65'
+                            }`}
+                          >
+                            Songs (Rounds)
+                          </span>
+                          <div
+                            className={`grid grid-cols-3 gap-1 rounded-full p-1 ${
+                              isLight ? 'bg-[#FFFFFF] border border-[#D1D1D1]' : 'bg-black/50'
+                            }`}
+                          >
+                            {SONG_COUNT_OPTIONS.map((count) => (
+                              <button
+                                key={count}
+                                type="button"
+                                onClick={() => {
+                                  audioEngine.playUiTick(1.05, 'selection');
+                                  setSongCount(count);
+                                }}
+                                className={`min-h-[32px] rounded-full text-xs font-mono font-bold tabular-nums transition-colors ${
+                                  songCount === count
+                                    ? 'bg-[#309F92] text-[#FFFFFF]'
+                                    : isLight
+                                    ? 'text-[#000000]/70 hover:text-[#000000]'
+                                    : 'text-white/70 hover:text-white'
+                                }`}
+                              >
+                                {count}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <span
+                            className={`block text-[11px] font-semibold mb-1 ${
+                              isLight ? 'text-[#000000]/65' : 'text-white/65'
+                            }`}
+                          >
+                            Answer Mode
+                          </span>
+                          <div
+                            className={`grid grid-cols-2 gap-1 rounded-full p-1 ${
+                              isLight ? 'bg-[#FFFFFF] border border-[#D1D1D1]' : 'bg-black/50'
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                audioEngine.playUiTick(1.05, 'selection');
+                                setPlayMode('party-30s');
+                              }}
+                              className={`min-h-[32px] rounded-full text-[11px] font-bold transition-colors whitespace-nowrap px-2 ${
+                                playMode === 'party-30s'
+                                  ? isLight
+                                    ? 'bg-[#000000] text-[#FFFFFF]'
+                                    : 'bg-[#EDFF8C] text-[#000000]'
+                                  : isLight
+                                  ? 'text-[#000000]/70'
+                                  : 'text-white/70'
+                              }`}
+                            >
+                              30s Judge
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                audioEngine.playUiTick(1.05, 'selection');
+                                setPlayMode('quiz-4choice');
+                              }}
+                              className={`min-h-[32px] rounded-full text-[11px] font-bold transition-colors whitespace-nowrap px-2 ${
+                                playMode === 'quiz-4choice'
+                                  ? isLight
+                                    ? 'bg-[#000000] text-[#FFFFFF]'
+                                    : 'bg-[#EDFF8C] text-[#000000]'
+                                  : isLight
+                                  ? 'text-[#000000]/70'
+                                  : 'text-white/70'
+                              }`}
+                            >
+                              4-Choice
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Custom Artist / Era / Genre Search Input */}
+                      <div className="relative flex items-center">
+                        <MagnifyingGlass
+                          weight="bold"
+                          className={`pointer-events-none absolute left-3.5 h-4 w-4 ${
+                            isLight ? 'text-[#000000]/45' : 'text-white/45'
                           }`}
-                        >
-                          4-Choice
-                        </button>
+                        />
+                        <input
+                          type="text"
+                          value={customSearchTerm}
+                          onChange={(e) => setCustomSearchTerm(e.target.value)}
+                          placeholder="Search artist, genre, or year (e.g. Daft Punk, SZA, 1998)..."
+                          aria-label="Custom artist, genre, or year search"
+                          className={`w-full rounded-full border pl-9 pr-3.5 py-2 text-xs focus:outline-none ${
+                            isLight
+                              ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000] placeholder-[#000000]/40 focus:border-[#309F92]'
+                              : 'border-white/15 bg-black/50 text-white placeholder-white/40 focus:border-[#309F92]'
+                          }`}
+                        />
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-                  {/* Custom Artist / Era / Genre Search Input */}
-                  <div className="relative flex items-center">
-                    <MagnifyingGlass
-                      weight="bold"
-                      className={`pointer-events-none absolute left-3 h-4 w-4 ${
-                        isLight ? 'text-[#85776C]' : 'text-sky-300/60'
-                      }`}
-                    />
-                    <input
-                      type="text"
-                      value={customSearchTerm}
-                      onChange={(e) => setCustomSearchTerm(e.target.value)}
-                      placeholder="Search any artist, genre, or year (e.g. Daft Punk, SZA, 1998)..."
-                      aria-label="Custom artist, genre, or year search"
-                      className={`w-full rounded-xl border pl-9 pr-3 py-2 text-xs focus:outline-none ${
-                        isLight
-                          ? 'border-[#DCD4C6] bg-white text-[#231C18] placeholder-[#9A8E82] focus:border-[#468E68]'
-                          : 'border-[#38BDF8]/20 bg-black/40 text-white placeholder-slate-400 focus:border-[#38BDF8]'
-                      }`}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Tactile Nintendo-Style 3D Primary Start Button (with data-start="true") */}
-              <button
+              {/* Primary CTA Button (with data-start="true") */}
+              <motion.button
                 type="button"
+                whileTap={{ scale: 0.98 }}
                 data-start="true"
                 onClick={() => startNewGame()}
-                className={`flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-black tracking-tight active:translate-y-0.5 active:border-b-2 transition-all whitespace-nowrap ${primaryBtnClasses}`}
+                className={`flex min-h-[50px] w-full items-center justify-between rounded-full px-5 py-2.5 text-sm font-bold tracking-tight transition-colors whitespace-nowrap ${primaryBtnClasses}`}
               >
-                <Play weight="fill" className="h-5 w-5 shrink-0" />
-                <span>
-                  {isLoadingSongs
-                    ? `Drop the Needle · Play ${songCount} Songs (${snippetDuration}s)`
-                    : `Drop the Needle · Play ${songCount} Songs (${snippetDuration}s)`}
+                <div className="flex items-center gap-2">
+                  <Play weight="fill" className="h-4 w-4 shrink-0" />
+                  <span>
+                    {isLoadingSongs
+                      ? `Drop the Needle · Play ${songCount} Songs`
+                      : `Drop the Needle · Play ${songCount} Songs`}
+                  </span>
+                </div>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 font-mono text-xs font-bold tabular-nums ${
+                    isLight
+                      ? 'bg-[#EDFF8C] text-[#000000]'
+                      : 'bg-[#000000] text-[#EDFF8C]'
+                  }`}
+                >
+                  {snippetDuration}s
                 </span>
-              </button>
-            </section>
+              </motion.button>
+            </motion.section>
           </>
         )}
 
@@ -1367,28 +1551,32 @@ export const VinylRushGame: React.FC = () => {
            ===================================================================== */}
         {session.status === 'playing' && (
           <>
-            {/* Top Perimeter Nintendo Status Cluster */}
-            <div className="pointer-events-auto flex flex-col gap-2">
+            {/* Top Perimeter HUD + Horizontal Round Process Capsule (IMG_5847!) */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="pointer-events-auto flex flex-col gap-2"
+            >
               <div
-                className={`flex items-center justify-between gap-2 rounded-2xl border px-3.5 py-2 shadow-lg transition-colors ${
+                className={`flex items-center justify-between gap-2 rounded-[24px] border px-4 py-2.5 shadow-sm transition-colors ${
                   isLight
-                    ? 'border-[#DFD7C8] bg-[#FCF9F2]/94 text-[#231C18]'
-                    : 'border-[#38BDF8]/22 bg-[#091826]/92 text-[#F0F9FF]'
+                    ? 'border-[#D1D1D1] bg-[#FFFFFF]/95 text-[#000000]'
+                    : 'border-white/12 bg-[#12161D]/95 text-[#FFFFFF]'
                 }`}
               >
                 {/* Score, Streak & Round Readouts (Tabular Numerals) */}
-                <div className="flex items-center gap-3.5">
+                <div className="flex items-center gap-4">
                   <div>
                     <div
-                      className={`text-[10px] font-extrabold tracking-wider uppercase ${
-                        isLight ? 'text-[#85776C]' : 'text-sky-200/60'
+                      className={`text-[10px] font-semibold ${
+                        isLight ? 'text-[#000000]/55' : 'text-white/55'
                       }`}
                     >
-                      SCORE
+                      Score
                     </div>
                     <div
                       data-testid="hud-score"
-                      className="text-xl font-black font-mono tabular-nums"
+                      className="text-xl font-bold font-mono tabular-nums"
                     >
                       {Math.round(session.score + (roundFeedback?.points || 0))}
                     </div>
@@ -1396,19 +1584,16 @@ export const VinylRushGame: React.FC = () => {
 
                   <div>
                     <div
-                      className={`flex items-center gap-1 text-[10px] font-extrabold tracking-wider uppercase ${
-                        isLight ? 'text-[#85776C]' : 'text-sky-200/60'
+                      className={`flex items-center gap-1 text-[10px] font-semibold ${
+                        isLight ? 'text-[#000000]/55' : 'text-white/55'
                       }`}
                     >
-                      <span>STREAK</span>
+                      <span>Streak</span>
                       {isFeverActive && (
-                        <Fire weight="fill" className="h-3.5 w-3.5 text-amber-500 animate-bounce" />
+                        <Fire weight="fill" className="h-3.5 w-3.5 text-[#E07A47]" />
                       )}
                     </div>
-                    <div
-                      className="text-xl font-black font-mono tabular-nums"
-                      style={{ color: isFeverActive ? '#F59E0B' : currentMood.primaryHex }}
-                    >
+                    <div className="text-xl font-bold font-mono tabular-nums text-[#309F92]">
                       {roundFeedback?.answered
                         ? roundFeedback.correct
                           ? session.streak + 1
@@ -1420,169 +1605,125 @@ export const VinylRushGame: React.FC = () => {
 
                   <div>
                     <div
-                      className={`text-[10px] font-extrabold tracking-wider uppercase ${
-                        isLight ? 'text-[#85776C]' : 'text-sky-200/60'
+                      className={`text-[10px] font-semibold ${
+                        isLight ? 'text-[#000000]/55' : 'text-white/55'
                       }`}
                     >
-                      SONG
+                      Round
                     </div>
-                    <div
-                      className={`text-xl font-black font-mono tabular-nums ${
-                        isLight ? 'text-[#574C44]' : 'text-sky-100'
-                      }`}
-                    >
+                    <div className="text-xl font-bold font-mono tabular-nums">
                       {session.currentIndex + 1}/{session.playlist.length}
                     </div>
                   </div>
                 </div>
 
-                {/* Right Utility Controls: Vinyl Pass, Theme Switch [T], Mute [M], Pause [P] */}
+                {/* Right Circular Controls */}
                 <div className="flex items-center gap-1.5">
-                  <button
+                  <motion.button
                     type="button"
+                    whileTap={{ scale: 0.92 }}
                     tabIndex={-1}
                     onClick={(e) => {
                       e.currentTarget.blur();
-                      audioEngine.playUiTick();
+                      audioEngine.playTabSwitch(true);
                       setIsPassModalOpen(true);
                     }}
                     aria-label="Open Vinyl Pass and Quests"
-                    className={`inline-flex h-9 items-center gap-1 rounded-xl border px-2 text-xs font-extrabold transition-colors ${
-                      isLight
-                        ? 'border-[#DCD4C6] bg-[#EDE6DA] text-[#231C18] hover:bg-[#E2D9C8]'
-                        : 'border-[#38BDF8]/20 bg-[#38BDF8]/10 text-amber-300 hover:bg-[#38BDF8]/20'
-                    }`}
+                    className="inline-flex h-9 items-center gap-1 rounded-full bg-[#EDFF8C] px-2.5 text-xs font-bold text-[#000000]"
                   >
-                    <Coins weight="fill" className="h-4 w-4 text-amber-500" />
+                    <Coins weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
                     <span className="font-mono tabular-nums">{progression.coins}</span>
-                  </button>
+                  </motion.button>
 
-                  <button
+                  <motion.button
                     type="button"
+                    whileTap={{ scale: 0.92 }}
                     tabIndex={-1}
                     onClick={(e) => {
                       e.currentTarget.blur();
                       toggleThemeMode();
                     }}
                     aria-label={isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
-                    className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
-                      isLight
-                        ? 'border-[#DCD4C6] bg-[#EDE6DA] text-amber-500 hover:bg-[#E2D9C8]'
-                        : 'border-[#38BDF8]/20 bg-[#38BDF8]/10 text-[#38BDF8] hover:bg-[#38BDF8]/20'
-                    }`}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${circleBtnClass}`}
                   >
                     {isLight ? (
-                      <Sun weight="fill" className="h-4 w-4" />
+                      <Sun weight="bold" className="h-4 w-4" />
                     ) : (
-                      <Moon weight="fill" className="h-4 w-4" />
+                      <Moon weight="bold" className="h-4 w-4 text-[#EDFF8C]" />
                     )}
-                  </button>
+                  </motion.button>
 
-                  <button
+                  <motion.button
                     type="button"
+                    whileTap={{ scale: 0.92 }}
                     tabIndex={-1}
                     onClick={(e) => {
                       e.currentTarget.blur();
+                      audioEngine.triggerHaptic('light');
                       const next = !isMuted;
                       setIsMuted(next);
                       audioEngine.setMuted(next);
                     }}
                     aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
-                    className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
-                      isLight
-                        ? 'border-[#DCD4C6] bg-[#EDE6DA] text-[#574C44] hover:bg-[#E2D9C8]'
-                        : 'border-[#38BDF8]/20 bg-[#38BDF8]/10 text-sky-100 hover:bg-[#38BDF8]/20'
-                    }`}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${circleBtnClass}`}
                   >
                     {isMuted ? (
                       <SpeakerSlash weight="bold" className="h-4 w-4 text-rose-500" />
                     ) : (
-                      <SpeakerHigh
-                        weight="bold"
-                        className="h-4 w-4"
-                        style={{ color: currentMood.primaryHex }}
-                      />
+                      <SpeakerHigh weight="bold" className="h-4 w-4 text-[#309F92]" />
                     )}
-                  </button>
+                  </motion.button>
 
-                  <button
+                  <motion.button
                     type="button"
+                    whileTap={{ scale: 0.92 }}
                     tabIndex={-1}
                     onClick={(e) => {
                       e.currentTarget.blur();
+                      audioEngine.playUiTick(0.95, 'light');
                       audioEngine.stopSnippet(false);
                       setIsPlayingSnippet(false);
                       setSession((prev) => ({ ...prev, status: 'paused' }));
                     }}
                     aria-label="Pause game"
-                    className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
-                      isLight
-                        ? 'border-[#DCD4C6] bg-[#EDE6DA] text-[#574C44] hover:bg-[#E2D9C8]'
-                        : 'border-[#38BDF8]/20 bg-[#38BDF8]/10 text-sky-100 hover:bg-[#38BDF8]/20'
-                    }`}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${circleBtnClass}`}
                   >
                     <Pause weight="bold" className="h-4 w-4" />
-                  </button>
+                  </motion.button>
                 </div>
               </div>
 
-              {/* Mascot Live Reaction Pill */}
-              <div
-                className={`flex items-center justify-between gap-2 rounded-2xl border px-3 py-1.5 text-xs transition-colors ${
-                  isLight
-                    ? 'border-[#DFD7C8] bg-[#FCF9F2]/90 text-[#574C44]'
-                    : 'border-[#38BDF8]/18 bg-[#091826]/88 text-sky-100'
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <button
-                    type="button"
-                    onClick={cycleMascotCharacter}
-                    className="h-6 w-6 shrink-0 overflow-hidden rounded-lg border border-[#4E946B]/40"
-                  >
-                    <img
-                      src={activeCharacter.avatarImg}
-                      alt={activeCharacter.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </button>
-                  <span className="truncate">
-                    <strong className={isLight ? 'text-[#231C18]' : 'text-white'}>
-                      {activeCharacter.name}:
-                    </strong>{' '}
-                    {mascotSpeech}
-                  </span>
-                </div>
-                <span
-                  className="shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold text-white"
-                  style={{ backgroundColor: activeCharacter.accentColor }}
-                >
-                  {emotionBadgeText}
-                </span>
-              </div>
-            </div>
+              {/* Horizontal Step Process Bar (Inspired directly by IMG_5847!) */}
+              <RoundStepProcessBar
+                totalRounds={session.playlist.length}
+                currentIndex={session.currentIndex}
+                history={session.history}
+                isLight={isLight}
+              />
+            </motion.div>
 
             {/* Unobstructed 3D Center Playfield */}
             <div className="pointer-events-none flex-1" />
 
             {/* Unified Collapsible Bottom Control Dock */}
             <div className="pointer-events-auto flex flex-col items-center">
-              <button
+              <motion.button
                 type="button"
+                whileTap={{ scale: 0.95 }}
                 onClick={() => {
-                  audioEngine.playUiTick();
+                  audioEngine.playUiTick(1.05, 'light');
                   setIsDockCollapsed((prev) => !prev);
                 }}
                 className={`mb-1.5 inline-flex min-h-[28px] items-center gap-1.5 rounded-full border px-3.5 py-1 text-[11px] font-bold transition-colors ${
                   isLight
-                    ? 'border-[#DFD7C8] bg-[#FCF9F2]/92 text-[#574C44] hover:text-[#231C18]'
-                    : 'border-[#38BDF8]/20 bg-[#091826]/90 text-sky-200 hover:text-white'
+                    ? 'border-[#D1D1D1] bg-[#FFFFFF]/92 text-[#000000]/75 hover:text-[#000000]'
+                    : 'border-white/15 bg-[#12161D]/90 text-white/80 hover:text-white'
                 }`}
               >
                 {isDockCollapsed ? (
                   <>
                     <CaretUp weight="bold" className="h-3.5 w-3.5" />
-                    <span>Show Deck Controls [H]</span>
+                    <span>Show Controls [H]</span>
                   </>
                 ) : (
                   <>
@@ -1590,306 +1731,286 @@ export const VinylRushGame: React.FC = () => {
                     <span>Zen 3D View [H]</span>
                   </>
                 )}
-              </button>
+              </motion.button>
 
-              {!isDockCollapsed && (
-                <section
-                  aria-label="Active Song Quiz Controls"
-                  className={`w-full rounded-[28px] border p-3 shadow-2xl space-y-2 transition-colors ${
-                    isLight
-                      ? 'border-[#DFD7C8] bg-[#FCF9F2]/96 text-[#231C18] shadow-[0_16px_40px_rgba(35,28,24,0.1)]'
-                      : 'border-[#38BDF8]/22 bg-[#091826]/95 text-[#F0F9FF]'
-                  }`}
-                >
-                  {/* Apple Music-style Animated Cover Art & Mood Card */}
-                  <AppleMusicCoverCard
-                    song={currentSong}
-                    mood={currentMood}
-                    themeMode={themeMode}
-                    isRevealed={session.isRevealed}
-                    isPlaying={isPlayingSnippet}
-                    compact
-                    artistHintText={artistHintText}
-                    onSaveTrack={() => {
-                      setProgression((p) => ({
-                        ...p,
-                        unlockedBadges: Array.from(new Set([...p.unlockedBadges, 'crate-curator'])),
-                      }));
-                    }}
-                  />
-
-                  {/* Gamified In-Round Power-Up Boosters Row */}
-                  {!roundFeedback?.answered && (
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <button
-                        type="button"
-                        disabled={Boolean(artistHintText)}
-                        onClick={handleUseArtistHint}
-                        className={`flex min-h-[34px] items-center justify-center gap-1 rounded-xl border px-2 py-1 text-[11px] font-extrabold transition-all whitespace-nowrap ${
-                          artistHintText
-                            ? 'opacity-50 cursor-default border-emerald-500/40 bg-emerald-500/10 text-emerald-600'
-                            : isLight
-                            ? 'border-[#DCD4C6] bg-[#EDE6DA] text-[#574C44] hover:bg-[#E2D9C8]'
-                            : 'border-[#38BDF8]/20 bg-[#38BDF8]/10 text-sky-100 hover:bg-[#38BDF8]/20'
-                        }`}
-                      >
-                        <Lightbulb weight="fill" className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                        <span>{artistHintText ? 'Clue Active' : 'Artist Clue'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={eliminatedOptionIds.length > 0}
-                        onClick={handleUseFiftyFifty}
-                        className={`flex min-h-[34px] items-center justify-center gap-1 rounded-xl border px-2 py-1 text-[11px] font-extrabold transition-all whitespace-nowrap ${
-                          eliminatedOptionIds.length > 0
-                            ? 'opacity-50 cursor-default border-emerald-500/40 bg-emerald-500/10 text-emerald-600'
-                            : isLight
-                            ? 'border-[#DCD4C6] bg-[#EDE6DA] text-[#574C44] hover:bg-[#E2D9C8]'
-                            : 'border-[#38BDF8]/20 bg-[#38BDF8]/10 text-sky-100 hover:bg-[#38BDF8]/20'
-                        }`}
-                      >
-                        <Scissors weight="bold" className="h-3.5 w-3.5 text-[#5C8EC2] shrink-0" />
-                        <span>{eliminatedOptionIds.length > 0 ? '50/50 Cut' : '50/50 Cut'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={doubleBoostActive}
-                        onClick={handleUseDoubleBoost}
-                        className={`flex min-h-[34px] items-center justify-center gap-1 rounded-xl border px-2 py-1 text-[11px] font-extrabold transition-all whitespace-nowrap ${
-                          doubleBoostActive
-                            ? 'border-amber-500 bg-amber-500/20 text-amber-500'
-                            : isLight
-                            ? 'border-[#DCD4C6] bg-[#EDE6DA] text-[#574C44] hover:bg-[#E2D9C8]'
-                            : 'border-[#38BDF8]/20 bg-[#38BDF8]/10 text-sky-100 hover:bg-[#38BDF8]/20'
-                        }`}
-                      >
-                        <Lightning weight="fill" className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                        <span>{doubleBoostActive ? '2x Active!' : '2x Boost'}</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Snippet Playback Controls & Live Progress Bar */}
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => triggerSnippetPlay(currentSong, snippetDuration)}
-                      className={`flex min-h-[38px] flex-1 items-center justify-center gap-1.5 rounded-2xl px-3 py-1.5 text-xs font-extrabold active:scale-[0.98] transition-all whitespace-nowrap min-w-0 ${
-                        isLight
-                          ? 'bg-[#EDE6DA] text-[#231C18] hover:bg-[#E2D9C8]'
-                          : 'bg-[#38BDF8]/15 text-white hover:bg-[#38BDF8]/25'
-                      }`}
-                    >
-                      <Play
-                        weight="fill"
-                        className="h-4 w-4 shrink-0"
-                        style={{ color: currentMood.primaryHex }}
-                      />
-                      <span className="truncate">
-                        {isPlayingSnippet
-                          ? `Playing ${snippetDuration}s...`
-                          : `Replay ${snippetDuration}s`}
-                      </span>
-                    </button>
-
-                    {/* Extend Play Time on the fly */}
-                    {snippetDuration < 30 && !roundFeedback?.answered && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextDur: SnippetDuration =
-                            snippetDuration < 5
-                              ? 5
-                              : snippetDuration < 15
-                              ? 15
-                              : 30;
-                          setSnippetDuration(nextDur);
-                          triggerSnippetPlay(currentSong, nextDur);
-                        }}
-                        className={`inline-flex min-h-[38px] items-center gap-1 rounded-2xl border px-2.5 py-1.5 text-xs font-extrabold whitespace-nowrap shrink-0 ${
-                          isLight
-                            ? 'border-[#468E68]/40 bg-[#468E68]/12 text-[#2E6F4E] hover:bg-[#468E68]/20'
-                            : 'border-[#2DD4BF]/35 bg-[#2DD4BF]/12 text-[#2DD4BF] hover:bg-[#2DD4BF]/22'
-                        }`}
-                      >
-                        <Timer weight="bold" className="h-3.5 w-3.5" />
-                        <span>+Time</span>
-                      </button>
-                    )}
-
-                    {/* Toggle Party 30s Judge vs 4-Choice */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        audioEngine.playUiTick();
-                        setPlayMode((m) =>
-                          m === 'party-30s' ? 'quiz-4choice' : 'party-30s'
-                        );
-                      }}
-                      className={`inline-flex min-h-[38px] items-center gap-1 rounded-2xl border px-2.5 py-1.5 text-xs font-bold whitespace-nowrap shrink-0 ${
-                        isLight
-                          ? 'border-[#DCD4C6] bg-[#EDE6DA] text-[#574C44] hover:bg-[#E2D9C8]'
-                          : 'border-[#38BDF8]/20 bg-white/5 text-sky-100 hover:bg-white/10'
-                      }`}
-                    >
-                      <span>{playMode === 'party-30s' ? '4-Choice' : '30s Judge'}</span>
-                    </button>
-                  </div>
-
-                  {/* Snippet Progress Bar */}
-                  <div
-                    className={`h-1.5 w-full overflow-hidden rounded-full ${
-                      isLight ? 'bg-[#E5DECF]' : 'bg-white/10'
+              <AnimatePresence>
+                {!isDockCollapsed && (
+                  <motion.section
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 16 }}
+                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    aria-label="Active Song Quiz Controls"
+                    className={`w-full rounded-[28px] border p-3.5 space-y-2.5 transition-colors ${
+                      isLight
+                        ? 'border-[#D1D1D1] bg-[#FFFFFF]/96 text-[#000000] shadow-[0_16px_40px_rgba(0,0,0,0.08)]'
+                        : 'border-white/12 bg-[#12161D]/96 text-[#FFFFFF] shadow-2xl'
                     }`}
                   >
-                    <div
-                      className="h-full transition-all duration-75"
-                      style={{
-                        width: `${Math.round(snippetProgress * 100)}%`,
-                        backgroundColor: currentMood.primaryHex,
+                    {/* Waveform & Cover Card (IMG_5813 + IMG_5847!) */}
+                    <AppleMusicCoverCard
+                      song={currentSong}
+                      mood={currentMood}
+                      themeMode={themeMode}
+                      isRevealed={session.isRevealed}
+                      isPlaying={isPlayingSnippet}
+                      snippetProgress={snippetProgress}
+                      snippetDuration={snippetDuration}
+                      compact
+                      artistHintText={artistHintText}
+                      onReplaySnippet={() => triggerSnippetPlay(currentSong, snippetDuration)}
+                      onSaveTrack={() => {
+                        setProgression((p) => ({
+                          ...p,
+                          unlockedBadges: Array.from(
+                            new Set([...p.unlockedBadges, 'crate-curator'])
+                          ),
+                        }));
                       }}
                     />
-                  </div>
 
-                  {/* MODE A: 30-SECONDS PARTY SELF-SCORING ("Right or Wrong") */}
-                  {playMode === 'party-30s' && !roundFeedback?.answered && (
-                    <div className="space-y-2">
-                      {!session.isRevealed ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            audioEngine.playUiTick(1.15);
-                            setSession((prev) => ({ ...prev, isRevealed: true }));
-                            setMascotSpeech(
-                              `It's "${currentSong.title}" by ${currentSong.artist}! Did you guess it?`
-                            );
-                          }}
-                          className={`flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-black active:translate-y-0.5 transition-all ${primaryBtnClasses}`}
+                    {/* Compact Transport + Power-Up Action Pill Bar (Inspired by IMG_5847 Bottom Pill Bar!) */}
+                    {!roundFeedback?.answered && (
+                      <div className="flex items-center justify-between gap-1.5">
+                        {/* Left: Power-Up Boosters */}
+                        <div
+                          className={`flex items-center gap-1 rounded-full p-1 ${
+                            isLight ? 'bg-[#F1F1F1]' : 'bg-white/8'
+                          }`}
                         >
-                          <Eye weight="bold" className="h-5 w-5" />
-                          <span>Reveal Song &amp; Score Round</span>
-                        </button>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
+                          <motion.button
                             type="button"
-                            onClick={() => handleJudgeAnswer(true)}
-                            className="flex min-h-[46px] items-center justify-center gap-1.5 rounded-2xl border-b-4 border-[#2E6F4E] bg-[#468E68] px-3 py-2 text-xs font-black text-white shadow-md hover:bg-[#529E76] active:translate-y-0.5 transition-all whitespace-nowrap"
-                          >
-                            <Check weight="bold" className="h-4 w-4 shrink-0" />
-                            <span>Right (+{potentialPoints})</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleJudgeAnswer(false)}
-                            className={`flex min-h-[46px] items-center justify-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-extrabold active:scale-[0.98] transition-all whitespace-nowrap ${
-                              isLight
-                                ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                : 'border-rose-500/50 bg-rose-500/25 text-rose-200 hover:bg-rose-500/35'
-                            }`}
-                          >
-                            <X weight="bold" className="h-4 w-4 shrink-0" />
-                            <span>Wrong (0)</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* MODE B: 4-CHOICE INTERACTIVE QUIZ */}
-                  {playMode === 'quiz-4choice' && !roundFeedback?.answered && (
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {quizOptions.map((option) => {
-                        const isEliminated = eliminatedOptionIds.includes(option.id);
-                        return (
-                          <button
-                            key={option.id}
-                            type="button"
-                            disabled={isEliminated}
-                            onClick={() =>
-                              handleJudgeAnswer(option.id === currentSong.id, option.id)
-                            }
-                            className={`flex min-h-[44px] flex-col justify-center rounded-2xl border px-3 py-1.5 text-left transition-all ${
-                              isEliminated
-                                ? 'opacity-30 line-through cursor-not-allowed border-stone-300/40'
+                            whileTap={{ scale: 0.94 }}
+                            disabled={Boolean(artistHintText)}
+                            onClick={handleUseArtistHint}
+                            className={`inline-flex min-h-[32px] items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors whitespace-nowrap ${
+                              artistHintText
+                                ? 'bg-[#309F92] text-[#FFFFFF]'
                                 : isLight
-                                ? 'border-[#DCD4C6] bg-[#F5F0E6] hover:border-[#468E68] hover:bg-[#EDE6DA] active:scale-[0.99]'
-                                : 'border-[#38BDF8]/18 bg-[#06101A]/70 hover:border-[#38BDF8] hover:bg-[#38BDF8]/15 active:scale-[0.99]'
+                                ? 'bg-[#FFFFFF] text-[#000000] shadow-2xs hover:bg-[#EDFF8C]'
+                                : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                           >
-                            <span
-                              className={`truncate text-xs font-extrabold ${
-                                isLight ? 'text-[#231C18]' : 'text-white'
-                              }`}
-                            >
-                              {option.title}
-                            </span>
-                            <span
-                              className={`truncate text-[11px] ${
-                                isLight ? 'text-[#6E6259]' : 'text-sky-200/75'
-                              }`}
-                            >
-                              {option.artist} · {option.releaseYear}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                            <Lightbulb weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
+                            <span>{artistHintText ? 'Clue On' : 'Clue'}</span>
+                          </motion.button>
 
-                  {/* Post-Guess Outcome Banner & Next Song Button */}
-                  {roundFeedback?.answered && (
-                    <div
-                      className={`flex items-center justify-between gap-2.5 rounded-2xl border p-2.5 ${
-                        isLight
-                          ? 'border-[#DCD4C6] bg-[#F5F0E6]'
-                          : 'border-[#38BDF8]/20 bg-[#06101A]/85'
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <div
-                          className={`text-xs font-black ${
-                            roundFeedback.correct
-                              ? isLight
-                                ? 'text-[#2E6F4E]'
-                                : 'text-[#2DD4BF]'
-                              : isLight
-                              ? 'text-rose-600'
-                              : 'text-rose-300'
-                          }`}
-                        >
-                          {roundFeedback.correct
-                            ? `Correct! +${roundFeedback.points} pts · +${roundFeedback.xpGained} XP`
-                            : `Missed Track · +${roundFeedback.xpGained} XP`}
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.94 }}
+                            disabled={eliminatedOptionIds.length > 0}
+                            onClick={handleUseFiftyFifty}
+                            className={`inline-flex min-h-[32px] items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors whitespace-nowrap ${
+                              eliminatedOptionIds.length > 0
+                                ? 'bg-[#309F92] text-[#FFFFFF]'
+                                : isLight
+                                ? 'bg-[#FFFFFF] text-[#000000] shadow-2xs hover:bg-[#EDFF8C]'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                          >
+                            <Scissors weight="bold" className="h-3.5 w-3.5" />
+                            <span>50/50</span>
+                          </motion.button>
+
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.94 }}
+                            disabled={doubleBoostActive}
+                            onClick={handleUseDoubleBoost}
+                            className={`inline-flex min-h-[32px] items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors whitespace-nowrap ${
+                              doubleBoostActive
+                                ? 'bg-[#EDFF8C] text-[#000000]'
+                                : isLight
+                                ? 'bg-[#FFFFFF] text-[#000000] shadow-2xs hover:bg-[#EDFF8C]'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                          >
+                            <Lightning weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
+                            <span>2x</span>
+                          </motion.button>
                         </div>
-                        <div
-                          className={`truncate text-[11px] font-medium ${
-                            isLight ? 'text-[#5C5046]' : 'text-sky-200/80'
-                          }`}
-                        >
-                          {currentSong.title} — {currentSong.artist}
+
+                        {/* Right: Replay, +Time & Mode Switch */}
+                        <div className="flex items-center gap-1">
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.94 }}
+                            onClick={() => triggerSnippetPlay(currentSong, snippetDuration)}
+                            className={`inline-flex min-h-[34px] items-center gap-1 rounded-full px-3 py-1 text-xs font-bold whitespace-nowrap ${
+                              isLight
+                                ? 'bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                          >
+                            <Play weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
+                            <span>{isPlayingSnippet ? `${snippetDuration}s` : 'Replay'}</span>
+                          </motion.button>
+
+                          {snippetDuration < 30 && (
+                            <motion.button
+                              type="button"
+                              whileTap={{ scale: 0.94 }}
+                              onClick={() => {
+                                const nextDur: SnippetDuration =
+                                  snippetDuration < 5
+                                    ? 5
+                                    : snippetDuration < 15
+                                    ? 15
+                                    : 30;
+                                setSnippetDuration(nextDur);
+                                triggerSnippetPlay(currentSong, nextDur);
+                              }}
+                              className="inline-flex min-h-[34px] items-center gap-1 rounded-full bg-[#EDFF8C] px-2.5 py-1 text-xs font-bold text-[#000000] whitespace-nowrap"
+                            >
+                              <Timer weight="bold" className="h-3.5 w-3.5" />
+                              <span>+Time</span>
+                            </motion.button>
+                          )}
+
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.94 }}
+                            onClick={() => {
+                              audioEngine.playUiTick(1.05, 'selection');
+                              setPlayMode((m) =>
+                                m === 'party-30s' ? 'quiz-4choice' : 'party-30s'
+                              );
+                            }}
+                            className={`inline-flex min-h-[34px] items-center rounded-full border px-2.5 py-1 text-[11px] font-bold whitespace-nowrap ${
+                              isLight
+                                ? 'border-[#D1D1D1] text-[#000000]/75'
+                                : 'border-white/15 text-white/80'
+                            }`}
+                          >
+                            {playMode === 'party-30s' ? '4-Choice' : 'Judge'}
+                          </motion.button>
                         </div>
                       </div>
+                    )}
 
-                      <button
-                        type="button"
-                        onClick={handleNextRound}
-                        className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-black active:scale-[0.98] transition-all whitespace-nowrap shrink-0 ${primaryBtnClasses}`}
+                    {/* MODE A: 30-SECONDS PARTY SELF-SCORING ("Right or Wrong") */}
+                    {playMode === 'party-30s' && !roundFeedback?.answered && (
+                      <div>
+                        {!session.isRevealed ? (
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => {
+                              audioEngine.playUiTick(1.15, 'medium');
+                              setSession((prev) => ({ ...prev, isRevealed: true }));
+                              setMascotSpeech(
+                                `"${currentSong.title}" by ${currentSong.artist}. Did you get it?`
+                              );
+                            }}
+                            className={`flex min-h-[46px] w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold transition-colors ${primaryBtnClasses}`}
+                          >
+                            <Eye weight="bold" className="h-4 w-4" />
+                            <span>Reveal Song &amp; Score Round</span>
+                          </motion.button>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2">
+                            <motion.button
+                              type="button"
+                              whileTap={{ scale: 0.97 }}
+                              onClick={() => handleJudgeAnswer(true)}
+                              className="flex min-h-[46px] items-center justify-center gap-1.5 rounded-full bg-[#000000] px-4 py-2 text-xs font-bold text-[#EDFF8C] shadow-md whitespace-nowrap"
+                            >
+                              <Check weight="bold" className="h-4 w-4 shrink-0" />
+                              <span>Right (+{potentialPoints})</span>
+                            </motion.button>
+
+                            <motion.button
+                              type="button"
+                              whileTap={{ scale: 0.97 }}
+                              onClick={() => handleJudgeAnswer(false)}
+                              className={`flex min-h-[46px] items-center justify-center gap-1.5 rounded-full border px-4 py-2 text-xs font-bold whitespace-nowrap ${
+                                isLight
+                                  ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000]'
+                                  : 'border-white/15 bg-white/10 text-white'
+                              }`}
+                            >
+                              <X weight="bold" className="h-4 w-4 shrink-0" />
+                              <span>Missed (0)</span>
+                            </motion.button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* MODE B: 4-CHOICE INTERACTIVE QUIZ */}
+                    {playMode === 'quiz-4choice' && !roundFeedback?.answered && (
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {quizOptions.map((option) => {
+                          const isEliminated = eliminatedOptionIds.includes(option.id);
+                          return (
+                            <motion.button
+                              key={option.id}
+                              type="button"
+                              whileTap={{ scale: 0.97 }}
+                              disabled={isEliminated}
+                              onClick={() =>
+                                handleJudgeAnswer(option.id === currentSong.id, option.id)
+                              }
+                              className={`flex min-h-[46px] flex-col justify-center rounded-[18px] border px-3 py-1.5 text-left transition-colors ${
+                                isEliminated
+                                  ? 'opacity-30 line-through cursor-not-allowed border-[#D1D1D1]'
+                                  : isLight
+                                  ? 'border-[#D1D1D1] bg-[#F1F1F1]/70 hover:bg-[#EDFF8C] hover:border-[#000000]/20'
+                                  : 'border-white/12 bg-white/5 hover:bg-[#EDFF8C] hover:text-[#000000]'
+                              }`}
+                            >
+                              <span className="truncate text-xs font-bold">
+                                {option.title}
+                              </span>
+                              <span className="truncate text-[11px] opacity-65">
+                                {option.artist} · {option.releaseYear}
+                              </span>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Post-Guess Outcome Banner & Next Song Button */}
+                    {roundFeedback?.answered && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`flex items-center justify-between gap-2.5 rounded-[20px] border p-2.5 ${
+                          isLight
+                            ? 'border-[#D1D1D1] bg-[#F1F1F1]'
+                            : 'border-white/15 bg-black/50'
+                        }`}
                       >
-                        <span>
-                          {session.currentIndex + 1 >= session.playlist.length
-                            ? 'Finish Set'
-                            : 'Next Song'}
-                        </span>
-                        <ArrowRight weight="bold" className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
-                </section>
-              )}
+                        <div className="min-w-0 pl-1">
+                          <div className="text-xs font-bold text-[#309F92]">
+                            {roundFeedback.correct
+                              ? `Correct · +${roundFeedback.points} pts · +${roundFeedback.xpGained} XP`
+                              : `Missed Track · +${roundFeedback.xpGained} XP`}
+                          </div>
+                          <div className="truncate text-[11px] opacity-75">
+                            {currentSong.title} — {currentSong.artist}
+                          </div>
+                        </div>
+
+                        <motion.button
+                          type="button"
+                          whileTap={{ scale: 0.96 }}
+                          onClick={handleNextRound}
+                          className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold whitespace-nowrap shrink-0 ${primaryBtnClasses}`}
+                        >
+                          <span>
+                            {session.currentIndex + 1 >= session.playlist.length
+                              ? 'Finish Set'
+                              : 'Next Song'}
+                          </span>
+                          <ArrowRight weight="bold" className="h-4 w-4" />
+                        </motion.button>
+                      </motion.div>
+                    )}
+                  </motion.section>
+                )}
+              </AnimatePresence>
             </div>
           </>
         )}
@@ -1898,83 +2019,72 @@ export const VinylRushGame: React.FC = () => {
             STATE 3: PAUSED MODAL
            ===================================================================== */}
         {session.status === 'paused' && (
-          <div
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
             role="dialog"
             aria-modal="true"
             aria-labelledby="pause-modal-title"
-            className={`pointer-events-auto my-auto mx-auto w-full max-w-sm rounded-[30px] border p-6 text-center shadow-2xl space-y-4 ${
+            className={`pointer-events-auto my-auto mx-auto w-full max-w-sm rounded-[28px] border p-6 text-center shadow-2xl space-y-4 ${
               isLight
-                ? 'border-[#DFD7C8] bg-[#FCF9F2]/96 text-[#231C18]'
-                : 'border-[#38BDF8]/25 bg-[#091826]/95 text-[#F0F9FF]'
+                ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
+                : 'border-white/15 bg-[#12161D] text-[#FFFFFF]'
             }`}
           >
-            <h2 id="pause-modal-title" className="text-2xl font-black tracking-tight">
-              Turntable Paused
+            <h2 id="pause-modal-title" className="text-2xl font-bold tracking-tight">
+              Session Paused
             </h2>
-            <p className={`text-xs ${isLight ? 'text-[#6E6259]' : 'text-sky-200/75'}`}>
+            <p className={`text-xs ${isLight ? 'text-[#000000]/60' : 'text-white/60'}`}>
               Round {session.currentIndex + 1} of {session.playlist.length} ·{' '}
-              {session.config.snippetDuration}s Snippet Mode
+              {session.config.snippetDuration}s Snippet Cut
             </p>
 
             <div
-              className={`grid grid-cols-2 gap-3 rounded-2xl p-3 ${
-                isLight ? 'bg-[#EDE6DA]' : 'bg-[#06101A]/80'
+              className={`grid grid-cols-2 gap-3 rounded-[22px] p-3.5 ${
+                isLight ? 'bg-[#F1F1F1]' : 'bg-black/40'
               }`}
             >
               <div>
-                <div
-                  className={`text-[10px] font-bold uppercase ${
-                    isLight ? 'text-[#85776C]' : 'text-sky-200/60'
-                  }`}
-                >
-                  SCORE
-                </div>
-                <div className="text-xl font-black font-mono tabular-nums">
+                <div className="text-[11px] font-semibold opacity-60">Score</div>
+                <div className="text-2xl font-bold font-mono tabular-nums">
                   {session.score}
                 </div>
               </div>
               <div>
-                <div
-                  className={`text-[10px] font-bold uppercase ${
-                    isLight ? 'text-[#85776C]' : 'text-sky-200/60'
-                  }`}
-                >
-                  STREAK
-                </div>
-                <div
-                  className="text-xl font-black font-mono tabular-nums"
-                  style={{ color: currentMood.primaryHex }}
-                >
+                <div className="text-[11px] font-semibold opacity-60">Streak</div>
+                <div className="text-2xl font-bold font-mono tabular-nums text-[#309F92]">
                   {session.streak}x
                 </div>
               </div>
             </div>
 
             <div className="space-y-2 pt-1">
-              <button
+              <motion.button
                 type="button"
+                whileTap={{ scale: 0.98 }}
                 onClick={() => {
-                  audioEngine.playUiTick(1.1);
+                  audioEngine.playUiTick(1.1, 'medium');
                   setSession((prev) => ({ ...prev, status: 'playing' }));
                 }}
-                className={`flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-black ${primaryBtnClasses}`}
+                className={`flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold ${primaryBtnClasses}`}
               >
                 <Play weight="fill" className="h-4 w-4" />
                 <span>Resume Turntable</span>
-              </button>
+              </motion.button>
 
-              <button
+              <motion.button
                 type="button"
+                whileTap={{ scale: 0.98 }}
                 onClick={() => startNewGame()}
-                className={`flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-bold transition-colors ${
+                className={`flex min-h-[46px] w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition-colors ${
                   isLight
-                    ? 'bg-[#EDE6DA] text-[#231C18] hover:bg-[#E2D9C8]'
-                    : 'bg-[#38BDF8]/15 text-white hover:bg-[#38BDF8]/25'
+                    ? 'bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                    : 'bg-white/10 text-white hover:bg-white/15'
                 }`}
               >
                 <ArrowsClockwise weight="bold" className="h-4 w-4" />
                 <span>Restart Session</span>
-              </button>
+              </motion.button>
 
               <button
                 type="button"
@@ -1982,93 +2092,56 @@ export const VinylRushGame: React.FC = () => {
                   audioEngine.stopSnippet(false);
                   setSession((prev) => ({ ...prev, status: 'title' }));
                 }}
-                className={`flex min-h-[42px] w-full items-center justify-center rounded-2xl text-xs font-bold ${
-                  isLight
-                    ? 'text-[#6E6259] hover:text-[#231C18]'
-                    : 'text-sky-200/75 hover:text-white'
-                }`}
+                className="flex min-h-[40px] w-full items-center justify-center rounded-full text-xs font-semibold opacity-65 hover:opacity-100"
               >
                 Back to Crate Setup
               </button>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* =====================================================================
-            STATE 4: GAME OVER / SESSION SUMMARY MODAL WITH XP LEVEL & STREAMING LINKS
+            STATE 4: GAME OVER / SESSION SUMMARY WITH RADIAL TICK GAUGE (IMG_5846!)
            ===================================================================== */}
         {session.status === 'gameover' && (
-          <div
+          <motion.div
+            initial={{ opacity: 0, y: 18, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
             role="dialog"
             aria-modal="true"
             aria-labelledby="gameover-modal-title"
-            className={`pointer-events-auto my-auto mx-auto flex max-h-[88vh] w-full max-w-md flex-col rounded-[30px] border p-5 shadow-2xl ${
+            className={`pointer-events-auto my-auto mx-auto flex max-h-[88vh] w-full max-w-md flex-col rounded-[28px] border p-5 shadow-2xl ${
               isLight
-                ? 'border-[#DFD7C8] bg-[#FCF9F2]/96 text-[#231C18]'
-                : 'border-[#38BDF8]/25 bg-[#091826]/95 text-[#F0F9FF]'
+                ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
+                : 'border-white/15 bg-[#12161D] text-[#FFFFFF]'
             }`}
           >
-            <div className="text-center">
-              <div className="mx-auto mb-1 inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1 text-xs font-extrabold text-amber-500">
-                <Trophy weight="fill" className="h-4 w-4" />
-                <span>
-                  Level {tierInfo.level} · {tierInfo.name} ({progression.xp} XP)
-                </span>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs font-semibold text-[#309F92]">
+                  Level {tierInfo.level} · {tierInfo.name}
+                </div>
+                <h2 id="gameover-modal-title" className="text-2xl font-bold tracking-tight">
+                  Session Summary
+                </h2>
               </div>
-              <h2 id="gameover-modal-title" className="text-2xl font-black tracking-tight">
-                Session Complete!
-              </h2>
-              <p className={`mt-0.5 text-xs ${isLight ? 'text-[#6E6259]' : 'text-sky-200/75'}`}>
-                {activeCharacter.name} loved your rhythm! Save your favorite tracks to Spotify or
-                Apple Music.
-              </p>
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#EDFF8C] font-mono text-xs font-bold text-[#000000]">
+                {session.bestStreak}x
+              </div>
             </div>
 
-            {/* 3 Mastery Stat Tiles (Tabular Numerals) */}
-            <div
-              className={`mt-3.5 grid grid-cols-3 gap-2 rounded-2xl p-3 text-center ${
-                isLight ? 'bg-[#EDE6DA]' : 'bg-[#06101A]/80'
-              }`}
-            >
-              <div>
-                <div
-                  className={`text-[10px] font-bold uppercase ${
-                    isLight ? 'text-[#85776C]' : 'text-sky-200/60'
-                  }`}
-                >
-                  FINAL SCORE
-                </div>
-                <div className="text-xl font-black font-mono tabular-nums">
-                  {Math.round(session.score)}
-                </div>
-              </div>
-              <div>
-                <div
-                  className={`text-[10px] font-bold uppercase ${
-                    isLight ? 'text-[#85776C]' : 'text-sky-200/60'
-                  }`}
-                >
-                  ACCURACY
-                </div>
-                <div className="text-xl font-black font-mono tabular-nums text-[#468E68]">
-                  {session.history.length > 0
+            {/* Radial Tick-Mark Accuracy Gauge (IMG_5846 Lead Score 90 Gauge!) */}
+            <div className="mt-3">
+              <SegmentedTickArcGauge
+                value={
+                  session.history.length > 0
                     ? Math.round((session.correctCount / session.history.length) * 100)
-                    : 0}
-                  %
-                </div>
-              </div>
-              <div>
-                <div
-                  className={`text-[10px] font-bold uppercase ${
-                    isLight ? 'text-[#85776C]' : 'text-sky-200/60'
-                  }`}
-                >
-                  BEST STREAK
-                </div>
-                <div className="text-xl font-black font-mono tabular-nums text-[#D98A3C]">
-                  {session.bestStreak}x
-                </div>
-              </div>
+                    : 0
+                }
+                gradeLabel={tierInfo.grade}
+                statusLabel={`${Math.round(session.score)} pts`}
+                isLight={isLight}
+              />
             </div>
 
             {/* Played Tracks List with Direct Add to Spotify & Apple Music Links */}
@@ -2078,33 +2151,27 @@ export const VinylRushGame: React.FC = () => {
                 return (
                   <div
                     key={`${item.song.id}-${idx}`}
-                    className={`flex items-center justify-between gap-2.5 rounded-2xl border p-2.5 ${
-                      isLight
-                        ? 'border-[#E2DBD0] bg-[#F5F0E6]'
-                        : 'border-[#38BDF8]/15 bg-[#06101A]/70'
+                    className={`flex items-center justify-between gap-2.5 rounded-[20px] border p-3 ${
+                      item.correct && isLight
+                        ? 'border-[#000000]/10 bg-[#EDFF8C]/55'
+                        : isLight
+                        ? 'border-[#D1D1D1] bg-[#F1F1F1]/70'
+                        : 'border-white/10 bg-white/5'
                     }`}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span
-                          className={`text-xs font-extrabold ${
-                            item.correct ? 'text-[#468E68]' : 'text-rose-500'
-                          }`}
-                        >
-                          {item.correct ? `+${item.pointsEarned}` : '0'} pts
+                        <span className="font-mono text-xs font-bold text-[#309F92]">
+                          {item.correct ? `+${item.pointsEarned}` : '0'}
                         </span>
                         <span aria-hidden="true" className="opacity-40">
                           ·
                         </span>
-                        <span className="truncate text-xs font-extrabold">
+                        <span className="truncate text-xs font-bold">
                           {item.song.title}
                         </span>
                       </div>
-                      <div
-                        className={`truncate text-[11px] ${
-                          isLight ? 'text-[#6E6259]' : 'text-sky-200/75'
-                        }`}
-                      >
+                      <div className="truncate text-[11px] opacity-65">
                         {item.song.artist} · {item.song.releaseYear}
                       </div>
                     </div>
@@ -2115,7 +2182,7 @@ export const VinylRushGame: React.FC = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Add ${item.song.title} to Spotify`}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1DB954]/20 text-[#1DB954] hover:bg-[#1DB954]/35"
+                        className="flex h-9 w-9 items-center justify-center rounded-full bg-[#000000] text-[#1DB954]"
                       >
                         <SpotifyLogo weight="fill" className="h-4 w-4" />
                       </a>
@@ -2124,7 +2191,11 @@ export const VinylRushGame: React.FC = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Open ${item.song.title} in Apple Music`}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FA243C]/20 text-[#FA243C] hover:bg-[#FA243C]/35"
+                        className={`flex h-9 w-9 items-center justify-center rounded-full border ${
+                          isLight
+                            ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#FA243C]'
+                            : 'border-white/15 bg-white/10 text-[#FA243C]'
+                        }`}
                       >
                         <AppleLogo weight="fill" className="h-4 w-4" />
                       </a>
@@ -2134,226 +2205,193 @@ export const VinylRushGame: React.FC = () => {
               })}
             </div>
 
-            {/* Play Again & Back to Title Actions */}
+            {/* Play Again & Change Crate Actions */}
             <div
-              className={`mt-4 grid grid-cols-2 gap-2.5 pt-2 border-t ${
-                isLight ? 'border-[#E2DBD0]' : 'border-[#38BDF8]/15'
+              className={`mt-4 grid grid-cols-2 gap-2.5 pt-3 border-t ${
+                isLight ? 'border-[#F1F1F1]' : 'border-white/10'
               }`}
             >
-              <button
+              <motion.button
                 type="button"
+                whileTap={{ scale: 0.97 }}
                 data-start="true"
                 onClick={() => startNewGame()}
-                className={`flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-black ${primaryBtnClasses}`}
+                className={`flex min-h-[48px] items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold ${primaryBtnClasses}`}
               >
                 <ArrowsClockwise weight="bold" className="h-4 w-4" />
                 <span>Play Again</span>
-              </button>
+              </motion.button>
 
-              <button
+              <motion.button
                 type="button"
+                whileTap={{ scale: 0.97 }}
                 onClick={() => {
-                  audioEngine.playUiTick();
+                  audioEngine.playUiTick(1.05, 'light');
                   setSession((prev) => ({ ...prev, status: 'title' }));
                 }}
-                className={`flex min-h-[48px] items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-bold ${
+                className={`flex min-h-[48px] items-center justify-center rounded-full px-4 py-2.5 text-sm font-bold ${
                   isLight
-                    ? 'bg-[#EDE6DA] text-[#231C18] hover:bg-[#E2D9C8]'
-                    : 'bg-[#38BDF8]/15 text-white hover:bg-[#38BDF8]/25'
+                    ? 'bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                    : 'bg-white/10 text-white hover:bg-white/15'
                 }`}
               >
                 Change Crate
-              </button>
+              </motion.button>
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
 
       {/* =====================================================================
-          GAMIFICATION MODAL: VINYL PASS, PRESTIGE TIER, DAILY QUESTS & BADGES
-          (Inspired directly by IMG_5843 "Blue Tier / Total points / Quests" UI!)
+          GAMIFICATION MODAL: RHYTHM SCORE GAUGE (IMG_5846) & GROOVE QUESTS
          ===================================================================== */}
-      {isPassModalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="vinyl-pass-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 pointer-events-auto"
-        >
-          <div
-            className={`relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[28px] border p-5 shadow-2xl space-y-4 ${
-              isLight
-                ? 'border-[#DFD7C8] bg-[#FCF9F2] text-[#231C18]'
-                : 'border-[#38BDF8]/28 bg-[#081624] text-[#F0F9FF]'
-            }`}
+      <AnimatePresence>
+        {isPassModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="vinyl-pass-title"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-3 pointer-events-auto"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Trophy weight="fill" className="h-5 w-5 text-amber-500" />
-                <h2 id="vinyl-pass-title" className="text-lg font-black tracking-tight">
-                  Vinyl Pass &amp; Groove Quests
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  audioEngine.playUiTick(0.9);
-                  setIsPassModalOpen(false);
-                }}
-                aria-label="Close Vinyl Pass modal"
-                className={`flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${
-                  isLight
-                    ? 'bg-[#EDE6DA] text-[#231C18] hover:bg-[#E2D9C8]'
-                    : 'bg-[#38BDF8]/15 text-sky-100 hover:bg-[#38BDF8]/25'
-                }`}
-              >
-                <X weight="bold" className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Prestige Tier Loyalty Card (Inspired by IMG_5843 Blue Tier Card!) */}
-            <div
-              className={`rounded-2xl border p-4 space-y-3 ${
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className={`relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[28px] border p-5 shadow-2xl space-y-4 ${
                 isLight
-                  ? 'border-[#DCD4C6] bg-gradient-to-br from-[#F4EFE4] to-[#E8E0D0]'
-                  : 'border-[#38BDF8]/30 bg-gradient-to-br from-[#0D253A] to-[#071522]'
+                  ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
+                  : 'border-white/15 bg-[#12161D] text-[#FFFFFF]'
               }`}
             >
+              <div className="mx-auto mb-1 h-1.5 w-10 rounded-full bg-[#D1D1D1] dark:bg-white/20 sm:hidden" />
+
               <div className="flex items-center justify-between">
                 <div>
-                  <span
-                    className={`text-[10px] font-extrabold uppercase tracking-wider ${
-                      isLight ? 'text-[#6E6259]' : 'text-sky-300/80'
-                    }`}
-                  >
-                    LEVEL {tierInfo.level} DJ RANK
+                  <span className="text-xs font-semibold text-[#309F92]">
+                    Level {tierInfo.level} · {tierInfo.name}
                   </span>
-                  <div className="text-xl font-black tracking-tight">{tierInfo.name}</div>
+                  <h2 id="vinyl-pass-title" className="text-xl font-bold tracking-tight">
+                    Rhythm Score &amp; Pass
+                  </h2>
                 </div>
-                <div className="flex items-center gap-1.5 rounded-xl bg-amber-500/15 px-3 py-1.5 text-xs font-extrabold text-amber-500">
-                  <Coins weight="fill" className="h-4 w-4" />
-                  <span className="font-mono tabular-nums">{progression.coins} Coins</span>
-                </div>
-              </div>
-
-              <div className="flex items-end justify-between text-xs">
-                <div>
-                  <div className={isLight ? 'text-[#6E6259]' : 'text-sky-200/70'}>Total points</div>
-                  <div className="font-mono text-lg font-black tabular-nums">
-                    {progression.xp} pt
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className={isLight ? 'text-[#6E6259]' : 'text-sky-200/70'}>To next tier</div>
-                  <div className="font-mono text-sm font-bold tabular-nums">
-                    {tierInfo.xpToNext} points
-                  </div>
-                </div>
-              </div>
-
-              {/* Tier Progress Bar */}
-              <div
-                className={`h-2 w-full overflow-hidden rounded-full ${
-                  isLight ? 'bg-[#D6CDBE]' : 'bg-black/50'
-                }`}
-              >
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${Math.round(tierInfo.progressRatio * 100)}%`,
-                    backgroundColor: tierInfo.badgeHex,
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.92 }}
+                  onClick={() => {
+                    audioEngine.playUiTick(0.9, 'light');
+                    setIsPassModalOpen(false);
                   }}
-                />
-              </div>
-            </div>
-
-            {/* Daily Groove Quests (+250pt / +350pt / +500pt cards) */}
-            <div className="space-y-2">
-              <div className="text-xs font-extrabold uppercase tracking-wider opacity-75">
-                Daily Groove Quests
-              </div>
-              {progression.quests.map((q) => (
-                <div
-                  key={q.id}
-                  className={`flex items-center justify-between gap-3 rounded-2xl border p-3 ${
-                    isLight
-                      ? 'border-[#E2DBD0] bg-white/85'
-                      : 'border-[#38BDF8]/18 bg-[#0B1E30]/80'
-                  }`}
+                  aria-label="Close Vinyl Pass modal"
+                  className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${circleBtnClass}`}
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      {q.completed ? (
-                        <CheckCircle weight="fill" className="h-4 w-4 text-emerald-500 shrink-0" />
-                      ) : (
-                        <Sparkle weight="fill" className="h-4 w-4 text-amber-500 shrink-0" />
-                      )}
-                      <span className="truncate text-xs font-extrabold">{q.title}</span>
-                    </div>
-                    <p
-                      className={`truncate text-[11px] ${
-                        isLight ? 'text-[#6E6259]' : 'text-sky-200/70'
-                      }`}
-                    >
-                      {q.description} ({q.progress}/{q.target})
-                    </p>
+                  <X weight="bold" className="h-4 w-4" />
+                </motion.button>
+              </div>
+
+              {/* Radial Tick-Mark Gauge (Exact match to IMG_5846 Lead Score 90 Card!) */}
+              <SegmentedTickArcGauge
+                value={Math.min(99, Math.round(tierInfo.progressRatio * 100) || 90)}
+                gradeLabel={tierInfo.grade}
+                statusLabel="Steady"
+                isLight={isLight}
+              />
+
+              {/* Acid-Lime Highlight Summary Strip (IMG_5847!) */}
+              <div className="flex items-center justify-between rounded-[22px] bg-[#EDFF8C] p-3.5 text-[#000000]">
+                <div>
+                  <div className="text-[11px] font-semibold opacity-70">Total Groove XP</div>
+                  <div className="font-mono text-lg font-bold tabular-nums">
+                    {progression.xp} pt · {tierInfo.xpToNext} to next tier
                   </div>
-                  <span
-                    className={`shrink-0 rounded-xl px-2.5 py-1 font-mono text-xs font-extrabold tabular-nums ${
-                      q.completed
-                        ? 'bg-emerald-500/20 text-emerald-500'
-                        : isLight
-                        ? 'bg-[#468E68]/15 text-[#2E6F4E]'
-                        : 'bg-[#38BDF8]/20 text-[#38BDF8]'
+                </div>
+                <div className="flex h-9 items-center gap-1 rounded-full bg-[#000000] px-3 font-mono text-xs font-bold text-[#EDFF8C] tabular-nums">
+                  <Coins weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
+                  <span>{progression.coins}</span>
+                </div>
+              </div>
+
+              {/* Daily Groove Quests */}
+              <div className="space-y-2">
+                <div className="text-xs font-bold opacity-65">Daily Groove Quests</div>
+                {progression.quests.map((q) => (
+                  <div
+                    key={q.id}
+                    className={`flex items-center justify-between gap-3 rounded-[20px] border p-3 ${
+                      isLight
+                        ? 'border-[#D1D1D1] bg-[#F1F1F1]/65'
+                        : 'border-white/10 bg-white/5'
                     }`}
                   >
-                    {q.completed ? 'Claimed' : `+${q.rewardXp}pt`}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Collectible Achievement Badges Grid */}
-            <div className="space-y-2">
-              <div className="text-xs font-extrabold uppercase tracking-wider opacity-75">
-                Collectible Vinyl Badges ({progression.unlockedBadges.length}/{ALL_BADGES.length})
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {ALL_BADGES.map((badge) => {
-                  const unlocked = progression.unlockedBadges.includes(badge.id);
-                  return (
-                    <div
-                      key={badge.id}
-                      className={`flex items-start gap-2 rounded-2xl border p-2.5 ${
-                        unlocked
-                          ? isLight
-                            ? 'border-[#468E68]/40 bg-[#468E68]/10'
-                            : 'border-[#38BDF8]/35 bg-[#38BDF8]/12'
-                          : isLight
-                          ? 'border-[#E6DFD3] bg-[#F4EFE6]/60 opacity-60'
-                          : 'border-white/10 bg-white/[0.03] opacity-55'
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle
+                          weight={q.completed ? 'fill' : 'regular'}
+                          className="h-4 w-4 text-[#309F92] shrink-0"
+                        />
+                        <span className="truncate text-xs font-bold">{q.title}</span>
+                      </div>
+                      <p className="truncate text-[11px] opacity-65 mt-0.5">
+                        {q.description} · {q.progress}/{q.target}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-xs font-bold tabular-nums ${
+                        q.completed
+                          ? 'bg-[#309F92] text-[#FFFFFF]'
+                          : 'bg-[#000000] text-[#EDFF8C]'
                       }`}
                     >
-                      {unlocked ? (
-                        <Medal weight="fill" className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                      ) : (
-                        <LockSimple weight="bold" className="h-4 w-4 opacity-60 shrink-0 mt-0.5" />
-                      )}
-                      <div className="min-w-0">
-                        <div className="truncate text-xs font-extrabold">{badge.title}</div>
-                        <div className="line-clamp-2 text-[10px] opacity-80">
-                          {badge.description}
+                      {q.completed ? 'Done' : `+${q.rewardXp}pt`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Collectible Vinyl Badges */}
+              <div className="space-y-2">
+                <div className="text-xs font-bold opacity-65">
+                  Milestones · {progression.unlockedBadges.length}/{ALL_BADGES.length}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {ALL_BADGES.map((badge) => {
+                    const unlocked = progression.unlockedBadges.includes(badge.id);
+                    return (
+                      <div
+                        key={badge.id}
+                        className={`flex items-start gap-2 rounded-[18px] border p-2.5 ${
+                          unlocked
+                            ? isLight
+                              ? 'border-[#309F92]/40 bg-[#309F92]/10'
+                              : 'border-[#309F92]/40 bg-[#309F92]/15'
+                            : isLight
+                            ? 'border-[#D1D1D1] bg-[#F1F1F1]/40 opacity-55'
+                            : 'border-white/10 bg-white/[0.02] opacity-50'
+                        }`}
+                      >
+                        {unlocked ? (
+                          <Medal weight="fill" className="h-4 w-4 text-[#309F92] shrink-0 mt-0.5" />
+                        ) : (
+                          <LockSimple weight="bold" className="h-4 w-4 opacity-50 shrink-0 mt-0.5" />
+                        )}
+                        <div className="min-w-0">
+                          <div className="truncate text-xs font-bold">{badge.title}</div>
+                          <div className="line-clamp-2 text-[10px] opacity-75">
+                            {badge.description}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Spotify & Apple Music Account Connect Modal */}
       <MusicAccountModal

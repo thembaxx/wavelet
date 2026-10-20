@@ -1,21 +1,21 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
+import { Urbanist, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
-const jakarta = Plus_Jakarta_Sans({
+const urbanist = Urbanist({
   subsets: ['latin'],
-  weight: ['500', '600', '700', '800'],
+  weight: ['400', '500', '600', '700', '800'],
   variable: '--font-sans',
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
-  weight: ['600', '700', '800'],
+  weight: ['500', '600', '700'],
   variable: '--font-mono',
 });
 
 export const viewport: Viewport = {
-  themeColor: '#0D0914',
+  themeColor: '#F1F1F1',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -25,7 +25,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'Vinyl Rush 30s — 3D Isometric Song Quiz',
   description:
-    'A 3D isometric music-guessing party game with physics-driven vinyl turntables, real song snippets, animated mood gradients, reactive mascot GrooveBot, and Spotify & Apple Music integration.',
+    'A mobile-first 3D isometric music-guessing game with physics-driven turntables, real song snippets, tactile sound and haptic feedback, and Spotify & Apple Music integration.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
@@ -39,14 +39,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Vinyl Rush 30s — 3D Isometric Song Quiz',
     description:
-      'A 3D isometric music-guessing party game with physics-driven vinyl turntables, real song snippets, animated mood gradients, reactive mascot GrooveBot, and Spotify & Apple Music integration.',
+      'A mobile-first 3D isometric music-guessing game with physics-driven turntables, real song snippets, tactile sound and haptic feedback, and Spotify & Apple Music integration.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Vinyl Rush 30s — 3D Isometric Song Quiz',
     description:
-      'A 3D isometric music-guessing party game with physics-driven vinyl turntables, real song snippets, animated mood gradients, reactive mascot GrooveBot, and Spotify & Apple Music integration.',
+      'A mobile-first 3D isometric music-guessing game with physics-driven turntables, real song snippets, tactile sound and haptic feedback, and Spotify & Apple Music integration.',
   },
 };
 
@@ -54,12 +54,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${jakarta.variable} ${jetbrainsMono.variable} bg-[#0D0914] text-white antialiased`}
+      className={`${urbanist.variable} ${jetbrainsMono.variable} bg-[#F1F1F1] text-[#000000] antialiased`}
     >
       <body
         suppressHydrationWarning
         data-state="title"
-        className="bg-[#0D0914] font-sans text-white overflow-hidden"
+        className="bg-[#F1F1F1] font-sans text-[#000000] overflow-hidden"
       >
         {children}
       </body>

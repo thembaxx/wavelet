@@ -59,7 +59,6 @@ function createVinylGrooveTexture(maxAnisotropy: number): THREE.CanvasTexture {
     ctx.stroke();
   }
 
-  // Anisotropic diagonal sheen
   const grad = ctx.createLinearGradient(0, 0, 512, 512);
   grad.addColorStop(0, 'rgba(255,255,255,0.0)');
   grad.addColorStop(0.45, 'rgba(255,255,255,0.08)');
@@ -76,8 +75,51 @@ function createVinylGrooveTexture(maxAnisotropy: number): THREE.CanvasTexture {
 }
 
 /**
- * Generates a vertical ribbed knit bump texture matching the sage bucket hat & blue cat beanie in IMG_5611 / IMG_5644.
+ * Generates the Acid Lime (#EDFF8C) 9-Dot Bauhaus Cube texture inspired directly by IMG_5844.
  */
+function createBauhausCubeTexture(maxAnisotropy: number): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = '#EDFF8C';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Subtle top-left illumination gradient
+  const grad = ctx.createLinearGradient(0, 0, 512, 512);
+  grad.addColorStop(0, 'rgba(255,255,255,0.35)');
+  grad.addColorStop(1, 'rgba(48,159,146,0.08)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 512, 512);
+
+  // 3x3 9-Dot Matrix with #309F92 center dot (matching IMG_5844!)
+  const spacing = 86;
+  const startX = 256 - spacing;
+  const startY = 236 - spacing;
+
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      const isCenter = row === 1 && col === 1;
+      ctx.fillStyle = isCenter ? '#309F92' : '#000000';
+      ctx.beginPath();
+      ctx.arc(startX + col * spacing, startY + row * spacing, 20, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Minimal corner caption ("365" / "2026" like IMG_5844)
+  ctx.fillStyle = '#000000';
+  ctx.font = '600 28px sans-serif';
+  ctx.fillText('VINYL', 54, 456);
+  ctx.fillText('365', 396, 456);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = maxAnisotropy;
+  return tex;
+}
+
 function createRibbedKnitBumpTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
@@ -94,7 +136,6 @@ function createRibbedKnitBumpTexture(): THREE.CanvasTexture {
     ctx.fillRect(x + 3, 0, 3, 256);
   }
 
-  // Subtle horizontal knit stitch rows
   ctx.fillStyle = 'rgba(255,255,255,0.12)';
   for (let y = 0; y < 256; y += 8) {
     ctx.fillRect(0, y, 256, 2);
@@ -107,9 +148,6 @@ function createRibbedKnitBumpTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-/**
- * Generates a soft organic peanut/cable-knit bump texture matching Pebble's peanut suit in IMG_5611 / IMG_5644.
- */
 function createPeanutWaffleBumpTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
@@ -119,7 +157,6 @@ function createPeanutWaffleBumpTexture(): THREE.CanvasTexture {
   ctx.fillStyle = '#909090';
   ctx.fillRect(0, 0, 256, 256);
 
-  // Vertical peanut ridges
   for (let x = 0; x < 256; x += 16) {
     const grad = ctx.createLinearGradient(x, 0, x + 16, 0);
     grad.addColorStop(0, '#555555');
@@ -129,7 +166,6 @@ function createPeanutWaffleBumpTexture(): THREE.CanvasTexture {
     ctx.fillRect(x, 0, 16, 256);
   }
 
-  // Organic horizontal dimples
   for (let y = 0; y < 256; y += 22) {
     ctx.strokeStyle = 'rgba(60,60,60,0.45)';
     ctx.lineWidth = 4;
@@ -146,11 +182,6 @@ function createPeanutWaffleBumpTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-/**
- * Draws the smooth Pop-Mart / Nintendo vinyl toy kawaii facial expression onto a decal canvas.
- * Matches IMG_5611 (winking smile + blue teardrop cheek stickers), IMG_5644 (pouty cat whisker mouth),
- * and IMG_5583 (happy curved ^ ^ eyes).
- */
 function updateVinylToyFaceCanvas(
   canvas: HTMLCanvasElement,
   state: MascotMoodState,
@@ -162,19 +193,23 @@ function updateVinylToyFaceCanvas(
   const w = canvas.width;
   const h = canvas.height;
 
-  // Warm porcelain vinyl skin base
   ctx.fillStyle = '#FCEAD8';
   ctx.fillRect(0, 0, w, h);
 
-  // Soft subsurface ambient shading around edges
-  const skinGrad = ctx.createRadialGradient(w * 0.5, h * 0.52, w * 0.1, w * 0.5, h * 0.5, w * 0.52);
+  const skinGrad = ctx.createRadialGradient(
+    w * 0.5,
+    h * 0.52,
+    w * 0.1,
+    w * 0.5,
+    h * 0.5,
+    w * 0.52
+  );
   skinGrad.addColorStop(0, '#FFF5EB');
   skinGrad.addColorStop(0.75, '#FCEAD8');
   skinGrad.addColorStop(1, '#F3D5BA');
   ctx.fillStyle = skinGrad;
   ctx.fillRect(0, 0, w, h);
 
-  // Soft airbrushed coral-pink blush cheeks
   const drawBlush = (cx: number, cy: number, radius: number, alpha: number) => {
     const blush = ctx.createRadialGradient(cx, cy, 2, cx, cy, radius);
     blush.addColorStop(0, `rgba(255, 132, 150, ${alpha})`);
@@ -190,7 +225,6 @@ function updateVinylToyFaceCanvas(
   drawBlush(136, 305, 52, blushIntensity);
   drawBlush(376, 305, 52, blushIntensity);
 
-  // Cute sky-blue teardrop cheek stickers (signature look from IMG_5611, IMG_5644 & video!)
   const drawTeardrop = (tx: number, ty: number, tiltRad: number, scale = 1) => {
     ctx.save();
     ctx.translate(tx, ty);
@@ -204,7 +238,6 @@ function updateVinylToyFaceCanvas(
     ctx.closePath();
     ctx.fill();
 
-    // Subtle glossy highlight on teardrop
     ctx.fillStyle = 'rgba(255,255,255,0.45)';
     ctx.beginPath();
     ctx.ellipse(-5, 2, 3.5, 7, -0.2, 0, Math.PI * 2);
@@ -216,7 +249,6 @@ function updateVinylToyFaceCanvas(
     drawTeardrop(112, 294, 0.22, state === 'sympathy' ? 1.12 : 0.95);
     drawTeardrop(400, 294, -0.22, state === 'sympathy' ? 1.12 : 0.95);
   } else if (characterId === 'bobacat') {
-    // BobaCat has a single sky-blue cheek drop on the left cheek (matching IMG_5583 left character!)
     drawTeardrop(108, 296, 0.15, 0.95);
   }
 
@@ -225,13 +257,11 @@ function updateVinylToyFaceCanvas(
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  // LEFT & RIGHT EYES
   const leftEyeX = 166;
   const rightEyeX = 346;
   const eyeY = 232;
 
   const drawGlossyKawaiiEye = (ex: number, ey: number, sparkleExtra = false) => {
-    // Upper eyelashes (2 cute flicks on outer corner like IMG_5611)
     ctx.lineWidth = 8.5;
     const dir = ex < 256 ? -1 : 1;
     ctx.beginPath();
@@ -241,25 +271,21 @@ function updateVinylToyFaceCanvas(
     ctx.lineTo(ex + dir * 46, ey - 16);
     ctx.stroke();
 
-    // Big glossy dark espresso iris/pupil
     ctx.fillStyle = '#261815';
     ctx.beginPath();
     ctx.arc(ex, ey, 35, 0, Math.PI * 2);
     ctx.fill();
 
-    // Warm chocolate lower iris crescent
     ctx.fillStyle = '#4A2E24';
     ctx.beginPath();
     ctx.arc(ex, ey + 8, 24, 0.15 * Math.PI, 0.85 * Math.PI);
     ctx.fill();
 
-    // Large upper-right specular catchlight (IMG_5611 signature!)
     ctx.fillStyle = '#FFFFFF';
     ctx.beginPath();
     ctx.arc(ex + 11, ey - 12, 11.5, 0, Math.PI * 2);
     ctx.fill();
 
-    // Secondary lower-left catchlight dot
     ctx.beginPath();
     ctx.arc(ex - 12, ey + 12, 5, 0, Math.PI * 2);
     ctx.fill();
@@ -278,7 +304,6 @@ function updateVinylToyFaceCanvas(
     ctx.arc(ex, ey + 12, 30, 1.15 * Math.PI, 1.85 * Math.PI);
     ctx.stroke();
 
-    // Cute outer eyelash flicks on wink
     const dir = ex < 256 ? -1 : 1;
     ctx.lineWidth = 8.5;
     ctx.beginPath();
@@ -291,11 +316,9 @@ function updateVinylToyFaceCanvas(
 
   if (state === 'celebrating' || state === 'hyped' || characterId === 'sprout') {
     if (characterId === 'sprout' && state === 'idle' && !isBlinking) {
-      // Sprout's signature double happy arc eyes ^ ^ from IMG_5583 right character
       drawWinkingArcEye(leftEyeX, eyeY);
       drawWinkingArcEye(rightEyeX, eyeY);
     } else if (state === 'celebrating' || state === 'hyped') {
-      // Joyful sparkling eyes or happy arcs
       drawGlossyKawaiiEye(leftEyeX, eyeY, true);
       drawWinkingArcEye(rightEyeX, eyeY);
     } else {
@@ -306,28 +329,26 @@ function updateVinylToyFaceCanvas(
     drawWinkingArcEye(leftEyeX, eyeY);
     drawWinkingArcEye(rightEyeX, eyeY);
   } else if (characterId === 'bobacat' && state === 'idle') {
-    // BobaCat cool half-lidded plush eyes from IMG_5583 left character
     drawGlossyKawaiiEye(leftEyeX, eyeY);
     drawGlossyKawaiiEye(rightEyeX, eyeY);
-    // Cool upper eyelid crop
     ctx.fillStyle = '#FCEAD8';
     ctx.fillRect(leftEyeX - 42, eyeY - 42, 84, 22);
     ctx.fillRect(rightEyeX - 42, eyeY - 42, 84, 22);
   } else {
-    // Pebble signature look from IMG_5611 & IMG_5644: Big glossy left eye + cute winking right eye!
     drawGlossyKawaiiEye(leftEyeX, eyeY, state === 'listening');
     drawWinkingArcEye(rightEyeX, eyeY);
   }
 
-  // MOUTH EXPRESSION (Reacts to music singing, smiling, or pouty cat whisker mouth)
   const mouthX = 256;
   const mouthY = 274;
   ctx.strokeStyle = '#2B1B17';
   ctx.fillStyle = '#2B1B17';
   ctx.lineWidth = 9.5;
 
-  if (state === 'sympathy' || (characterId === 'bobacat' && state !== 'celebrating' && singOpenAmount < 0.15)) {
-    // Iconic cute cat nose + inverted Y mouth from IMG_5644 & BobaCat in IMG_5583!
+  if (
+    state === 'sympathy' ||
+    (characterId === 'bobacat' && state !== 'celebrating' && singOpenAmount < 0.15)
+  ) {
     ctx.beginPath();
     ctx.ellipse(mouthX, mouthY - 12, 13, 8.5, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -340,8 +361,12 @@ function updateVinylToyFaceCanvas(
     ctx.moveTo(mouthX, mouthY + 12);
     ctx.lineTo(mouthX + 18, mouthY + 24);
     ctx.stroke();
-  } else if (state === 'listening' || singOpenAmount > 0.18 || state === 'celebrating' || state === 'hyped') {
-    // Expressive singing / laughing kawaii open mouth (like frames 00:01-00:03 of the attached video!)
+  } else if (
+    state === 'listening' ||
+    singOpenAmount > 0.18 ||
+    state === 'celebrating' ||
+    state === 'hyped'
+  ) {
     const openH = state === 'celebrating' ? 26 : 14 + singOpenAmount * 22;
     const openW = state === 'celebrating' ? 28 : 22 + singOpenAmount * 8;
 
@@ -350,20 +375,17 @@ function updateVinylToyFaceCanvas(
     ctx.roundRect(mouthX - openW, mouthY - 6, openW * 2, openH + 10, [8, 8, 24, 24]);
     ctx.fill();
 
-    // Cute coral-pink inner tongue tint
     ctx.fillStyle = '#FF8FA3';
     ctx.beginPath();
     ctx.arc(mouthX, mouthY + openH - 2, openW * 0.65, 0, Math.PI);
     ctx.fill();
 
-    // Crisp outline
     ctx.strokeStyle = '#2B1B17';
     ctx.lineWidth = 7.5;
     ctx.beginPath();
     ctx.roundRect(mouthX - openW, mouthY - 6, openW * 2, openH + 10, [8, 8, 24, 24]);
     ctx.stroke();
   } else {
-    // Sweet warm Nintendo vinyl smile (IMG_5611 & IMG_5583 center/right)
     ctx.beginPath();
     ctx.arc(mouthX, mouthY - 4, 21, 0.15 * Math.PI, 0.85 * Math.PI);
     ctx.stroke();
@@ -382,7 +404,6 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
 }) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
-  // Store latest props in refs so the 60fps loop reads them without re-creating the WebGL context
   const propsRef = useRef({
     mood,
     mascotState,
@@ -434,9 +455,8 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(initialBgHex);
-    scene.fog = new THREE.FogExp2(initialBgHex, 0.024);
+    scene.fog = new THREE.FogExp2(initialBgHex, 0.022);
 
-    // Nintendo 3D Isometric Diorama camera angle with flattering front-3/4 view of the mascot face & vinyl deck
     const camera = new THREE.PerspectiveCamera(31, width / height, 0.1, 140);
     const updateCameraFraming = (w: number, h: number) => {
       const aspect = w / Math.max(h, 1);
@@ -478,11 +498,11 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
 
     const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
 
-    // Soft Nintendo Toybox & Studio Lighting Rig
-    const hemiLight = new THREE.HemisphereLight(0xfffbeb, 0xc7d2fe, 1.25);
+    // Studio Lighting Rig
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xd1d1d1, 1.3);
     scene.add(hemiLight);
 
-    const keyLight = new THREE.DirectionalLight(0xfffaf0, 2.35);
+    const keyLight = new THREE.DirectionalLight(0xfffcf5, 2.3);
     keyLight.position.set(6.5, 13, 8);
     if (!isHeadless) {
       keyLight.castShadow = true;
@@ -498,37 +518,37 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     }
     scene.add(keyLight);
 
-    const rimLight = new THREE.PointLight(0x4e946b, 3.6, 18);
+    const rimLight = new THREE.PointLight(0x309f92, 3.6, 18);
     rimLight.position.set(-5.5, 4.5, -4);
     scene.add(rimLight);
 
-    const accentLight = new THREE.PointLight(0x38bdf8, 3.2, 16);
+    const accentLight = new THREE.PointLight(0xedff8c, 2.8, 16);
     accentLight.position.set(5, 3.8, 3.5);
     scene.add(accentLight);
 
-    // Root Stage Group (interactive physics tilt on swipe/drag)
+    // Root Stage Group
     const stageGroup = new THREE.Group();
     scene.add(stageGroup);
 
-    // Ground Toy Diorama Platform
+    // Ground Diorama Platform (#FFFFFF in Light Mode, #12161D in Dark Mode)
     const platformGeo = new THREE.CylinderGeometry(6.8, 7.15, 0.5, 64);
     const platformMat = new THREE.MeshStandardMaterial({
-      color: propsRef.current.themeMode === 'light' ? 0xfcf9f2 : 0x0b1c2c,
-      roughness: 0.55,
-      metalness: 0.08,
+      color: propsRef.current.themeMode === 'light' ? 0xffffff : 0x12161d,
+      roughness: 0.48,
+      metalness: 0.06,
     });
     const platformMesh = new THREE.Mesh(platformGeo, platformMat);
     platformMesh.position.y = -0.25;
     platformMesh.receiveShadow = true;
     stageGroup.add(platformMesh);
 
-    // Glowing Trim Ring around Stage
+    // Teal #309F92 Trim Ring around Stage
     const stageRingGeo = new THREE.TorusGeometry(6.92, 0.055, 20, 72);
     stageRingGeo.rotateX(Math.PI / 2);
     const stageRingMat = new THREE.MeshStandardMaterial({
-      color: 0x4e946b,
-      emissive: 0x4e946b,
-      emissiveIntensity: 0.7,
+      color: 0x309f92,
+      emissive: 0x309f92,
+      emissiveIntensity: 0.55,
       roughness: 0.25,
     });
     const stageRingMesh = new THREE.Mesh(stageRingGeo, stageRingMat);
@@ -536,18 +556,18 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     stageGroup.add(stageRingMesh);
 
     // =========================================================================
-    // 1. COMPOSITE HERO PROP: 3D ISOMETRIC TURNTABLE DECK (9 DISTINCT PARTS)
+    // 1. COMPOSITE HERO PROP: 3D ISOMETRIC TURNTABLE DECK + BAUHAUS STAND CUBE
     // =========================================================================
     const turntableGroup = new THREE.Group();
     turntableGroup.position.set(-0.95, 0, 0.35);
     stageGroup.add(turntableGroup);
 
-    // Part 1: Plinth Deck Base (adapts between warm oat-birch in Light Mode and deep aero-sapphire in Dark Mode)
+    // Part 1: Plinth Deck Base
     const plinthGeo = new THREE.BoxGeometry(4.2, 0.48, 3.45);
     const plinthMat = new THREE.MeshStandardMaterial({
-      color: propsRef.current.themeMode === 'light' ? 0xefe9dd : 0x0e2235,
-      roughness: 0.32,
-      metalness: 0.25,
+      color: propsRef.current.themeMode === 'light' ? 0xf5f5f3 : 0x181e27,
+      roughness: 0.3,
+      metalness: 0.2,
     });
     const plinthMesh = new THREE.Mesh(plinthGeo, plinthMat);
     plinthMesh.position.y = 0.24;
@@ -558,9 +578,9 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     // Part 2: Anodized Top Plate Trim
     const topPlateGeo = new THREE.BoxGeometry(3.96, 0.06, 3.22);
     const topPlateMat = new THREE.MeshStandardMaterial({
-      color: propsRef.current.themeMode === 'light' ? 0xe0d8c8 : 0x16324c,
+      color: propsRef.current.themeMode === 'light' ? 0xe5e5e2 : 0x222a36,
       roughness: 0.25,
-      metalness: 0.55,
+      metalness: 0.45,
     });
     const topPlateMesh = new THREE.Mesh(topPlateGeo, topPlateMat);
     topPlateMesh.position.y = 0.51;
@@ -593,12 +613,12 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     vinylMesh.position.y = 0.08;
     platterGroup.add(vinylMesh);
 
-    // Part 5: Mood-Reactive Record Center Label
+    // Part 5: Acid-Lime & Teal Record Center Label (#EDFF8C / #309F92)
     const labelGeo = new THREE.CylinderGeometry(0.46, 0.46, 0.045, 32);
     const labelMat = new THREE.MeshStandardMaterial({
-      color: 0xff4791,
-      emissive: 0xff4791,
-      emissiveIntensity: 0.3,
+      color: 0x309f92,
+      emissive: 0x309f92,
+      emissiveIntensity: 0.28,
       roughness: 0.35,
     });
     const labelMesh = new THREE.Mesh(labelGeo, labelMat);
@@ -635,9 +655,9 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     // Part 8: Cartridge Headshell & Glowing Stylus
     const cartridgeGeo = new THREE.BoxGeometry(0.18, 0.1, 0.3);
     const cartridgeMat = new THREE.MeshStandardMaterial({
-      color: 0x00d2b8,
-      emissive: 0x00d2b8,
-      emissiveIntensity: 0.5,
+      color: 0x309f92,
+      emissive: 0x309f92,
+      emissiveIntensity: 0.45,
       roughness: 0.25,
     });
     const cartridgeMesh = new THREE.Mesh(cartridgeGeo, cartridgeMat);
@@ -652,15 +672,59 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     turntableGroup.add(startBtnMesh);
 
     // =========================================================================
-    // 2. SMOOTH KAWAII NINTENDO / POP-MART VINYL TOY MASCOT (15 SMOOTH PARTS)
-    //    Inspired directly by IMG_5611, IMG_5644, IMG_5583 & Attached Video!
+    // 1B. SCULPTED BAUHAUS #EDFF8C SPEAKER CUBE ON 4-LEG STAND (IMG_5844!)
+    // =========================================================================
+    const bauhausCubeTex = createBauhausCubeTexture(maxAnisotropy);
+    const speakerCubeGroup = new THREE.Group();
+    speakerCubeGroup.position.set(-2.9, 0.02, -1.65);
+    speakerCubeGroup.rotation.y = 0.42;
+    stageGroup.add(speakerCubeGroup);
+
+    const standMat = new THREE.MeshStandardMaterial({
+      color: 0x222428,
+      roughness: 0.35,
+      metalness: 0.6,
+    });
+
+    // 4 architectural stand legs + frame (exact replica of IMG_5844 right photo!)
+    const legGeo = new THREE.BoxGeometry(0.08, 0.44, 0.08);
+    const legOffsets = [
+      [-0.44, 0.22, -0.44],
+      [0.44, 0.22, -0.44],
+      [-0.44, 0.22, 0.44],
+      [0.44, 0.22, 0.44],
+    ];
+    for (const [lx, ly, lz] of legOffsets) {
+      const leg = new THREE.Mesh(legGeo, standMat);
+      leg.position.set(lx, ly, lz);
+      leg.castShadow = true;
+      speakerCubeGroup.add(leg);
+    }
+
+    const standTopFrameGeo = new THREE.BoxGeometry(1.02, 0.07, 1.02);
+    const standTopFrame = new THREE.Mesh(standTopFrameGeo, standMat);
+    standTopFrame.position.y = 0.44;
+    speakerCubeGroup.add(standTopFrame);
+
+    const cubeBodyGeo = new THREE.BoxGeometry(1.02, 1.02, 1.02);
+    const cubeBodyMat = new THREE.MeshStandardMaterial({
+      map: bauhausCubeTex,
+      roughness: 0.28,
+      metalness: 0.05,
+    });
+    const cubeBodyMesh = new THREE.Mesh(cubeBodyGeo, cubeBodyMat);
+    cubeBodyMesh.position.y = 0.98;
+    cubeBodyMesh.castShadow = true;
+    speakerCubeGroup.add(cubeBodyMesh);
+
+    // =========================================================================
+    // 2. SMOOTH KAWAII NINTENDO / POP-MART VINYL TOY MASCOT
     // =========================================================================
     const ribbedBumpTex = createRibbedKnitBumpTexture();
     const peanutBumpTex = createPeanutWaffleBumpTexture();
 
     const mascotGroup = new THREE.Group();
     mascotGroup.position.set(2.25, 0.02, 0.72);
-    // Face directly toward the front-right camera so kawaii eyes, blush, and smile are front-and-center
     mascotGroup.rotation.y = 0.28;
     stageGroup.add(mascotGroup);
 
@@ -670,14 +734,13 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     const shadowMat = new THREE.MeshBasicMaterial({
       color: 0x000000,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.18,
       depthWrite: false,
     });
     const mascotShadow = new THREE.Mesh(shadowGeo, shadowMat);
     mascotShadow.position.set(2.25, 0.015, 0.72);
     stageGroup.add(mascotShadow);
 
-    // Shared Smooth Vinyl Toy Materials (Subsurface-like matte clearcoat finish)
     const vinylSkinMat = new THREE.MeshPhysicalMaterial({
       color: 0xfcead8,
       roughness: 0.34,
@@ -728,24 +791,22 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     });
 
     const scooterMintMat = new THREE.MeshPhysicalMaterial({
-      color: 0x67b894,
-      roughness: 0.28,
+      color: 0x309f92,
+      roughness: 0.26,
       metalness: 0.15,
       clearcoat: 0.25,
     });
 
     const darkWheelMat = new THREE.MeshStandardMaterial({
-      color: 0x26262a,
+      color: 0x18181b,
       roughness: 0.4,
       metalness: 0.3,
     });
 
-    // Mascot Root Rig (handles bounce, jump, hip sway, squash & stretch)
     const mascotRig = new THREE.Group();
     mascotRig.position.y = 0.0;
     mascotGroup.add(mascotRig);
 
-    // Part 1 & 2: Plump Rounded Stubby Vinyl Legs/Feet (step to the beat!)
     const footGeo = new THREE.CapsuleGeometry(0.24, 0.2, 16, 24);
     const leftFoot = new THREE.Mesh(footGeo, vinylSkinMat);
     leftFoot.position.set(-0.28, 0.28, 0.04);
@@ -757,7 +818,6 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     rightFoot.castShadow = true;
     mascotRig.add(rightFoot);
 
-    // Part 3: Smooth Plump Peanut/Sweater Torso (High-poly sphere + collar roll)
     const torsoGroup = new THREE.Group();
     torsoGroup.position.y = 0.92;
     mascotRig.add(torsoGroup);
@@ -775,19 +835,16 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     collarMesh.position.y = 0.62;
     torsoGroup.add(collarMesh);
 
-    // Part 4: Oversized Kawaii Head Group
     const headGroup = new THREE.Group();
     headGroup.position.y = 1.98;
     mascotRig.add(headGroup);
 
-    // Smooth Rounded Vinyl Head Sphere
     const headSphereGeo = new THREE.SphereGeometry(0.76, 48, 48);
     headSphereGeo.scale(1.08, 0.96, 0.95);
     const headSphereMesh = new THREE.Mesh(headSphereGeo, vinylSkinMat);
     headSphereMesh.castShadow = true;
     headGroup.add(headSphereMesh);
 
-    // Dynamic Kawaii Face Canvas Mapped onto Front Curved Surface of Head
     const faceCanvas = document.createElement('canvas');
     faceCanvas.width = 512;
     faceCanvas.height = 512;
@@ -802,7 +859,6 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     faceTex.colorSpace = THREE.SRGBColorSpace;
     faceTex.anisotropy = maxAnisotropy;
 
-    // Curved front face patch matching the head sphere curvature
     const facePatchGeo = new THREE.SphereGeometry(
       0.768,
       36,
@@ -813,8 +869,6 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       Math.PI * 0.48
     );
     facePatchGeo.scale(1.08, 0.96, 0.95);
-    // Rotate so the patch faces +Z cleanly
-    facePatchGeo.rotateY(0);
     const facePatchMat = new THREE.MeshBasicMaterial({
       map: faceTex,
       transparent: false,
@@ -822,14 +876,12 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     const facePatchMesh = new THREE.Mesh(facePatchGeo, facePatchMat);
     headGroup.add(facePatchMesh);
 
-    // Part 5: Cozy Peanut Hood Rim Framing the Face (IMG_5611 / IMG_5644)
     const hoodRimGeo = new THREE.TorusGeometry(0.74, 0.14, 24, 48);
     const hoodRimMesh = new THREE.Mesh(hoodRimGeo, peanutSuitMat);
     hoodRimMesh.scale.set(1.06, 0.95, 0.9);
     hoodRimMesh.position.set(0, 0.0, 0.15);
     headGroup.add(hoodRimMesh);
 
-    // Part 6: Sculpted 3D Dark-Chocolate Bangs & Side Hair Curls (IMG_5611)
     const bangsGroup = new THREE.Group();
     headGroup.add(bangsGroup);
 
@@ -842,7 +894,6 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       bangsGroup.add(bangMesh);
     }
 
-    // Twin side hair locks curling down beside the cheeks
     const sideLockGeo = new THREE.CapsuleGeometry(0.11, 0.65, 12, 16);
     const leftLock = new THREE.Mesh(sideLockGeo, hairMat);
     leftLock.position.set(-0.62, -0.22, 0.42);
@@ -854,7 +905,6 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     rightLock.rotation.z = -0.15;
     bangsGroup.add(rightLock);
 
-    // Part 7: Oversized Pastel-Pink Bow behind the Head (IMG_5611 & IMG_5583!)
     const bowGroup = new THREE.Group();
     bowGroup.position.set(0, 0.08, -0.18);
     headGroup.add(bowGroup);
@@ -871,44 +921,37 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     rightBowWing.position.set(0.78, 0, 0);
     bowGroup.add(rightBowWing);
 
-    // Part 8: Ribbed Sage-Green Bucket Hat (tilted back on the crown so the kawaii eyes & bangs face the camera!)
     const bucketHatGroup = new THREE.Group();
     bucketHatGroup.position.set(0, 0.78, -0.16);
     bucketHatGroup.rotation.x = -0.36;
     headGroup.add(bucketHatGroup);
 
-    // Flared lower brim
     const brimGeo = new THREE.CylinderGeometry(0.76, 0.94, 0.28, 48, 1, false);
     const brimMesh = new THREE.Mesh(brimGeo, sageHatMat);
     brimMesh.castShadow = true;
     bucketHatGroup.add(brimMesh);
 
-    // Upper crown of bucket hat
     const crownGeo = new THREE.CylinderGeometry(0.72, 0.84, 0.56, 48);
     const crownMesh = new THREE.Mesh(crownGeo, sageHatMat);
     crownMesh.position.y = 0.42;
     crownMesh.castShadow = true;
     bucketHatGroup.add(crownMesh);
 
-    // Part 9: Stacked Ribbed Sky-Blue Cat-Ear Beanie (IMG_5611, IMG_5644, IMG_5583!)
     const catBeanieGroup = new THREE.Group();
     catBeanieGroup.position.y = 0.78;
     bucketHatGroup.add(catBeanieGroup);
 
-    // Rolled ribbed beanie cuff
     const cuffGeo = new THREE.TorusGeometry(0.64, 0.16, 24, 48);
     cuffGeo.rotateX(Math.PI / 2);
     const cuffMesh = new THREE.Mesh(cuffGeo, blueBeanieMat);
     cuffMesh.scale.set(1.05, 1.0, 1.15);
     catBeanieGroup.add(cuffMesh);
 
-    // Beanie dome
     const domeGeo = new THREE.SphereGeometry(0.64, 36, 24, 0, Math.PI * 2, 0, Math.PI * 0.55);
     const domeMesh = new THREE.Mesh(domeGeo, blueBeanieMat);
     domeMesh.position.y = 0.04;
     catBeanieGroup.add(domeMesh);
 
-    // Sculpted 3D Cat Ears with Creamy White Inner Triangles
     const createCatEar = (side: -1 | 1) => {
       const earGroup = new THREE.Group();
       earGroup.position.set(side * 0.42, 0.46, 0.05);
@@ -931,7 +974,6 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     catBeanieGroup.add(createCatEar(-1));
     catBeanieGroup.add(createCatEar(1));
 
-    // Part 10: Plump Cream Vinyl Arms & Miniature Mint-Green Kick-Scooter Prop (IMG_5611 & Video!)
     const armsAndScooterGroup = new THREE.Group();
     armsAndScooterGroup.position.set(0, 1.05, 0.68);
     mascotRig.add(armsAndScooterGroup);
@@ -949,31 +991,26 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     rightArm.rotation.x = 0.45;
     armsAndScooterGroup.add(rightArm);
 
-    // Miniature Mint-Green Kick-Scooter held across front
     const scooterProp = new THREE.Group();
     scooterProp.position.set(0.02, -0.08, 0.12);
     armsAndScooterGroup.add(scooterProp);
 
-    // Scooter deck
     const deckGeo = new THREE.BoxGeometry(0.56, 0.055, 0.14);
     const deckMesh = new THREE.Mesh(deckGeo, scooterMintMat);
     scooterProp.add(deckMesh);
 
-    // Scooter steering stem
     const stemGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.46, 12);
     const stemMesh = new THREE.Mesh(stemGeo, scooterMintMat);
     stemMesh.position.set(-0.22, 0.22, 0);
     stemMesh.rotation.z = -0.18;
     scooterProp.add(stemMesh);
 
-    // Scooter handlebar
     const barGeo = new THREE.CylinderGeometry(0.022, 0.022, 0.24, 12);
     barGeo.rotateX(Math.PI / 2);
     const barMesh = new THREE.Mesh(barGeo, darkWheelMat);
     barMesh.position.set(-0.18, 0.44, 0);
     scooterProp.add(barMesh);
 
-    // Scooter front & rear wheels
     const wheelGeo = new THREE.CylinderGeometry(0.095, 0.095, 0.05, 20);
     wheelGeo.rotateX(Math.PI / 2);
     const frontWheel = new THREE.Mesh(wheelGeo, darkWheelMat);
@@ -984,34 +1021,40 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     rearWheel.position.set(0.26, -0.02, 0);
     scooterProp.add(rearWheel);
 
-    // Floating 3D Rhythm / Emotion Orbs around the Mascot
-    const noteCount = 6;
-    const noteOrbs: THREE.Mesh[] = [];
-    const noteGeo = new THREE.OctahedronGeometry(0.11, 1);
-    for (let i = 0; i < noteCount; i++) {
-      const noteMat = new THREE.MeshStandardMaterial({
-        color: i % 2 === 0 ? 0xff4791 : 0x00d2b8,
-        emissive: i % 2 === 0 ? 0xff4791 : 0x00d2b8,
-        emissiveIntensity: 0.6,
-        roughness: 0.2,
+    // Floating Bauhaus Geometric Shapes (Torus rings, Rounded Cubes, Capsules inspired by IMG_5845 & IMG_5813)
+    const shapeCount = 6;
+    const floatingShapes: THREE.Mesh[] = [];
+    const torusGeo = new THREE.TorusGeometry(0.11, 0.038, 14, 28);
+    const cubeShapeGeo = new THREE.BoxGeometry(0.16, 0.16, 0.16);
+    const pillShapeGeo = new THREE.CapsuleGeometry(0.06, 0.14, 10, 16);
+
+    const shapeColors = [0x309f92, 0xedff8c, 0xff7a59, 0x4f5bd5, 0x309f92, 0xedff8c];
+    for (let i = 0; i < shapeCount; i++) {
+      const geo = i % 3 === 0 ? torusGeo : i % 3 === 1 ? cubeShapeGeo : pillShapeGeo;
+      const mat = new THREE.MeshStandardMaterial({
+        color: shapeColors[i],
+        emissive: shapeColors[i],
+        emissiveIntensity: 0.35,
+        roughness: 0.22,
+        metalness: 0.15,
       });
-      const orb = new THREE.Mesh(noteGeo, noteMat);
-      mascotGroup.add(orb);
-      noteOrbs.push(orb);
+      const mesh = new THREE.Mesh(geo, mat);
+      mascotGroup.add(mesh);
+      floatingShapes.push(mesh);
     }
 
     // =========================================================================
     // 3. 16-BAR 3D ISOMETRIC SPECTRUM EQUALIZER ARC (InstancedMesh)
     // =========================================================================
     const eqCount = 16;
-    const eqGeo = new THREE.BoxGeometry(0.36, 1.0, 0.36);
+    const eqGeo = new THREE.BoxGeometry(0.34, 1.0, 0.34);
     eqGeo.translate(0, 0.5, 0);
     const eqMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
-      emissive: 0x8b5cf6,
-      emissiveIntensity: 0.38,
+      emissive: 0x309f92,
+      emissiveIntensity: 0.35,
       roughness: 0.25,
-      metalness: 0.35,
+      metalness: 0.25,
     });
     const eqInstanced = new THREE.InstancedMesh(eqGeo, eqMat, eqCount);
     eqInstanced.frustumCulled = false;
@@ -1031,7 +1074,8 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       _tempQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -angle);
       _tempMatrix.compose(_tempPos, _tempQuat, _tempScale);
       eqInstanced.setMatrixAt(i, _tempMatrix);
-      _tempColor.setHSL(0.85 - t * 0.35, 0.85, 0.62);
+      // Alternate between Teal #309F92 and Acid Lime #EDFF8C across the arc
+      _tempColor.set(i % 2 === 0 ? 0x309f92 : 0xd4eb68);
       eqInstanced.setColorAt(i, _tempColor);
     }
     eqInstanced.instanceMatrix.needsUpdate = true;
@@ -1047,6 +1091,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     const interactables: THREE.Object3D[] = [
       vinylMesh,
       plinthMesh,
+      cubeBodyMesh,
       headSphereMesh,
       bellyMesh,
       brimMesh,
@@ -1084,11 +1129,11 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         ) {
           mascotJumpVelocity = 5.2;
           mascotSpinBoost = Math.PI * 2;
-          audioEngine.playUiTick(1.38);
+          audioEngine.playUiTick(1.38, 'medium');
           propsRef.current.onMascotInteract?.();
-        } else if (hitObj === vinylMesh || hitObj === plinthMesh) {
+        } else if (hitObj === vinylMesh || hitObj === plinthMesh || hitObj === cubeBodyMesh) {
           vinylScratchBoost = 6.5;
-          audioEngine.playUiTick(0.92);
+          audioEngine.playUiTick(0.92, 'medium');
           propsRef.current.onTurntableInteract?.();
         }
       }
@@ -1126,7 +1171,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     resizeObserver.observe(container);
 
     // =========================================================================
-    // 5. 60FPS SIMULATION, KAWAII EXPRESSION & NINTENDO DANCE CHOREOGRAPHY LOOP
+    // 5. 60FPS SIMULATION, KAWAII EXPRESSION & DANCE CHOREOGRAPHY LOOP
     // =========================================================================
     const startTimeMs = performance.now();
     let prevTimeMs = startTimeMs;
@@ -1151,7 +1196,6 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       const spectrum = audioEngine.sampleSpectrum(elapsed);
       const isLight = currentProps.themeMode === 'light';
 
-      // Configure character outfit visibility & colors based on selected characterId ('pebble' | 'bobacat' | 'sprout')
       if (currentProps.characterId === 'pebble') {
         bowGroup.visible = true;
         bucketHatGroup.visible = true;
@@ -1159,19 +1203,18 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         catBeanieGroup.position.y = 0.78;
         bangsGroup.visible = true;
         scooterProp.visible = true;
-        _targetSuitColor.set(0xe6b87d); // Warm peanut suit
+        _targetSuitColor.set(0xe6b87d);
       } else if (currentProps.characterId === 'bobacat') {
         bowGroup.visible = false;
         bucketHatGroup.visible = true;
         brimMesh.visible = false;
         crownMesh.visible = false;
         catBeanieGroup.visible = true;
-        catBeanieGroup.position.y = 0.05; // Direct blue cat beanie on head
+        catBeanieGroup.position.y = 0.05;
         bangsGroup.visible = false;
         scooterProp.visible = false;
-        _targetSuitColor.set(0xfaf0e4); // Cream vinyl kitty body
+        _targetSuitColor.set(0xfaf0e4);
       } else {
-        // 'sprout' (Sage bucket hat buddy)
         bowGroup.visible = false;
         bucketHatGroup.visible = true;
         brimMesh.visible = true;
@@ -1179,7 +1222,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         catBeanieGroup.visible = false;
         bangsGroup.visible = false;
         scooterProp.visible = true;
-        _targetSuitColor.set(0x4b7457); // Cozy forest knit sweater
+        _targetSuitColor.set(0x309f92);
       }
       if (currentProps.characterId !== 'bobacat') {
         brimMesh.visible = true;
@@ -1187,7 +1230,6 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       }
       peanutSuitMat.color.lerp(_targetSuitColor, dt * 6);
 
-      // Update Kawaii Facial Expression Canvas (~15fps for blinking & singing lip-sync)
       if (nowMs - lastFaceRedrawMs > 65) {
         lastFaceRedrawMs = nowMs;
         const isBlinking = Math.sin(elapsed * 1.9) > 0.96;
@@ -1204,16 +1246,15 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         faceTex.needsUpdate = true;
       }
 
-      // Smoothly damp Light Mode vs Dark Mode studio colors & mood lighting
       _targetPrimaryColor.set(currentProps.mood.primaryHex);
       _targetSecondaryColor.set(currentProps.mood.secondaryHex);
       _targetAccentColor.set(currentProps.mood.accentHex);
       _targetBgColor.set(
         isLight ? currentProps.mood.bgLightHex : currentProps.mood.bgDarkHex
       );
-      _targetStageColor.set(isLight ? 0xfcf9f2 : 0x0b1c2c);
-      _targetPlinthColor.set(isLight ? 0xefe9dd : 0x0e2235);
-      _targetTopPlateColor.set(isLight ? 0xe0d8c8 : 0x16324c);
+      _targetStageColor.set(isLight ? 0xffffff : 0x12161d);
+      _targetPlinthColor.set(isLight ? 0xf5f5f3 : 0x181e27);
+      _targetTopPlateColor.set(isLight ? 0xe5e5e2 : 0x222a36);
 
       scene.background = (scene.background as THREE.Color).lerp(_targetBgColor, dt * 4.5);
       if (scene.fog instanceof THREE.FogExp2) {
@@ -1223,7 +1264,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       platformMat.color.lerp(_targetStageColor, dt * 4.5);
       plinthMat.color.lerp(_targetPlinthColor, dt * 4.5);
       topPlateMat.color.lerp(_targetTopPlateColor, dt * 4.5);
-      shadowMat.opacity = THREE.MathUtils.damp(shadowMat.opacity, isLight ? 0.16 : 0.36, 4, dt);
+      shadowMat.opacity = THREE.MathUtils.damp(shadowMat.opacity, isLight ? 0.14 : 0.34, 4, dt);
 
       rimLight.color.lerp(_targetPrimaryColor, dt * 4);
       accentLight.color.lerp(_targetAccentColor, dt * 4);
@@ -1231,16 +1272,19 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       stageRingMat.emissive.lerp(_targetPrimaryColor, dt * 4);
       labelMat.color.lerp(_targetPrimaryColor, dt * 4);
       labelMat.emissive.lerp(_targetPrimaryColor, dt * 4);
-      cartridgeMat.color.lerp(_targetAccentColor, dt * 4);
-      cartridgeMat.emissive.lerp(_targetAccentColor, dt * 4);
-      eqMat.emissive.lerp(_targetSecondaryColor, dt * 4);
+      cartridgeMat.color.lerp(_targetPrimaryColor, dt * 4);
+      cartridgeMat.emissive.lerp(_targetPrimaryColor, dt * 4);
+      eqMat.emissive.lerp(_targetPrimaryColor, dt * 4);
+
+      // Subtle bass pulse on the Bauhaus #EDFF8C speaker cube
+      const cubeScale = 1 + (currentProps.isPlayingSnippet ? spectrum.bass * 0.08 : 0.01 * Math.sin(elapsed * 2));
+      cubeBodyMesh.scale.setScalar(cubeScale);
 
       // Spin Vinyl Platter
       vinylScratchBoost = THREE.MathUtils.damp(vinylScratchBoost, 0, 4, dt);
       const baseSpinSpeed = currentProps.isPlayingSnippet ? 3.6 : 0.65;
       platterGroup.rotation.y -= (baseSpinSpeed + vinylScratchBoost) * dt;
 
-      // Smoothly pivot Tonearm onto the vinyl groove when snippet is playing
       const targetTonearmRot = currentProps.isPlayingSnippet ? 0.28 : 0.0;
       tonearmPivot.rotation.y = THREE.MathUtils.damp(
         tonearmPivot.rotation.y,
@@ -1249,7 +1293,6 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         dt
       );
 
-      // Stage swipe damping
       if (!isDragging) {
         stageTargetRotY = THREE.MathUtils.damp(stageTargetRotY, 0, 4, dt);
         stageTargetRotX = THREE.MathUtils.damp(stageTargetRotX, 0, 4, dt);
@@ -1257,9 +1300,6 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       stageGroup.rotation.y = THREE.MathUtils.damp(stageGroup.rotation.y, stageTargetRotY, 8, dt);
       stageGroup.rotation.x = THREE.MathUtils.damp(stageGroup.rotation.x, stageTargetRotX, 8, dt);
 
-      // =======================================================================
-      // NINTENDO-STYLE EXPRESSIVE MASCOT DANCING & SQUASH-AND-STRETCH PHYSICS
-      // =======================================================================
       const beatFreq = (currentProps.mood.bpm / 60) * Math.PI;
       const danceIntensity =
         currentProps.isPlayingSnippet || currentProps.mascotState === 'celebrating'
@@ -1284,10 +1324,8 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         mascotJumpVelocity = 0;
       }
 
-      // Spin boost decay when tapped
       mascotSpinBoost = THREE.MathUtils.damp(mascotSpinBoost, 0, 5, dt);
 
-      // Rhythmic bounce & squash-and-stretch
       const rhythmBounce =
         Math.abs(Math.sin(elapsed * beatFreq)) * (0.05 + spectrum.bass * 0.2) * danceIntensity;
       mascotRig.position.y = mascotJumpY + rhythmBounce;
@@ -1295,12 +1333,10 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       const squash = 1 + Math.sin(elapsed * beatFreq * 2) * 0.045 * danceIntensity;
       mascotRig.scale.set(1 / Math.sqrt(squash), squash, 1 / Math.sqrt(squash));
 
-      // Hip sway & playful dance twist (like the attached video!)
       mascotRig.rotation.z = Math.sin(elapsed * beatFreq) * 0.08 * danceIntensity;
       mascotRig.rotation.y =
         Math.sin(elapsed * beatFreq * 0.5) * 0.22 * danceIntensity + mascotSpinBoost;
 
-      // Expressive head tilt, nod & bow wiggle (tilted -0.26 rad up to make eye contact with isometric camera)
       headGroup.rotation.z =
         Math.sin(elapsed * beatFreq + 0.4) * (0.09 + spectrum.mid * 0.1) * danceIntensity;
       headGroup.rotation.x =
@@ -1310,42 +1346,38 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
           : Math.sin(elapsed * 1.6) * 0.04);
       bowGroup.rotation.z = Math.sin(elapsed * beatFreq * 2) * 0.12 * danceIntensity;
 
-      // Alternating stubby foot steps
       leftFoot.position.y =
         0.28 + Math.max(0, Math.sin(elapsed * beatFreq)) * 0.14 * danceIntensity;
       rightFoot.position.y =
         0.28 + Math.max(0, -Math.sin(elapsed * beatFreq)) * 0.14 * danceIntensity;
 
-      // Arms & miniature mint scooter groove wave (matching the video!)
       armsAndScooterGroup.position.y =
         1.05 + Math.sin(elapsed * beatFreq * 2) * 0.08 * danceIntensity;
       armsAndScooterGroup.rotation.z =
         Math.cos(elapsed * beatFreq) * 0.14 * danceIntensity;
 
-      // Floating 3D Rhythm Orbs around Mascot
-      for (let i = 0; i < noteCount; i++) {
-        const orb = noteOrbs[i];
-        const a = elapsed * 1.8 + (i * Math.PI * 2) / noteCount;
-        const r = 1.15 + Math.sin(elapsed * 3 + i) * 0.15;
-        orb.position.set(
+      for (let i = 0; i < shapeCount; i++) {
+        const shape = floatingShapes[i];
+        const a = elapsed * 1.6 + (i * Math.PI * 2) / shapeCount;
+        const r = 1.18 + Math.sin(elapsed * 2.5 + i) * 0.14;
+        shape.position.set(
           Math.cos(a) * r,
-          1.1 + ((elapsed * 0.8 + i * 0.4) % 2.2),
+          1.1 + ((elapsed * 0.75 + i * 0.4) % 2.1),
           Math.sin(a) * r
         );
-        const orbScale =
+        const s =
           currentProps.isPlayingSnippet || currentProps.mascotState === 'celebrating'
-            ? 0.7 + spectrum.energy * 0.6
-            : 0.35;
-        orb.scale.setScalar(orbScale);
-        orb.rotation.y = elapsed * 2;
-        orb.rotation.x = elapsed * 1.5;
+            ? 0.72 + spectrum.energy * 0.55
+            : 0.38;
+        shape.scale.setScalar(s);
+        shape.rotation.y = elapsed * 1.8;
+        shape.rotation.x = elapsed * 1.3;
       }
 
-      // Update 16-Bar 3D Equalizer Arc
       for (let i = 0; i < eqCount; i++) {
         const coord = eqCoords[i];
         const binVal = spectrum.bins[i] || 0.1;
-        const barHeight = 0.28 + binVal * 2.65;
+        const barHeight = 0.26 + binVal * 2.55;
 
         _tempPos.set(coord.x, 0.01, coord.z);
         _tempScale.set(1, barHeight, 1);
@@ -1367,6 +1399,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
       grooveTex.dispose();
+      bauhausCubeTex.dispose();
       ribbedBumpTex.dispose();
       peanutBumpTex.dispose();
       faceTex.dispose();

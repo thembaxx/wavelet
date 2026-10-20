@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import {
   SpotifyLogo,
   AppleLogo,
@@ -22,10 +23,19 @@ interface AppleMusicCoverCardProps {
   themeMode: ThemeMode;
   isRevealed: boolean;
   isPlaying: boolean;
+  snippetProgress?: number;
+  snippetDuration?: number;
   compact?: boolean;
   artistHintText?: string | null;
   onSaveTrack?: (provider: 'spotify' | 'apple', song: SongTrack) => void;
+  onReplaySnippet?: () => void;
 }
+
+const WAVEFORM_BARS = [
+  0.34, 0.72, 0.45, 0.88, 0.56, 0.32, 0.65, 0.94, 0.48, 0.76, 0.38, 0.62,
+  0.85, 0.52, 0.96, 0.44, 0.68, 0.36, 0.78, 0.58, 0.9, 0.42, 0.64, 0.82,
+  0.46, 0.7, 0.35, 0.86, 0.54, 0.74, 0.4, 0.6,
+];
 
 export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
   song,
@@ -33,9 +43,12 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
   themeMode,
   isRevealed,
   isPlaying,
+  snippetProgress = 0,
+  snippetDuration = 5,
   compact = false,
   artistHintText,
   onSaveTrack,
+  onReplaySnippet,
 }) => {
   const [imgError, setImgError] = useState(false);
   const [savedSpotify, setSavedSpotify] = useState(false);
@@ -45,8 +58,17 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
   const links = buildStreamingLinks(song);
   const showArt = isRevealed && Boolean(song.artworkUrl) && !imgError;
 
+  const elapsedFormatted = useMemo(() => {
+    const sec = Math.min(snippetDuration, Math.round(snippetProgress * snippetDuration));
+    return `00:${String(sec).padStart(2, '0')}`;
+  }, [snippetProgress, snippetDuration]);
+
+  const totalFormatted = useMemo(() => {
+    return `00:${String(snippetDuration).padStart(2, '0')}`;
+  }, [snippetDuration]);
+
   const handleSave = (provider: 'spotify' | 'apple') => {
-    audioEngine.playUiTick(1.25);
+    audioEngine.playUiTick(1.25, 'success');
     if (provider === 'spotify') {
       setSavedSpotify(true);
     } else {
@@ -56,34 +78,37 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
   };
 
   return (
-    <div
-      className={`relative overflow-hidden rounded-[22px] border transition-all duration-300 ${
-        isLight
-          ? 'border-[#E3DCD0] bg-[#FAF7F0]/95 text-[#231C18] shadow-[0_8px_24px_rgba(35,28,24,0.06)]'
-          : 'border-[#38BDF8]/20 bg-[#091826]/90 text-[#F0F9FF] shadow-2xl'
-      } ${compact ? 'p-2.5' : 'p-3.5'}`}
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      className={`relative overflow-hidden rounded-[24px] border transition-colors duration-300 ${
+        isRevealed
+          ? isLight
+            ? 'border-[#000000]/12 bg-[#EDFF8C] text-[#000000]'
+            : 'border-[#EDFF8C]/35 bg-[#141A17] text-[#FFFFFF]'
+          : isLight
+          ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000] shadow-[0_8px_24px_rgba(0,0,0,0.04)]'
+          : 'border-white/12 bg-[#12161D] text-[#FFFFFF] shadow-xl'
+      } ${compact ? 'p-3' : 'p-4'}`}
     >
-      {/* Dynamic Apple Music-style Fluid Mood Aura */}
-      <div
-        className={`pointer-events-none absolute -inset-8 transition-transform duration-700 ${
-          isLight ? 'opacity-20' : 'opacity-30'
-        }`}
-        style={{
-          background: `radial-gradient(circle at 25% 25%, ${mood.primaryHex} 0%, transparent 55%), radial-gradient(circle at 80% 75%, ${mood.secondaryHex} 0%, transparent 60%), radial-gradient(circle at 50% 50%, ${mood.accentHex} 0%, transparent 65%)`,
-          transform: isPlaying ? 'scale(1.12) rotate(6deg)' : 'scale(1) rotate(0deg)',
-        }}
-      />
-
       <div className="relative z-10 flex items-center gap-3">
-        {/* Squircle Animated Album Cover Container */}
-        <div
-          className={`relative shrink-0 overflow-hidden rounded-[16px] border shadow-md transition-transform duration-500 ${
-            isLight ? 'border-[#DCD4C6]' : 'border-[#38BDF8]/25'
-          } ${compact ? 'h-14 w-14' : 'h-18 w-18'} ${
-            isPlaying ? 'scale-[1.04]' : 'scale-100'
-          }`}
+        {/* Geometric Cover Art Frame (Inspired by IMG_5813 & IMG_5810) */}
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.94 }}
+          onClick={() => {
+            audioEngine.playUiTick(1.1, 'medium');
+            onReplaySnippet?.();
+          }}
+          aria-label="Replay song snippet"
+          className={`relative shrink-0 overflow-hidden rounded-[18px] border transition-transform ${
+            isLight ? 'border-[#000000]/10' : 'border-white/15'
+          } ${compact ? 'h-14 w-14' : 'h-16 w-16'}`}
           style={{
-            background: `linear-gradient(135deg, ${mood.primaryHex}, ${mood.secondaryHex})`,
+            background: showArt
+              ? '#000000'
+              : `linear-gradient(135deg, ${mood.primaryHex}, #000000)`,
           }}
         >
           {showArt ? (
@@ -92,144 +117,190 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
               alt={`${song.title} by ${song.artist} cover art`}
               referrerPolicy="no-referrer"
               onError={() => setImgError(true)}
-              className={`h-full w-full object-cover transition-transform duration-700 ${
-                isPlaying ? 'scale-110' : 'scale-100'
+              className={`h-full w-full object-cover transition-transform duration-500 ${
+                isPlaying ? 'scale-108' : 'scale-100'
               }`}
             />
           ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center p-1.5 text-center text-white">
+            <div className="flex h-full w-full flex-col items-center justify-center text-white">
               <Disc
                 weight="duotone"
                 className={`h-7 w-7 ${isPlaying ? 'animate-spin' : ''}`}
+                style={{ color: '#EDFF8C' }}
               />
-              {!isRevealed && (
-                <span className="mt-0.5 text-[9px] font-bold tracking-wider uppercase opacity-95">
-                  Mystery
-                </span>
-              )}
             </div>
           )}
+        </motion.button>
 
-          {/* Subtle Apple Music animated sheen overlay */}
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                'linear-gradient(145deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 48%, rgba(0,0,0,0.22) 100%)',
-            }}
-          />
-        </div>
-
-        {/* Song Metadata or Mystery Rhythm Prompt */}
+        {/* Clean Unboxed Metadata & Track Title (Zero-Pill Discipline) */}
         <div className="min-w-0 flex-1">
           {isRevealed ? (
             <>
               <div
                 className={`flex items-center gap-1.5 text-[11px] font-semibold whitespace-nowrap overflow-hidden ${
-                  isLight ? 'text-[#6E6259]' : 'text-sky-200/75'
+                  isLight ? 'text-[#000000]/65' : 'text-white/65'
                 }`}
               >
                 <span className="shrink-0">{song.genre}</span>
                 <span aria-hidden="true">·</span>
-                <span className="tabular-nums shrink-0">{song.releaseYear}</span>
+                <span className="font-mono tabular-nums shrink-0">{song.releaseYear}</span>
                 <span aria-hidden="true">·</span>
-                <span className="truncate">{mood.label}</span>
+                <span className="truncate">{song.album}</span>
               </div>
-              <h3
-                className={`truncate text-sm font-extrabold tracking-tight ${
-                  isLight ? 'text-[#231C18]' : 'text-white'
-                }`}
-              >
+              <h3 className="truncate text-sm font-bold tracking-tight">
                 {song.title}
               </h3>
               <p
-                className={`truncate text-xs font-semibold ${
-                  isLight ? 'text-[#574C44]' : 'text-sky-100/85'
+                className={`truncate text-xs font-medium ${
+                  isLight ? 'text-[#000000]/80' : 'text-white/80'
                 }`}
               >
-                {song.artist} —{' '}
-                <span className={isLight ? 'text-[#85776C]' : 'text-sky-200/60'}>
-                  {song.album}
-                </span>
+                {song.artist}
               </p>
             </>
           ) : (
             <>
               <div
-                className={`flex items-center gap-1.5 text-[11px] font-bold ${
-                  isLight ? 'text-[#5C5046]' : 'text-sky-200/80'
+                className={`flex items-center gap-1.5 text-[11px] font-semibold whitespace-nowrap overflow-hidden ${
+                  isLight ? 'text-[#309F92]' : 'text-[#EDFF8C]'
                 }`}
               >
-                <Waveform
-                  weight="bold"
-                  className="h-3.5 w-3.5"
-                  style={{ color: mood.primaryHex }}
-                />
-                <span>{mood.label}</span>
+                <Waveform weight="bold" className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{mood.label}</span>
                 <span aria-hidden="true">·</span>
-                <span className="font-mono tabular-nums">{mood.bpm} BPM</span>
+                <span className="font-mono tabular-nums shrink-0">{song.decade}</span>
               </div>
-              <h3
-                className={`mt-0.5 truncate text-sm font-extrabold tracking-tight ${
-                  isLight ? 'text-[#231C18]' : 'text-white'
-                }`}
-              >
+              <h3 className="mt-0.5 truncate text-sm font-bold tracking-tight">
                 {artistHintText ? artistHintText : 'Listen & Guess the Track'}
               </h3>
               <p
-                className={`truncate text-xs font-medium ${
-                  isLight ? 'text-[#6E6259]' : 'text-sky-200/70'
+                className={`truncate text-xs ${
+                  isLight ? 'text-[#000000]/60' : 'text-white/60'
                 }`}
               >
-                Era: {song.decade} · Genre: {song.genre}
+                {song.genre} · {snippetDuration}s Snippet Cut
               </p>
             </>
           )}
+        </div>
 
-          {/* Direct Spotify & Apple Music Save / Open Actions when revealed */}
-          {isRevealed && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <a
-                href={links.spotifyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => handleSave('spotify')}
-                className={`inline-flex min-h-[30px] items-center gap-1.5 rounded-xl px-2.5 py-1 text-[11px] font-bold transition-colors whitespace-nowrap shrink-0 ${
-                  isLight
-                    ? 'bg-[#1DB954]/15 text-[#117a37] border border-[#1DB954]/30 hover:bg-[#1DB954]/25'
-                    : 'bg-[#1DB954]/20 text-[#1ED760] border border-[#1DB954]/40 hover:bg-[#1DB954]/30'
-                }`}
-              >
-                {savedSpotify ? (
-                  <CheckCircle weight="fill" className="h-3.5 w-3.5" />
-                ) : (
-                  <SpotifyLogo weight="fill" className="h-3.5 w-3.5" />
-                )}
-                <span>{savedSpotify ? 'Added to Spotify' : 'Spotify'}</span>
-              </a>
-
-              <a
-                href={links.appleMusicUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => handleSave('apple')}
-                className={`inline-flex min-h-[30px] items-center gap-1.5 rounded-xl px-2.5 py-1 text-[11px] font-bold transition-colors whitespace-nowrap shrink-0 ${
-                  isLight
-                    ? 'bg-[#FA243C]/12 text-[#c81428] border border-[#FA243C]/25 hover:bg-[#FA243C]/20'
-                    : 'bg-[#FA243C]/20 text-[#FF4D62] border border-[#FA243C]/40 hover:bg-[#FA243C]/30'
-                }`}
-              >
-                {savedApple ? (
-                  <CheckCircle weight="fill" className="h-3.5 w-3.5" />
-                ) : (
-                  <AppleLogo weight="fill" className="h-3.5 w-3.5" />
-                )}
-                <span>{savedApple ? 'Saved to Apple' : 'Apple Music'}</span>
-              </a>
-            </div>
-          )}
+        {/* Signature Solid Black Circular Badge (Inspired directly by "83" / "90" in IMG_5847!) */}
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold tabular-nums ${
+            isRevealed && isLight
+              ? 'bg-[#000000] text-[#EDFF8C]'
+              : isLight
+              ? 'bg-[#000000] text-[#FFFFFF]'
+              : 'bg-[#EDFF8C] text-[#000000]'
+          }`}
+          title="Track Tempo (BPM)"
+        >
+          {mood.bpm}
         </div>
       </div>
-    </div>
+
+      {/* Interactive Vertical-Bar Waveform Scrubber (Inspired directly by IMG_5813 & IMG_5816!) */}
+      <div className="mt-2.5">
+        <div
+          onClick={() => {
+            audioEngine.playUiTick(1.15, 'light');
+            onReplaySnippet?.();
+          }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onReplaySnippet?.();
+            }
+          }}
+          aria-label="Audio snippet waveform progress"
+          className="flex h-6 w-full cursor-pointer items-end justify-between gap-[3px] px-0.5"
+        >
+          {WAVEFORM_BARS.map((heightRatio, idx) => {
+            const barProgress = idx / (WAVEFORM_BARS.length - 1);
+            const isPlayed = isPlaying ? barProgress <= snippetProgress : false;
+            const animatedHeight = isPlaying
+              ? Math.max(0.22, Math.min(1, heightRatio * (0.75 + 0.25 * Math.sin(idx * 1.3 + snippetProgress * 18))))
+              : heightRatio * 0.72;
+
+            return (
+              <span
+                key={idx}
+                className={`w-1 rounded-full transition-all duration-75 ${
+                  isPlayed
+                    ? isRevealed && isLight
+                      ? 'bg-[#000000]'
+                      : 'bg-[#309F92]'
+                    : isRevealed && isLight
+                    ? 'bg-[#000000]/22'
+                    : isLight
+                    ? 'bg-[#D1D1D1]'
+                    : 'bg-white/20'
+                }`}
+                style={{
+                  height: `${Math.round(animatedHeight * 22)}px`,
+                }}
+              />
+            );
+          })}
+        </div>
+
+        <div
+          className={`mt-1 flex items-center justify-between font-mono text-[10px] font-medium tabular-nums ${
+            isRevealed && isLight
+              ? 'text-[#000000]/70'
+              : isLight
+              ? 'text-[#000000]/55'
+              : 'text-white/55'
+          }`}
+        >
+          <span>{elapsedFormatted}</span>
+          <span>{isPlaying ? 'Spinning Vinyl Cut' : 'Tap waveform to replay'}</span>
+          <span>{totalFormatted}</span>
+        </div>
+      </div>
+
+      {/* Direct Spotify & Apple Music Save / Open Actions when revealed */}
+      {isRevealed && (
+        <div className="mt-2.5 flex items-center gap-2 pt-2 border-t border-black/10 dark:border-white/10">
+          <motion.a
+            whileTap={{ scale: 0.96 }}
+            href={links.spotifyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => handleSave('spotify')}
+            className="inline-flex min-h-[34px] flex-1 items-center justify-center gap-1.5 rounded-full bg-[#000000] px-3 py-1.5 text-xs font-bold text-[#FFFFFF] transition-transform whitespace-nowrap"
+          >
+            {savedSpotify ? (
+              <CheckCircle weight="fill" className="h-3.5 w-3.5 text-[#EDFF8C]" />
+            ) : (
+              <SpotifyLogo weight="fill" className="h-3.5 w-3.5 text-[#1DB954]" />
+            )}
+            <span>{savedSpotify ? 'Saved to Spotify' : 'Add to Spotify'}</span>
+          </motion.a>
+
+          <motion.a
+            whileTap={{ scale: 0.96 }}
+            href={links.appleMusicUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => handleSave('apple')}
+            className={`inline-flex min-h-[34px] flex-1 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-transform whitespace-nowrap ${
+              isLight
+                ? 'border-[#000000]/20 bg-[#FFFFFF] text-[#000000]'
+                : 'border-white/20 bg-white/10 text-[#FFFFFF]'
+            }`}
+          >
+            {savedApple ? (
+              <CheckCircle weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
+            ) : (
+              <AppleLogo weight="fill" className="h-3.5 w-3.5 text-[#FA243C]" />
+            )}
+            <span>{savedApple ? 'Saved to Apple' : 'Apple Music'}</span>
+          </motion.a>
+        </div>
+      )}
+    </motion.div>
   );
 };
