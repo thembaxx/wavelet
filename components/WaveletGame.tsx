@@ -413,7 +413,7 @@ export const WaveletGame: React.FC = () => {
   }, [characterId]);
 
   const activeChallengeModeDef = useMemo(() => {
-    const modeId = session.status === 'playing' ? session.config.challengeMode || challengeMode : challengeMode;
+    const modeId = session.status !== 'title' ? session.config.challengeMode || challengeMode : challengeMode;
     return GAME_CHALLENGE_MODES.find((m) => m.id === modeId) || GAME_CHALLENGE_MODES[0];
   }, [session.status, session.config.challengeMode, challengeMode]);
 
