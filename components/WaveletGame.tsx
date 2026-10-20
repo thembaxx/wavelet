@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, MotionConfig } from 'motion/react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 import type { User } from 'firebase/auth';
 import {
   Play,
@@ -14,18 +16,13 @@ import {
   AppleLogo,
   CaretDown,
   CaretUp,
-  DeviceMobile,
-  Desktop,
   ArrowsClockwise,
   Timer,
-  DownloadSimple,
   Eye,
   ArrowRight,
   MagnifyingGlass,
-  Sun,
-  Moon,
   SlidersHorizontal,
-  FilmStrip,
+  GearSix,
   Trophy,
   Fire,
   Lightning,
@@ -47,7 +44,6 @@ import {
   type PlayMode,
   type GuessChallengeMode,
   type DifficultyTier,
-  type ThemeMode,
   type MascotCharacterId,
   type SongTrack,
   type GameSessionState,
@@ -86,6 +82,13 @@ import { IsometricVinylStage, type MascotMoodState } from './IsometricVinylStage
 import { AppleMusicCoverCard } from './AppleMusicCoverCard';
 import { MusicAccountModal, type ConnectedMusicProfile } from './MusicAccountModal';
 import { usePWAInstall } from '@/hooks/use-pwa-install';
+import { useStudioPreferences } from '@/hooks/use-studio-preferences';
+import { StudioSettings } from './StudioSettings';
+import { StudioDialog } from './StudioDialog';
+import { WaveletBrand } from './WaveletBrand';
+import { DiscoveryDelight } from './DiscoveryDelight';
+
+gsap.registerPlugin(useGSAP);
 
 const SNIPPET_OPTIONS: SnippetDuration[] = [1, 3, 5, 10, 15, 30];
 const SONG_COUNT_OPTIONS = [5, 10, 15];
@@ -106,35 +109,6 @@ const QUICK_VIBE_CRATES: Array<{
   { id: '2000s', label: '2000s', mode: 'year', value: '2000s' },
   { id: '1990s', label: '1990s', mode: 'year', value: '1990s' },
 ];
-
-/**
- * 9-Dot (3x3) Geometric Brand Mark with #309F92 center dot (Inspired directly by IMG_5844 & IMG_5846)
- */
-const NineDotBrandMark: React.FC<{ isLight: boolean }> = ({ isLight }) => (
-  <div
-    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border transition-colors ${
-      isLight
-        ? 'border-[#D1D1D1] bg-[#FFFFFF] shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
-        : 'border-white/15 bg-[#12161D]'
-    }`}
-    aria-hidden="true"
-  >
-    <div className="grid grid-cols-3 gap-1">
-      {Array.from({ length: 9 }).map((_, idx) => (
-        <span
-          key={idx}
-          className={`h-1.5 w-1.5 rounded-full ${
-            idx === 4
-              ? 'bg-[#309F92]'
-              : isLight
-                ? 'bg-[#000000]'
-                : 'bg-[#FFFFFF]'
-          }`}
-        />
-      ))}
-    </div>
-  </div>
-);
 
 /**
  * Radial Segmented Tick-Mark Gauge (Inspired directly by IMG_5846 "Lead Score 90 · Grade A" card)
@@ -169,7 +143,7 @@ const SegmentedTickArcGauge: React.FC<{
                 <span
                   key={i}
                   className={`h-1 w-1 rounded-full ${
-                    i === 4 ? 'bg-[#309F92]' : isLight ? 'bg-[#000000]' : 'bg-white'
+                    i === 4 ? 'bg-[#12786C]' : isLight ? 'bg-[#000000]' : 'bg-white'
                   }`}
                 />
               ))}
@@ -179,7 +153,7 @@ const SegmentedTickArcGauge: React.FC<{
         </div>
 
         <div className="flex items-center gap-1.5">
-          <span className="rounded-full bg-[#309F92] px-2.5 py-0.5 text-[11px] font-bold text-[#FFFFFF]">
+          <span className="rounded-full bg-[#12786C] px-2.5 py-0.5 text-[11px] font-bold text-[#FFFFFF]">
             {gradeLabel}
           </span>
           <span
@@ -214,7 +188,7 @@ const SegmentedTickArcGauge: React.FC<{
             const isLit = i < activeTickCount;
             const strokeColor = isLit
               ? i / totalTicks > 0.65
-                ? '#309F92'
+                ? '#12786C'
                 : isLight
                   ? '#000000'
                   : '#EDFF8C'
@@ -283,12 +257,12 @@ const RoundStepProcessBar: React.FC<{
             key={idx}
             className={`relative flex h-7 flex-1 items-center justify-center rounded-full text-[11px] font-mono font-bold tabular-nums transition-all ${
               isCurrent
-                ? 'bg-gradient-to-r from-[#309F92] to-[#EDFF8C] text-[#000000] shadow-xs'
+                ? 'bg-gradient-to-r from-[#12786C] to-[#EDFF8C] text-[#000000] shadow-xs'
                 : isCompleted
                   ? pastItem?.correct
                     ? isLight
                       ? 'bg-[#EDFF8C]/75 text-[#000000]'
-                      : 'bg-[#309F92]/40 text-[#EDFF8C]'
+                      : 'bg-[#12786C]/40 text-[#EDFF8C]'
                     : isLight
                       ? 'bg-[#F1F1F1] text-[#000000]/45'
                       : 'bg-white/10 text-white/40'
@@ -303,7 +277,7 @@ const RoundStepProcessBar: React.FC<{
                   ? 'bg-[#000000] text-[#FFFFFF]'
                   : isCompleted
                     ? pastItem?.correct
-                      ? 'bg-[#309F92] text-[#FFFFFF]'
+                      ? 'bg-[#12786C] text-[#FFFFFF]'
                       : 'bg-[#000000]/75 text-[#FFFFFF]'
                     : isLight
                       ? 'bg-[#FFFFFF]/75 text-[#000000]/45'
@@ -327,11 +301,27 @@ const RoundStepProcessBar: React.FC<{
   );
 };
 
-export const VinylRushGame: React.FC = () => {
-  // Theme & Companion State (Defaults to clean #F1F1F1 / #FFFFFF Light Mode from IMG_5845)
-  const [themeMode, setThemeMode] = useState<ThemeMode>('light');
+export const WaveletGame: React.FC = () => {
+  const { preferences, updatePreferences, reducedMotion } = useStudioPreferences();
+  const themeMode = preferences.theme;
+  const mobileFrameLocked = preferences.compactCanvas;
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [discovery, setDiscovery] = useState<{ id: number; label: string } | null>(null);
+  const discoveryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const companionTaps = useRef(0);
+  const introRef = useRef<HTMLDivElement>(null);
+
+  const discoverGroove = useCallback((label = 'A little secret. A lot of groove.') => {
+    audioEngine.playDiscovery();
+    setDiscovery({ id: performance.now(), label });
+    if (discoveryTimer.current) clearTimeout(discoveryTimer.current);
+    discoveryTimer.current = setTimeout(() => setDiscovery(null), 3200);
+  }, []);
+
+  useEffect(() => () => { if (discoveryTimer.current) clearTimeout(discoveryTimer.current); }, []);
+
+  // Companion and profile state.
   const [characterId, setCharacterId] = useState<MascotCharacterId>('pebble');
-  const [showCameoVideo, setShowCameoVideo] = useState<boolean>(false);
   const [isRulesDrawerOpen, setIsRulesDrawerOpen] = useState<boolean>(false);
   const [isPassModalOpen, setIsPassModalOpen] = useState<boolean>(false);
   const [passModalTab, setPassModalTab] = useState<'profile' | 'modes' | 'quests'>('profile');
@@ -341,12 +331,13 @@ export const VinylRushGame: React.FC = () => {
   const [isAuthBusy, setIsAuthBusy] = useState<boolean>(false);
   const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
   const [draftCallsign, setDraftCallsign] = useState<string>('Studio Selector');
-  const [draftTagline, setDraftTagline] = useState<string>('365 Crate Digger · Tactile Audio');
+  const [draftTagline, setDraftTagline] = useState<string>('Wavelet selector · Always listening');
 
   // Gamification & Player Progression State
   const [progression, setProgression] = useState<PlayerProgressionState>(() =>
     createInitialProgression()
   );
+  const [progressionLoaded, setProgressionLoaded] = useState(false);
   const progressionRef = useRef<PlayerProgressionState>(progression);
   useEffect(() => {
     progressionRef.current = progression;
@@ -396,7 +387,6 @@ export const VinylRushGame: React.FC = () => {
   // Playback & UI micro-interaction states
   const [isPlayingSnippet, setIsPlayingSnippet] = useState<boolean>(false);
   const [snippetProgress, setSnippetProgress] = useState<number>(0);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isDockCollapsed, setIsDockCollapsed] = useState<boolean>(false);
   const [mascotState, setMascotState] = useState<MascotMoodState>('idle');
   const [mascotSpeech, setMascotSpeech] = useState<string>(
@@ -411,17 +401,14 @@ export const VinylRushGame: React.FC = () => {
     selectedOptionId?: string;
   } | null>(null);
 
-  // Desktop / Tablet Mobile-First Disclaimer & Mobile Viewport Frame simulator
+  // Compact canvas is optional on larger displays.
   const [isDesktopViewport, setIsDesktopViewport] = useState<boolean>(false);
-  const [mobileFrameLocked, setMobileFrameLocked] = useState<boolean>(true);
-  const [showDesktopBanner, setShowDesktopBanner] = useState<boolean>(true);
 
   // Modals & Saved Crate
   const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
   const [connectedProfile, setConnectedProfile] = useState<ConnectedMusicProfile | null>(null);
 
   const { isInstallable, isInstalled, isIOS, isOnline, install } = usePWAInstall();
-  const [showIOSInstallTip, setShowIOSInstallTip] = useState<boolean>(false);
 
   const isLight = themeMode === 'light';
 
@@ -513,7 +500,7 @@ export const VinylRushGame: React.FC = () => {
             };
             setProgression(merged);
             setDraftCallsign(merged.callsign || 'Studio Selector');
-            setDraftTagline(merged.tagline || '365 Crate Digger · Tactile Audio');
+            setDraftTagline(merged.tagline || 'Wavelet selector · Always listening');
             if (merged.mascotId) {
               setCharacterId(merged.mascotId);
             }
@@ -522,6 +509,7 @@ export const VinylRushGame: React.FC = () => {
       } catch {
         // Ignore storage errors
       }
+      setProgressionLoaded(true);
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
@@ -561,15 +549,15 @@ export const VinylRushGame: React.FC = () => {
     };
   }, []);
 
-  // Persist progression locally whenever it updates
+  // Retain the existing save key and wait for restoration before writing it.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (!progressionLoaded || typeof window === 'undefined') return;
     try {
       window.localStorage.setItem('vinyl_rush_progression_v2', JSON.stringify(progression));
     } catch {
       // Ignore storage errors
     }
-  }, [progression]);
+  }, [progression, progressionLoaded]);
 
   // Sync document.body.dataset.state & dynamic theme-color meta tag for seamless browser chrome
   useEffect(() => {
@@ -1015,26 +1003,21 @@ export const VinylRushGame: React.FC = () => {
   // Toggle Light / Dark Theme
   const toggleThemeMode = useCallback(() => {
     audioEngine.playTabSwitch(themeMode === 'dark');
-    setThemeMode((prev) => (prev === 'light' ? 'dark' : 'light'));
-  }, [themeMode]);
+    updatePreferences({ theme: themeMode === 'light' ? 'dark' : 'light' });
+  }, [themeMode, updatePreferences]);
 
-  // Cycle Mascot Character ('pebble' -> 'bobacat' -> 'sprout')
-  const cycleMascotCharacter = useCallback(() => {
-    audioEngine.playUiTick(1.32, 'medium');
-    setCharacterId((prev) => {
-      const idx = MASCOT_CHARACTERS.findIndex((c) => c.id === prev);
-      const next = MASCOT_CHARACTERS[(idx + 1) % MASCOT_CHARACTERS.length];
-      setMascotState('hyped');
-      setMascotSpeech(`${next.name} active · ${next.tagline}`);
-      setProgression((p) => {
-        const updated = { ...p, mascotId: next.id };
-        void persistUserProfileUpdate(authUser, updated);
-        return updated;
-      });
-      setTimeout(() => setMascotState(isPlayingSnippet ? 'listening' : 'idle'), 1600);
-      return next.id;
+  const selectCompanion = useCallback((id: MascotCharacterId) => {
+    audioEngine.playDiscovery(true);
+    setCharacterId(id);
+    setMascotState('hyped');
+    const companion = MASCOT_CHARACTERS.find(character => character.id === id)!;
+    setMascotSpeech(`${companion.name} is in the groove.`);
+    setProgression(previous => {
+      const updated = { ...previous, mascotId: id };
+      void persistUserProfileUpdate(authUser, updated);
+      return updated;
     });
-  }, [isPlayingSnippet, authUser]);
+  }, [authUser]);
 
   // Save custom Callsign & Tagline in User Profile Modal
   const handleSaveProfileIdentity = useCallback(() => {
@@ -1085,55 +1068,53 @@ export const VinylRushGame: React.FC = () => {
     setTimeout(() => setLastXpToast(null), 2400);
   }, []);
 
-  // Global keyboard shortcuts
+  // Game shortcuts never intercept focused controls or an open modal.
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        document.activeElement &&
-        (document.activeElement.tagName === 'INPUT' ||
-          document.activeElement.tagName === 'TEXTAREA')
-      ) {
-        return;
+    let secretKeys = '';
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (isSettingsOpen || isAccountModalOpen || isPassModalOpen) return;
+      const target = event.target;
+      if (target instanceof Element && target.closest('input, textarea, select, button, a, [contenteditable="true"], dialog')) return;
+      if (session.status === 'title' && event.key.length === 1) {
+        secretKeys = (secretKeys + event.key.toLowerCase()).slice(-6);
+        if (secretKeys === 'groove') discoverGroove('Secret selector. Welcome to the B-side.');
       }
-
-      if (session.status === 'title' && (e.code === 'Enter' || e.code === 'Space')) {
-        if (!isAccountModalOpen && !isPassModalOpen) {
-          e.preventDefault();
-          void startNewGame();
-        }
-      } else if (e.code === 'KeyP' || e.code === 'Escape') {
-        if (isPassModalOpen) {
-          setIsPassModalOpen(false);
-          return;
-        }
+      if (session.status === 'title' && (event.code === 'Enter' || event.code === 'Space')) {
+        event.preventDefault();
+        void startNewGame();
+      } else if (event.code === 'KeyP' || event.code === 'Escape') {
         if (session.status === 'playing') {
-          e.preventDefault();
+          event.preventDefault();
           audioEngine.stopSnippet(false);
           setIsPlayingSnippet(false);
-          setSession((prev) => ({ ...prev, status: 'paused' }));
+          setSession(previous => ({ ...previous, status: 'paused' }));
         } else if (session.status === 'paused') {
-          e.preventDefault();
-          setSession((prev) => ({ ...prev, status: 'playing' }));
+          event.preventDefault();
+          setSession(previous => ({ ...previous, status: 'playing' }));
         }
-      } else if (e.code === 'KeyM') {
-        e.preventDefault();
-        setIsMuted((prev) => {
-          const next = !prev;
-          audioEngine.setMuted(next);
-          return next;
-        });
-      } else if (e.code === 'KeyT') {
-        e.preventDefault();
+      } else if (event.code === 'KeyM') {
+        event.preventDefault();
+        const muted = !audioEngine.getMuted();
+        audioEngine.setMuted(muted);
+        updatePreferences({ muted });
+      } else if (event.code === 'KeyT') {
+        event.preventDefault();
         toggleThemeMode();
-      } else if (e.code === 'KeyH' && session.status === 'playing') {
-        e.preventDefault();
-        setIsDockCollapsed((prev) => !prev);
+      } else if (event.code === 'KeyH' && session.status === 'playing') {
+        event.preventDefault();
+        setIsDockCollapsed(previous => !previous);
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [session.status, isAccountModalOpen, isPassModalOpen, startNewGame, toggleThemeMode]);
+  }, [session.status, isSettingsOpen, isAccountModalOpen, isPassModalOpen, startNewGame, toggleThemeMode, updatePreferences, discoverGroove]);
+
+  useGSAP(() => {
+    if (session.status !== 'title' || reducedMotion) return;
+    gsap.fromTo('.studio-intro-word', { y: 14, opacity: 0.2 }, { y: 0, opacity: 1, duration: 0.75, stagger: 0.08, ease: 'power3.out' });
+    gsap.fromTo('.studio-intro-copy', { opacity: 0.2 }, { opacity: 1, duration: 0.8, delay: 0.25 });
+  }, { dependencies: [session.status, reducedMotion], scope: introRef, revertOnUpdate: true });
 
   const handleSelectFilterValue = async (mode: FilterMode, val: string) => {
     audioEngine.playUiTick(1.08, 'selection');
@@ -1159,14 +1140,6 @@ export const VinylRushGame: React.FC = () => {
     effectiveDifficultyInfo.effectiveTier,
   ]);
 
-  const emotionBadgeText = useMemo(() => {
-    if (mascotState === 'listening') return 'Dancing';
-    if (mascotState === 'celebrating') return 'Beaming';
-    if (mascotState === 'sympathy') return 'Pouting';
-    if (mascotState === 'hyped') return 'Grooving';
-    return 'Ready';
-  }, [mascotState]);
-
   const isFeverActive = session.streak >= 2;
   const activeBgHex = isLight ? currentMood.bgLightHex : currentMood.bgDarkHex;
 
@@ -1181,8 +1154,13 @@ export const VinylRushGame: React.FC = () => {
     : 'bg-[#EDFF8C] text-[#000000] hover:bg-[#F4FFAD] shadow-[0_10px_24px_rgba(237,255,140,0.2)]';
 
   return (
+    <MotionConfig reducedMotion={reducedMotion ? 'always' : 'never'} transition={{ type: 'spring', stiffness: 360, damping: 32 }}>
     <main
-      className={`relative h-dvh w-screen overflow-hidden select-none transition-colors duration-500 ${
+      data-theme={themeMode}
+      data-state={session.status}
+      data-dock-collapsed={isDockCollapsed}
+      data-reduced-motion={reducedMotion}
+      className={`wavelet-app relative h-dvh w-full max-w-full overflow-x-hidden overflow-y-auto select-none transition-colors duration-500 ${
         isLight ? 'text-[#000000]' : 'text-[#FFFFFF]'
       }`}
       style={{
@@ -1199,7 +1177,10 @@ export const VinylRushGame: React.FC = () => {
         themeMode={themeMode}
         isPlayingSnippet={isPlayingSnippet}
         gameState={session.status}
+        reducedMotion={reducedMotion}
         onMascotInteract={() => {
+          companionTaps.current += 1;
+          if (companionTaps.current % 3 === 0) discoverGroove(`${activeCharacter.name} knows a secret dance.`);
           setMascotState('hyped');
           setMascotSpeech(
             `${progression.callsign} · Overall ${progression.overallScore} pts · ${overallWlStats.winRatePercent}% Win Rate`
@@ -1213,6 +1194,10 @@ export const VinylRushGame: React.FC = () => {
         }}
       />
 
+      {session.status !== 'title' && <h1 className="sr-only">Wavelet music guessing game</h1>}
+      {session.status !== 'title' && session.status !== 'playing' && <button type="button" className="studio-icon-button studio-floating-settings" aria-label="Open settings" onClick={() => setIsSettingsOpen(true)}><GearSix size={20} /></button>}
+      <DiscoveryDelight discovery={discovery} reducedMotion={reducedMotion} />
+
       {/* Quest / XP / Profile Achievement Toast */}
       <AnimatePresence>
         {lastXpToast && (
@@ -1223,7 +1208,7 @@ export const VinylRushGame: React.FC = () => {
             className="pointer-events-none fixed top-16 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#000000] px-4 py-2 text-xs font-bold text-[#EDFF8C] shadow-xl"
           >
             <Trophy weight="fill" className="h-4 w-4 shrink-0" />
-            <span>{lastXpToast}</span>
+            <span role="status">{lastXpToast}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1235,294 +1220,36 @@ export const VinylRushGame: React.FC = () => {
         </div>
       )}
 
-      {/* Desktop / Tablet Mobile-First Preview Bar */}
-      {isDesktopViewport && showDesktopBanner && (
-        <div
-          role="region"
-          aria-label="Mobile-only experience notice"
-          className={`pointer-events-auto fixed top-2.5 left-1/2 z-40 flex w-[min(94vw,720px)] -translate-x-1/2 items-center justify-between gap-3 rounded-full border px-4 py-1.5 text-xs shadow-sm transition-colors ${
-            isLight
-              ? 'border-[#D1D1D1] bg-[#FFFFFF]/95 text-[#000000]'
-              : 'border-white/15 bg-[#12161D]/95 text-white'
-          }`}
-        >
-          <div className="flex items-center gap-2 min-w-0">
-            <DeviceMobile weight="duotone" className="h-4 w-4 text-[#309F92] shrink-0" />
-            <p className="truncate font-medium">
-              <strong>Mobile-First 3D Experience</strong> · Designed for handheld thumb gestures
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                audioEngine.playUiTick(1.05, 'light');
-                setMobileFrameLocked((prev) => !prev);
-              }}
-              className={`inline-flex min-h-[30px] items-center gap-1.5 rounded-full px-3 py-1 font-bold transition-colors whitespace-nowrap ${
-                isLight
-                  ? 'bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
-                  : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              <Desktop weight="bold" className="h-3.5 w-3.5" />
-              <span>{mobileFrameLocked ? 'Expand Canvas' : 'Mobile Frame'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                audioEngine.playUiTick(0.9, 'light');
-                setShowDesktopBanner(false);
-              }}
-              aria-label="Dismiss desktop disclaimer"
-              className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
-                isLight
-                  ? 'bg-[#F1F1F1] text-[#000000]/70 hover:bg-[#E5E5E5]'
-                  : 'bg-white/10 text-white/70 hover:bg-white/20'
-              }`}
-            >
-              <X weight="bold" className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Responsive Mobile-First Shell Container */}
       <div
-        className={`pointer-events-none relative z-20 mx-auto flex h-full w-full flex-col justify-between transition-all duration-300 ${
+        className={`wavelet-shell pointer-events-none relative z-20 mx-auto flex min-h-full w-full flex-col justify-between transition-all duration-300 ${
           isDesktopViewport && mobileFrameLocked
             ? isLight
               ? 'max-w-[430px] border-x border-[#D1D1D1]/80 shadow-[0_0_60px_rgba(0,0,0,0.06)]'
               : 'max-w-[430px] border-x border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.75)]'
             : 'max-w-5xl'
-        } ${isDesktopViewport && showDesktopBanner ? 'pt-14' : 'pt-3.5'} pb-3.5 px-3.5`}
+        } pt-3.5 pb-3.5 px-3.5`}
       >
         {/* =====================================================================
             STATE 1: TITLE SCREEN STAGE (MINIMAL BAUHAUS / URBANIST MOBILE UI)
            ===================================================================== */}
         {session.status === 'title' && (
           <>
-            {/* Minimal Top Header + Compact Companion Pill */}
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="pointer-events-auto flex flex-col gap-2"
-            >
-              <div className="flex items-center justify-between gap-2">
-                {/* Zone 1: 9-Dot Brand Mark + Clean Wordmark */}
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <NineDotBrandMark isLight={isLight} />
-                  <div className="min-w-0 leading-tight">
-                    <div className="text-base font-bold tracking-tight truncate">
-                      {progression.callsign || 'Vinyl Rush'}
-                    </div>
-                    <div
-                      className={`flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap ${
-                        isLight ? 'text-[#000000]/60' : 'text-white/60'
-                      }`}
-                    >
-                      <span>Lv.{tierInfo.level}</span>
-                      <span aria-hidden="true">·</span>
-                      <span className="font-mono tabular-nums">{progression.overallScore} pts</span>
-                      <span aria-hidden="true">·</span>
-                      <span className="font-mono tabular-nums text-[#309F92]">
-                        {overallWlStats.winRatePercent}% W
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Zone 2: Tactile Circular Utility Controls (Matching IMG_5846 & IMG_5847) */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {/* Player Profile, Stats & Vinyl Pass Trigger */}
-                  <motion.button
-                    type="button"
-                    whileTap={{ scale: 0.94 }}
-                    data-testid="vinyl-pass-btn"
-                    onClick={() => {
-                      audioEngine.playTabSwitch(true);
-                      setIsPassModalOpen(true);
-                    }}
-                    className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition-colors whitespace-nowrap ${
-                      isLight
-                        ? 'border-[#000000]/12 bg-[#EDFF8C] text-[#000000]'
-                        : 'border-[#EDFF8C]/35 bg-[#EDFF8C] text-[#000000]'
-                    }`}
-                  >
-                    <UserCircle weight="fill" className="h-4 w-4 text-[#309F92]" />
-                    <span className="font-mono tabular-nums">{tierInfo.grade}</span>
-                    <ArrowUpRight weight="bold" className="h-3 w-3 opacity-70" />
-                  </motion.button>
-
-                  {/* Theme Switcher */}
-                  <motion.button
-                    type="button"
-                    whileTap={{ scale: 0.92 }}
-                    data-testid="theme-toggle-btn"
-                    onClick={toggleThemeMode}
-                    aria-label={isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
-                    title={isLight ? 'Switch to Dark Mode [T]' : 'Switch to Light Mode [T]'}
-                    className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${circleBtnClass}`}
-                  >
-                    {isLight ? (
-                      <Sun weight="bold" className="h-4 w-4" />
-                    ) : (
-                      <Moon weight="bold" className="h-4 w-4 text-[#EDFF8C]" />
-                    )}
-                  </motion.button>
-
-                  {/* Spotify & Apple Music Account Sync */}
-                  <motion.button
-                    type="button"
-                    whileTap={{ scale: 0.92 }}
-                    onClick={() => {
-                      audioEngine.playTabSwitch(true);
-                      setIsAccountModalOpen(true);
-                    }}
-                    aria-label="Sync Spotify or Apple Music"
-                    className={`flex h-10 items-center gap-1 rounded-full border px-2.5 transition-colors ${circleBtnClass}`}
-                  >
-                    <SpotifyLogo weight="fill" className="h-4 w-4 text-[#1DB954]" />
-                    <AppleLogo weight="fill" className="h-4 w-4 text-[#FA243C]" />
-                  </motion.button>
-
-                  {!isInstalled && (isInstallable || isIOS) && (
-                    <motion.button
-                      type="button"
-                      whileTap={{ scale: 0.92 }}
-                      onClick={() => {
-                        audioEngine.playUiTick(1.15, 'light');
-                        if (isInstallable) {
-                          install();
-                        } else {
-                          setShowIOSInstallTip((prev) => !prev);
-                        }
-                      }}
-                      aria-label="Install Vinyl Rush PWA"
-                      className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${circleBtnClass}`}
-                    >
-                      <DownloadSimple weight="bold" className="h-4 w-4" />
-                    </motion.button>
-                  )}
-
-                  {/* Mute Toggle */}
-                  <motion.button
-                    type="button"
-                    whileTap={{ scale: 0.92 }}
-                    onClick={() => {
-                      audioEngine.triggerHaptic('light');
-                      const next = !isMuted;
-                      setIsMuted(next);
-                      audioEngine.setMuted(next);
-                    }}
-                    aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
-                    className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${circleBtnClass}`}
-                  >
-                    {isMuted ? (
-                      <SpeakerSlash weight="bold" className="h-4 w-4 text-rose-500" />
-                    ) : (
-                      <SpeakerHigh weight="bold" className="h-4 w-4 text-[#309F92]" />
-                    )}
-                  </motion.button>
-                </div>
+            <div className="pointer-events-auto studio-title-top">
+              <header className="studio-header">
+                <WaveletBrand reducedMotion={reducedMotion} onDiscover={() => discoverGroove()} />
+                <nav aria-label="Studio utilities" className="studio-header-actions">
+                  <button type="button" className="studio-icon-button" data-testid="vinyl-pass-btn" aria-label="Open player profile" title="Your profile & progress" onClick={() => { audioEngine.playTabSwitch(); setIsPassModalOpen(true); }}><UserCircle size={22} /></button>
+                  <button type="button" className="studio-icon-button" data-testid="settings-btn" aria-label="Open settings" aria-haspopup="dialog" aria-expanded={isSettingsOpen} onClick={() => { audioEngine.playTabSwitch(); setIsSettingsOpen(true); }}><GearSix size={21} /></button>
+                </nav>
+              </header>
+              <div ref={introRef} className="studio-intro">
+                <p className="studio-eyebrow studio-intro-copy">The music guessing game</p>
+                <h1 className="max-w-md"><span className="studio-intro-word">Little clips.</span><br /><span className="studio-intro-word studio-intro-accent">Big music energy.</span></h1>
+                <p className="studio-intro-copy">Listen. Trust your ears. Find your groove.</p>
               </div>
-
-              {showIOSInstallTip && (
-                <div
-                  className={`rounded-2xl border p-3 text-xs font-medium ${
-                    isLight
-                      ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
-                      : 'border-white/15 bg-[#12161D] text-white'
-                  }`}
-                >
-                  To install on iOS: tap <strong>Share</strong> in Safari and choose{' '}
-                  <strong>Add to Home Screen</strong>.
-                </div>
-              )}
-
-              {/* Minimal Companion Strip (Inspired by IMG_5847 Contact Header Card) */}
-              <div
-                className={`flex items-center justify-between gap-2 rounded-full border py-1.5 pl-2 pr-2.5 text-xs transition-colors ${
-                  isLight
-                    ? 'border-[#D1D1D1] bg-[#FFFFFF]/90 text-[#000000]'
-                    : 'border-white/12 bg-[#12161D]/90 text-white'
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <motion.button
-                    type="button"
-                    whileTap={{ scale: 0.92 }}
-                    onClick={cycleMascotCharacter}
-                    title="Tap to switch 3D companion"
-                    className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-[#309F92]"
-                  >
-                    <img
-                      src={activeCharacter.avatarImg}
-                      alt={activeCharacter.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </motion.button>
-                  <div className="min-w-0 flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={cycleMascotCharacter}
-                      className="font-bold hover:underline shrink-0"
-                    >
-                      {activeCharacter.name}
-                    </button>
-                    <span aria-hidden="true" className="opacity-40">
-                      ·
-                    </span>
-                    <span className="truncate opacity-75">{mascotSpeech}</span>
-                  </div>
-                </div>
-
-                <motion.button
-                  type="button"
-                  whileTap={{ scale: 0.94 }}
-                  onClick={() => {
-                    audioEngine.playUiTick(1.1, 'light');
-                    setShowCameoVideo((v) => !v);
-                  }}
-                  aria-label="Toggle 3D Mascot Dance Video"
-                  className={`inline-flex h-7 shrink-0 items-center gap-1 rounded-full px-2.5 text-[11px] font-bold transition-colors ${
-                    showCameoVideo
-                      ? 'bg-[#309F92] text-[#FFFFFF]'
-                      : isLight
-                        ? 'bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
-                        : 'bg-white/10 text-white hover:bg-white/15'
-                  }`}
-                >
-                  <FilmStrip weight="bold" className="h-3.5 w-3.5" />
-                  <span>{emotionBadgeText}</span>
-                </motion.button>
-              </div>
-
-              <AnimatePresence>
-                {showCameoVideo && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.92, y: -6 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.92, y: -6 }}
-                    className={`self-end overflow-hidden rounded-[22px] border p-1.5 shadow-xl ${
-                      isLight
-                        ? 'border-[#D1D1D1] bg-[#FFFFFF]'
-                        : 'border-white/15 bg-[#12161D]'
-                    }`}
-                  >
-                    <video
-                      src="/assets/aistudio/gemini_generated_video_7AE59D01_39556c31.mp4"
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      className="h-28 w-28 rounded-[16px] object-cover"
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
+              {preferences.danceVideo && !reducedMotion && <video src="/assets/aistudio/gemini_generated_video_7AE59D01_39556c31.mp4" autoPlay loop muted playsInline aria-label="Your companion dancing" className="studio-cameo" />}
+            </div>
 
             {/* Unobstructed 3D Center Stage */}
             <div className="pointer-events-none flex-1" />
@@ -1533,7 +1260,8 @@ export const VinylRushGame: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
               aria-label="Game Configuration Dock"
-              className={`pointer-events-auto rounded-[28px] border p-3.5 transition-all duration-300 space-y-2.5 ${
+              data-testid="game-configuration"
+              className={`studio-game-dock pointer-events-auto rounded-[28px] border p-3.5 transition-all duration-300 space-y-2.5 ${
                 isLight
                   ? 'border-[#D1D1D1] bg-[#FFFFFF]/96 text-[#000000] shadow-[0_16px_40px_rgba(0,0,0,0.06)]'
                   : 'border-white/12 bg-[#12161D]/96 text-[#FFFFFF] shadow-2xl'
@@ -1547,7 +1275,7 @@ export const VinylRushGame: React.FC = () => {
                       isLight ? 'text-[#000000]/70' : 'text-white/70'
                     }`}
                   >
-                    Game Mode · {activeChallengeModeDef.subtitle}
+                    Find your challenge
                   </span>
 
                   {/* Difficulty Tier Selector Pill (Chill 1.0x / Club 1.35x / Master 1.85x) */}
@@ -1564,10 +1292,11 @@ export const VinylRushGame: React.FC = () => {
                         <button
                           key={tier.id}
                           type="button"
+                          aria-pressed={active}
                           onClick={() => handleSelectDifficulty(tier.id)}
                           className={`rounded-full px-2 py-0.5 text-[10px] font-bold transition-colors ${
                             active
-                              ? 'bg-[#309F92] text-[#FFFFFF]'
+                              ? 'bg-[#12786C] text-[#FFFFFF]'
                               : isLight
                                 ? 'text-[#000000]/65 hover:text-[#000000]'
                                 : 'text-white/65 hover:text-white'
@@ -1583,16 +1312,13 @@ export const VinylRushGame: React.FC = () => {
                 <div className="grid grid-cols-4 gap-1.5" role="group" aria-label="Guessing Game Modes">
                   {GAME_CHALLENGE_MODES.map((m) => {
                     const isSelected = challengeMode === m.id;
-                    const modeRecord = progression.modeStats?.[m.id];
-                    const modeWl = calculateWinLossRatio(
-                      modeRecord?.wins ?? 0,
-                      modeRecord?.losses ?? 0
-                    );
                     return (
                       <motion.button
                         key={m.id}
                         type="button"
                         whileTap={{ scale: 0.96 }}
+                        aria-pressed={isSelected}
+                        aria-label={`Guess the ${m.id}`}
                         data-testid={`mode-${m.id}-btn`}
                         onClick={() => handleSelectChallengeMode(m.id)}
                         className={`flex flex-col justify-between rounded-[18px] border p-2 text-left transition-all min-w-0 ${
@@ -1605,28 +1331,8 @@ export const VinylRushGame: React.FC = () => {
                               : 'border-white/10 bg-white/5 text-white hover:bg-white/10'
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-1 w-full">
-                          <span className="font-mono text-[9px] font-bold uppercase tracking-wider opacity-60">
-                            {m.shortLabel}
-                          </span>
-                          <span
-                            className={`h-2 w-2 shrink-0 ${
-                              m.shapeType === 'circle'
-                                ? 'rounded-full'
-                                : m.shapeType === 'arch'
-                                  ? 'rounded-t-full'
-                                  : m.shapeType === 'pill'
-                                    ? 'rounded-full w-3'
-                                    : 'rounded-[3px]'
-                            } ${isSelected ? 'bg-[#309F92]' : 'bg-current opacity-35'}`}
-                          />
-                        </div>
-                        <div className="mt-1 truncate text-xs font-extrabold tracking-tight">
-                          {m.title}
-                        </div>
-                        <div className="mt-0.5 truncate font-mono text-[10px] tabular-nums opacity-70">
-                          {modeWl.totalRounds > 0 ? `${modeWl.winRatePercent}% W` : 'Ready'}
-                        </div>
+                        <span className="text-[13px] font-extrabold tracking-tight">{m.id.charAt(0).toUpperCase() + m.id.slice(1)}</span>
+                        <span className="mt-1 text-[10px] opacity-65">{{ track: 'Name it', artist: 'Who sings?', genre: 'The vibe', year: 'Go back' }[m.id]}</span>
                       </motion.button>
                     );
                   })}
@@ -1675,7 +1381,7 @@ export const VinylRushGame: React.FC = () => {
                     }}
                     className={`min-h-[34px] shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors whitespace-nowrap ${
                       filterMode === 'account'
-                        ? 'bg-[#309F92] text-[#FFFFFF]'
+                        ? 'bg-[#12786C] text-[#FFFFFF]'
                         : isLight
                           ? 'bg-[#F1F1F1] text-[#000000]/75 hover:bg-[#E5E5E5]'
                           : 'bg-white/8 text-white/80 hover:bg-white/15'
@@ -1697,7 +1403,7 @@ export const VinylRushGame: React.FC = () => {
                   aria-expanded={isRulesDrawerOpen}
                   className={`inline-flex min-h-[34px] shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-colors whitespace-nowrap ${
                     isRulesDrawerOpen
-                      ? 'border-[#309F92] bg-[#309F92] text-[#FFFFFF]'
+                      ? 'border-[#12786C] bg-[#12786C] text-[#FFFFFF]'
                       : isLight
                         ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
                         : 'border-white/15 bg-white/10 text-white hover:bg-white/15'
@@ -1716,7 +1422,7 @@ export const VinylRushGame: React.FC = () => {
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                    className="overflow-hidden"
+                    className="studio-rules-scroll overflow-hidden"
                   >
                     <div
                       className={`rounded-[22px] border p-3 space-y-3 ${
@@ -1725,85 +1431,6 @@ export const VinylRushGame: React.FC = () => {
                           : 'border-white/10 bg-black/40'
                       }`}
                     >
-                      {/* Difficulty Scaling Details */}
-                      <div>
-                        <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span
-                            className={`font-semibold ${
-                              isLight ? 'text-[#000000]/65' : 'text-white/65'
-                            }`}
-                          >
-                            Difficulty Scaling ({activeDifficultyDef.multiplier}x Points)
-                          </span>
-                          <span className="font-mono text-[10px] font-bold text-[#309F92]">
-                            {activeDifficultyDef.cluePolicy}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          {DIFFICULTY_TIERS.map((tier) => (
-                            <button
-                              key={tier.id}
-                              type="button"
-                              onClick={() => handleSelectDifficulty(tier.id)}
-                              className={`rounded-[14px] border px-2.5 py-1.5 text-left transition-colors ${
-                                difficulty === tier.id
-                                  ? 'border-[#309F92] bg-[#309F92] text-[#FFFFFF]'
-                                  : isLight
-                                    ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
-                                    : 'border-white/10 bg-white/5 text-white'
-                              }`}
-                            >
-                              <div className="text-xs font-bold">{tier.shortLabel}</div>
-                              <div className="font-mono text-[10px] opacity-80">
-                                {tier.multiplier}x · {tier.recommendedSnippet}s
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Mascot Companion Selector */}
-                      <div>
-                        <span
-                          className={`block text-[11px] font-semibold mb-1.5 ${
-                            isLight ? 'text-[#000000]/65' : 'text-white/65'
-                          }`}
-                        >
-                          3D Vinyl Companion
-                        </span>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          {MASCOT_CHARACTERS.map((char) => (
-                            <motion.button
-                              key={char.id}
-                              type="button"
-                              whileTap={{ scale: 0.96 }}
-                              onClick={() => {
-                                audioEngine.playUiTick(1.25, 'selection');
-                                setCharacterId(char.id);
-                                setMascotState('hyped');
-                                setMascotSpeech(`${char.name} ready · ${char.tagline}`);
-                              }}
-                              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-left text-xs font-bold transition-all whitespace-nowrap ${
-                                characterId === char.id
-                                  ? isLight
-                                    ? 'border-[#000000] bg-[#EDFF8C] text-[#000000]'
-                                    : 'border-[#EDFF8C] bg-[#EDFF8C] text-[#000000]'
-                                  : isLight
-                                    ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
-                                    : 'border-white/10 bg-white/5 text-white'
-                              }`}
-                            >
-                              <img
-                                src={char.avatarImg}
-                                alt={char.name}
-                                className="h-5 w-5 rounded-full object-cover shrink-0"
-                              />
-                              <span className="truncate">{char.name}</span>
-                            </motion.button>
-                          ))}
-                        </div>
-                      </div>
-
                       {/* Snippet Duration Selector (1s, 3s, 5s, 10s, 15s, 30s) */}
                       <div>
                         <div className="flex items-center justify-between text-[11px] mb-1">
@@ -1814,7 +1441,7 @@ export const VinylRushGame: React.FC = () => {
                           >
                             Snippet Play Time
                           </span>
-                          <span className="font-mono font-bold tabular-nums text-[#309F92]">
+                          <span className="font-mono font-bold tabular-nums text-[#12786C]">
                             Up to +{potentialPoints} pts
                           </span>
                         </div>
@@ -1872,7 +1499,7 @@ export const VinylRushGame: React.FC = () => {
                                 }}
                                 className={`min-h-[32px] rounded-full text-xs font-mono font-bold tabular-nums transition-colors ${
                                   songCount === count
-                                    ? 'bg-[#309F92] text-[#FFFFFF]'
+                                    ? 'bg-[#12786C] text-[#FFFFFF]'
                                     : isLight
                                       ? 'text-[#000000]/70 hover:text-[#000000]'
                                       : 'text-white/70 hover:text-white'
@@ -1953,8 +1580,8 @@ export const VinylRushGame: React.FC = () => {
                           aria-label="Custom artist, genre, or year search"
                           className={`w-full rounded-full border pl-9 pr-3.5 py-2 text-xs focus:outline-none ${
                             isLight
-                              ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000] placeholder-[#000000]/40 focus:border-[#309F92]'
-                              : 'border-white/15 bg-black/50 text-white placeholder-white/40 focus:border-[#309F92]'
+                              ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000] placeholder-[#000000]/40 focus:border-[#12786C]'
+                              : 'border-white/15 bg-black/50 text-white placeholder-white/40 focus:border-[#12786C]'
                           }`}
                         />
                       </div>
@@ -1974,7 +1601,7 @@ export const VinylRushGame: React.FC = () => {
                 <div className="flex items-center gap-2 min-w-0">
                   <Play weight="fill" className="h-4 w-4 shrink-0" />
                   <span className="truncate">
-                    Drop the Needle · {activeChallengeModeDef.title} ({songCount} Songs)
+                    Let’s play
                   </span>
                 </div>
                 <span
@@ -1984,7 +1611,7 @@ export const VinylRushGame: React.FC = () => {
                       : 'bg-[#000000] text-[#EDFF8C]'
                   }`}
                 >
-                  {snippetDuration}s · {activeDifficultyDef.shortLabel}
+                  {songCount} songs · {snippetDuration}s
                 </span>
               </motion.button>
             </motion.section>
@@ -2038,7 +1665,7 @@ export const VinylRushGame: React.FC = () => {
                         <Fire weight="fill" className="h-3.5 w-3.5 text-[#E07A47]" />
                       )}
                     </div>
-                    <div className="text-lg font-bold font-mono tabular-nums text-[#309F92]">
+                    <div className="text-lg font-bold font-mono tabular-nums text-[#12786C]">
                       {roundFeedback?.answered
                         ? roundFeedback.correct
                           ? session.streak + 1
@@ -2068,7 +1695,6 @@ export const VinylRushGame: React.FC = () => {
                   <motion.button
                     type="button"
                     whileTap={{ scale: 0.92 }}
-                    tabIndex={-1}
                     onClick={(e) => {
                       e.currentTarget.blur();
                       audioEngine.playTabSwitch(true);
@@ -2077,53 +1703,15 @@ export const VinylRushGame: React.FC = () => {
                     aria-label="Open User Profile and Vinyl Pass"
                     className="inline-flex h-9 items-center gap-1 rounded-full bg-[#EDFF8C] px-2.5 text-xs font-bold text-[#000000]"
                   >
-                    <Coins weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
+                    <Coins weight="fill" className="h-3.5 w-3.5 text-[#12786C]" />
                     <span className="font-mono tabular-nums">{progression.coins}</span>
                   </motion.button>
 
-                  <motion.button
-                    type="button"
-                    whileTap={{ scale: 0.92 }}
-                    tabIndex={-1}
-                    onClick={(e) => {
-                      e.currentTarget.blur();
-                      toggleThemeMode();
-                    }}
-                    aria-label={isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
-                    className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${circleBtnClass}`}
-                  >
-                    {isLight ? (
-                      <Sun weight="bold" className="h-4 w-4" />
-                    ) : (
-                      <Moon weight="bold" className="h-4 w-4 text-[#EDFF8C]" />
-                    )}
-                  </motion.button>
+                  <button type="button" className="studio-icon-button" aria-label="Open settings" aria-haspopup="dialog" aria-expanded={isSettingsOpen} onClick={() => { audioEngine.playTabSwitch(); setIsSettingsOpen(true); }}><GearSix size={20} /></button>
 
                   <motion.button
                     type="button"
                     whileTap={{ scale: 0.92 }}
-                    tabIndex={-1}
-                    onClick={(e) => {
-                      e.currentTarget.blur();
-                      audioEngine.triggerHaptic('light');
-                      const next = !isMuted;
-                      setIsMuted(next);
-                      audioEngine.setMuted(next);
-                    }}
-                    aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
-                    className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${circleBtnClass}`}
-                  >
-                    {isMuted ? (
-                      <SpeakerSlash weight="bold" className="h-4 w-4 text-rose-500" />
-                    ) : (
-                      <SpeakerHigh weight="bold" className="h-4 w-4 text-[#309F92]" />
-                    )}
-                  </motion.button>
-
-                  <motion.button
-                    type="button"
-                    whileTap={{ scale: 0.92 }}
-                    tabIndex={-1}
                     onClick={(e) => {
                       e.currentTarget.blur();
                       audioEngine.playUiTick(0.95, 'light');
@@ -2250,7 +1838,7 @@ export const VinylRushGame: React.FC = () => {
                                 : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                           >
-                            <Play weight="fill" className="h-3.5 w-3.5 shrink-0 text-[#309F92]" />
+                            <Play weight="fill" className="h-3.5 w-3.5 shrink-0 text-[#12786C]" />
                             <span className="truncate">
                               {isPlayingSnippet ? `${snippetDuration}s` : 'Replay'}
                             </span>
@@ -2316,13 +1904,13 @@ export const VinylRushGame: React.FC = () => {
                             onClick={handleUseArtistHint}
                             className={`flex min-h-[32px] min-w-0 items-center justify-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold transition-colors ${
                               artistHintText
-                                ? 'bg-[#309F92] text-[#FFFFFF]'
+                                ? 'bg-[#12786C] text-[#FFFFFF]'
                                 : isLight
                                   ? 'bg-[#FFFFFF] text-[#000000] shadow-2xs hover:bg-[#EDFF8C]'
                                   : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                           >
-                            <Lightbulb weight="fill" className="h-3.5 w-3.5 shrink-0 text-[#309F92]" />
+                            <Lightbulb weight="fill" className="h-3.5 w-3.5 shrink-0 text-[#12786C]" />
                             <span className="truncate">{artistHintText ? 'Clue On' : 'Clue'}</span>
                           </motion.button>
 
@@ -2333,7 +1921,7 @@ export const VinylRushGame: React.FC = () => {
                             onClick={handleUseFiftyFifty}
                             className={`flex min-h-[32px] min-w-0 items-center justify-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold transition-colors ${
                               eliminatedOptionIds.length > 0
-                                ? 'bg-[#309F92] text-[#FFFFFF]'
+                                ? 'bg-[#12786C] text-[#FFFFFF]'
                                 : isLight
                                   ? 'bg-[#FFFFFF] text-[#000000] shadow-2xs hover:bg-[#EDFF8C]'
                                   : 'bg-white/10 text-white hover:bg-white/20'
@@ -2356,7 +1944,7 @@ export const VinylRushGame: React.FC = () => {
                                   : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                           >
-                            <Lightning weight="fill" className="h-3.5 w-3.5 shrink-0 text-[#309F92]" />
+                            <Lightning weight="fill" className="h-3.5 w-3.5 shrink-0 text-[#12786C]" />
                             <span className="truncate">{doubleBoostActive ? '2x On' : '2x Boost'}</span>
                           </motion.button>
                         </div>
@@ -2366,7 +1954,7 @@ export const VinylRushGame: React.FC = () => {
                     {/* Active Mode Prompt Header */}
                     {!roundFeedback?.answered && (
                       <div className="flex items-center justify-between px-1 text-[11px]">
-                        <span className="font-bold text-[#309F92] truncate">
+                        <span className="font-bold text-[#12786C] truncate">
                           {activeChallengeModeDef.badgeCode} · {activeChallengeModeDef.promptLabel}
                         </span>
                         <span className="font-mono font-bold tabular-nums opacity-65 shrink-0 ml-2">
@@ -2468,7 +2056,7 @@ export const VinylRushGame: React.FC = () => {
                         }`}
                       >
                         <div className="min-w-0 pl-1">
-                          <div className="text-xs font-bold text-[#309F92]">
+                          <div className="text-xs font-bold text-[#12786C]">
                             {roundFeedback.correct
                               ? `Correct · +${roundFeedback.points} pts · +${roundFeedback.xpGained} XP`
                               : `Missed ${activeChallengeModeDef.shortLabel} · +${roundFeedback.xpGained} XP`}
@@ -2538,7 +2126,7 @@ export const VinylRushGame: React.FC = () => {
               </div>
               <div>
                 <div className="text-[11px] font-semibold opacity-60">Streak</div>
-                <div className="text-2xl font-bold font-mono tabular-nums text-[#309F92]">
+                <div className="text-2xl font-bold font-mono tabular-nums text-[#12786C]">
                   {session.streak}x
                 </div>
               </div>
@@ -2604,7 +2192,7 @@ export const VinylRushGame: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs font-semibold text-[#309F92]">
+                <div className="text-xs font-semibold text-[#12786C]">
                   {activeChallengeModeDef.title} · Level {tierInfo.level} {tierInfo.name}
                 </div>
                 <h2 id="gameover-modal-title" className="text-2xl font-bold tracking-tight">
@@ -2647,7 +2235,7 @@ export const VinylRushGame: React.FC = () => {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-xs font-bold text-[#309F92]">
+                        <span className="font-mono text-xs font-bold text-[#12786C]">
                           {item.correct ? `+${item.pointsEarned}` : '0'}
                         </span>
                         <span aria-hidden="true" className="opacity-40">
@@ -2731,34 +2319,14 @@ export const VinylRushGame: React.FC = () => {
       {/* =====================================================================
           USER PROFILE, PER-MODE WIN/LOSS RATIOS & GAMIFICATION PASS MODAL
          ===================================================================== */}
-      <AnimatePresence>
-        {isPassModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="vinyl-pass-title"
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-3 pointer-events-auto"
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 24, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className={`relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[28px] border p-5 shadow-2xl space-y-4 ${
-                isLight
-                  ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
-                  : 'border-white/15 bg-[#12161D] text-[#FFFFFF]'
-              }`}
-            >
+      <StudioDialog open={isPassModalOpen} onClose={() => setIsPassModalOpen(false)} labelledBy="vinyl-pass-title" reducedMotion={reducedMotion}>
+        <div className="overflow-y-auto p-5 space-y-4">
               <div className="mx-auto mb-1 h-1.5 w-10 rounded-full bg-[#D1D1D1] dark:bg-white/20 sm:hidden" />
 
               {/* Header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-semibold text-[#309F92]">
+                  <span className="text-xs font-semibold text-[#12786C]">
                     Level {tierInfo.level} · {tierInfo.name}
                   </span>
                   <h2 id="vinyl-pass-title" className="text-xl font-bold tracking-tight">
@@ -2772,6 +2340,7 @@ export const VinylRushGame: React.FC = () => {
                     audioEngine.playUiTick(0.9, 'light');
                     setIsPassModalOpen(false);
                   }}
+                  autoFocus
                   aria-label="Close Selector Profile modal"
                   className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${circleBtnClass}`}
                 >
@@ -2830,7 +2399,7 @@ export const VinylRushGame: React.FC = () => {
                         <img
                           src={activeCharacter.avatarImg}
                           alt={activeCharacter.name}
-                          className="h-12 w-12 rounded-2xl object-cover border border-[#309F92] shrink-0"
+                          className="h-12 w-12 rounded-2xl object-cover border border-[#12786C] shrink-0"
                         />
                         <div className="min-w-0">
                           <div className="truncate text-base font-extrabold tracking-tight">
@@ -2839,7 +2408,7 @@ export const VinylRushGame: React.FC = () => {
                           <div className="truncate text-xs opacity-65">
                             {progression.tagline}
                           </div>
-                          <div className="mt-0.5 font-mono text-[10px] font-bold text-[#309F92]">
+                          <div className="mt-0.5 font-mono text-[10px] font-bold text-[#12786C]">
                             {authUser
                               ? 'Cloud Account Synced'
                               : 'Local Studio Profile · Sign in to sync'}
@@ -2950,7 +2519,7 @@ export const VinylRushGame: React.FC = () => {
                     </div>
                     <div className="border-l border-[#000000]/15 pl-3">
                       <div className="text-[11px] font-semibold opacity-70">Personal Best Set</div>
-                      <div className="font-mono text-2xl font-extrabold tabular-nums text-[#309F92]">
+                      <div className="font-mono text-2xl font-extrabold tabular-nums text-[#12786C]">
                         {progression.bestSetScore}
                       </div>
                       <div className="text-[10px] font-semibold opacity-75">
@@ -2971,7 +2540,7 @@ export const VinylRushGame: React.FC = () => {
                         {progression.totalWins ?? progression.totalCorrect}W -{' '}
                         {progression.totalLosses ?? 0}L
                       </div>
-                      <div className="font-mono text-[10px] font-bold text-[#309F92]">
+                      <div className="font-mono text-[10px] font-bold text-[#12786C]">
                         {overallWlStats.ratioFormatted}
                       </div>
                     </div>
@@ -2982,7 +2551,7 @@ export const VinylRushGame: React.FC = () => {
                       }`}
                     >
                       <div className="text-[10px] font-semibold opacity-60">Win Rate</div>
-                      <div className="mt-0.5 font-mono text-base font-extrabold tabular-nums text-[#309F92]">
+                      <div className="mt-0.5 font-mono text-base font-extrabold tabular-nums text-[#12786C]">
                         {overallWlStats.winRatePercent}%
                       </div>
                       <div className="font-mono text-[10px] opacity-65">
@@ -3018,7 +2587,7 @@ export const VinylRushGame: React.FC = () => {
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between text-xs font-bold opacity-70">
                     <span>Performance by Game Mode</span>
-                    <ChartBar weight="bold" className="h-4 w-4 text-[#309F92]" />
+                    <ChartBar weight="bold" className="h-4 w-4 text-[#12786C]" />
                   </div>
 
                   <div className="grid grid-cols-1 gap-2.5">
@@ -3043,7 +2612,7 @@ export const VinylRushGame: React.FC = () => {
                         >
                           <div className="flex items-center justify-between">
                             <div>
-                              <span className="font-mono text-[10px] font-bold text-[#309F92]">
+                              <span className="font-mono text-[10px] font-bold text-[#12786C]">
                                 {m.badgeCode}
                               </span>
                               <h3 className="text-sm font-extrabold tracking-tight">
@@ -3064,7 +2633,7 @@ export const VinylRushGame: React.FC = () => {
                             </div>
                             <div>
                               <div className="text-[10px] opacity-60">Ratio</div>
-                              <div className="text-xs font-bold tabular-nums text-[#309F92]">
+                              <div className="text-xs font-bold tabular-nums text-[#12786C]">
                                 {wl.ratioFormatted}
                               </div>
                             </div>
@@ -3107,7 +2676,7 @@ export const VinylRushGame: React.FC = () => {
                           <div className="flex items-center gap-1.5">
                             <CheckCircle
                               weight={q.completed ? 'fill' : 'regular'}
-                              className="h-4 w-4 text-[#309F92] shrink-0"
+                              className="h-4 w-4 text-[#12786C] shrink-0"
                             />
                             <span className="truncate text-xs font-bold">{q.title}</span>
                           </div>
@@ -3118,7 +2687,7 @@ export const VinylRushGame: React.FC = () => {
                         <span
                           className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-xs font-bold tabular-nums ${
                             q.completed
-                              ? 'bg-[#309F92] text-[#FFFFFF]'
+                              ? 'bg-[#12786C] text-[#FFFFFF]'
                               : 'bg-[#000000] text-[#EDFF8C]'
                           }`}
                         >
@@ -3142,8 +2711,8 @@ export const VinylRushGame: React.FC = () => {
                             className={`flex items-start gap-2 rounded-[18px] border p-2.5 ${
                               unlocked
                                 ? isLight
-                                  ? 'border-[#309F92]/40 bg-[#309F92]/10'
-                                  : 'border-[#309F92]/40 bg-[#309F92]/15'
+                                  ? 'border-[#12786C]/40 bg-[#12786C]/10'
+                                  : 'border-[#12786C]/40 bg-[#12786C]/15'
                                 : isLight
                                   ? 'border-[#D1D1D1] bg-[#F1F1F1]/40 opacity-55'
                                   : 'border-white/10 bg-white/[0.02] opacity-50'
@@ -3152,7 +2721,7 @@ export const VinylRushGame: React.FC = () => {
                             {unlocked ? (
                               <Medal
                                 weight="fill"
-                                className="h-4 w-4 text-[#309F92] shrink-0 mt-0.5"
+                                className="h-4 w-4 text-[#12786C] shrink-0 mt-0.5"
                               />
                             ) : (
                               <LockSimple
@@ -3173,15 +2742,21 @@ export const VinylRushGame: React.FC = () => {
                   </div>
                 </div>
               )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      </StudioDialog>
+
+      <StudioSettings open={isSettingsOpen} onClose={() => { audioEngine.playTabSwitch(false); setIsSettingsOpen(false); }}
+        preferences={preferences} onChange={updatePreferences} reducedMotion={reducedMotion}
+        characterId={characterId} onCharacterChange={selectCompanion}
+        onOpenMusic={() => setIsAccountModalOpen(true)} musicConnected={Boolean(connectedProfile)}
+        isInstalled={isInstalled} isInstallable={isInstallable} isIOS={isIOS} onInstall={install}
+        onPreviewSound={() => audioEngine.playDiscovery()} />
 
       {/* Spotify & Apple Music Account Connect Modal */}
       <MusicAccountModal
         isOpen={isAccountModalOpen}
         themeMode={themeMode}
+        reducedMotion={reducedMotion}
         onClose={() => setIsAccountModalOpen(false)}
         connectedProfile={connectedProfile}
         onConnectSuccess={(profile) => {
@@ -3199,5 +2774,6 @@ export const VinylRushGame: React.FC = () => {
         }}
       />
     </main>
+    </MotionConfig>
   );
 };

@@ -19,6 +19,7 @@ interface IsometricVinylStageProps {
   themeMode: ThemeMode;
   isPlayingSnippet: boolean;
   gameState: 'title' | 'playing' | 'paused' | 'gameover';
+  reducedMotion?: boolean;
   onTurntableInteract?: () => void;
   onMascotInteract?: () => void;
 }
@@ -151,11 +152,11 @@ function createBauhausCubeTexture(maxAnisotropy: number): THREE.CanvasTexture {
     }
   }
 
-  // Minimal corner caption ("VINYL" / "365" like IMG_5844)
+  // Wavelet's signature on the studio speaker.
   ctx.fillStyle = '#000000';
   ctx.font = '700 26px sans-serif';
-  ctx.fillText('VINYL', 54, 456);
-  ctx.fillText('365', 398, 456);
+  ctx.fillText('WAVELET', 54, 456);
+  ctx.fillText('w.', 398, 456);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -478,6 +479,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
   themeMode,
   isPlayingSnippet,
   gameState,
+  reducedMotion = false,
   onTurntableInteract,
   onMascotInteract,
 }) => {
@@ -490,6 +492,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     themeMode,
     isPlayingSnippet,
     gameState,
+    reducedMotion,
     onTurntableInteract,
     onMascotInteract,
   });
@@ -502,6 +505,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       themeMode,
       isPlayingSnippet,
       gameState,
+      reducedMotion,
       onTurntableInteract,
       onMascotInteract,
     };
@@ -512,6 +516,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     themeMode,
     isPlayingSnippet,
     gameState,
+    reducedMotion,
     onTurntableInteract,
     onMascotInteract,
   ]);
@@ -533,7 +538,6 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         : propsRef.current.mood.bgDarkHex;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(initialBgHex);
     scene.fog = new THREE.FogExp2(initialBgHex, 0.02);
 
     const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 140);
@@ -551,6 +555,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({
+        alpha: true,
         antialias: !isHeadless,
         powerPreference: 'high-performance',
       });
@@ -1598,11 +1603,13 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
           hitObj === brimMesh ||
           hitObj === domeMesh
         ) {
-          mascotBounceSpring.impulse(5.8);
-          mascotSquashSpring.impulse(3.2);
-          hatFollowSpring.impulse(7.4);
-          beanieFollowSpring.impulse(9.2);
-          mascotSpinBoost = Math.PI * 2;
+          if (!propsRef.current.reducedMotion) {
+            mascotBounceSpring.impulse(5.8);
+            mascotSquashSpring.impulse(3.2);
+            hatFollowSpring.impulse(7.4);
+            beanieFollowSpring.impulse(9.2);
+            mascotSpinBoost = Math.PI * 2;
+          }
           audioEngine.playUiTick(1.38, 'medium');
           propsRef.current.onMascotInteract?.();
         } else if (
@@ -1611,8 +1618,10 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
           hitObj === cubeBodyMesh ||
           hitObj === crateBoxMesh
         ) {
-          vinylScratchSpring.impulse(14.0);
-          cubeBassSpring.impulse(2.8);
+          if (!propsRef.current.reducedMotion) {
+            vinylScratchSpring.impulse(14.0);
+            cubeBassSpring.impulse(2.8);
+          }
           audioEngine.playUiTick(0.92, 'medium');
           propsRef.current.onTurntableInteract?.();
         }
@@ -1620,7 +1629,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     };
 
     const handlePointerMove = (e: PointerEvent) => {
-      if (!isDragging) return;
+      if (!isDragging || propsRef.current.reducedMotion) return;
       const dx = e.clientX - prevPointerX;
       const dy = e.clientY - prevPointerY;
       prevPointerX = e.clientX;
@@ -1659,10 +1668,14 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     let lastHeadlessRender = 0;
     let lastFaceSignature = '';
 
+    const stillSpectrum = { bass: 0.12, mid: 0.1, treble: 0.08, energy: 0.1, bins: new Float32Array(16).fill(0.12) };
+
     const animate = (nowMs: number) => {
       animFrameId = requestAnimationFrame(animate);
 
-      if (isHeadless && lastHeadlessRender > 0 && nowMs - lastHeadlessRender < 500) {
+      if (document.hidden) { prevTimeMs = nowMs; return; }
+      const minFrameTime = isHeadless ? 500 : propsRef.current.reducedMotion ? 100 : 0;
+      if (lastHeadlessRender > 0 && nowMs - lastHeadlessRender < minFrameTime) {
         return;
       }
       lastHeadlessRender = nowMs;
@@ -1670,14 +1683,13 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       const rawDt = Math.max(0.001, (nowMs - prevTimeMs) / 1000);
       prevTimeMs = nowMs;
       const dt = Math.min(rawDt, 0.045);
-      const elapsed = (nowMs - startTimeMs) / 1000;
-
       const currentProps = propsRef.current;
-      const spectrum = audioEngine.sampleSpectrum(elapsed);
+      const elapsed = currentProps.reducedMotion ? 0 : (nowMs - startTimeMs) / 1000;
+      const spectrum = currentProps.reducedMotion ? stillSpectrum : audioEngine.sampleSpectrum(elapsed);
       const isLight = currentProps.themeMode === 'light';
 
       // Trigger celebratory spring jump when mascotState transitions to celebrating or hyped
-      if (currentProps.mascotState !== prevMascotState) {
+      if (!currentProps.reducedMotion && currentProps.mascotState !== prevMascotState) {
         if (
           currentProps.mascotState === 'celebrating' ||
           currentProps.mascotState === 'hyped'
@@ -1697,7 +1709,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       // Beat Onset Detection: inject physical impulse on sudden bass spikes
       const bassDelta = spectrum.bass - prevBassVal;
       prevBassVal = spectrum.bass;
-      if (currentProps.isPlayingSnippet && bassDelta > 0.14) {
+      if (!currentProps.reducedMotion && currentProps.isPlayingSnippet && bassDelta > 0.14) {
         mascotBounceSpring.impulse(bassDelta * 3.8);
         mascotSquashSpring.impulse(bassDelta * 2.1);
         hatFollowSpring.impulse(bassDelta * 4.5);
@@ -1793,7 +1805,6 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       _targetPlinthColor.set(isLight ? 0xf6f6f3 : 0x181e27);
       _targetTopPlateColor.set(isLight ? 0xe5e5e2 : 0x222a36);
 
-      scene.background = (scene.background as THREE.Color).lerp(_targetBgColor, dt * 4.5);
       if (scene.fog instanceof THREE.FogExp2) {
         scene.fog.color.lerp(_targetBgColor, dt * 4.5);
       }
@@ -1854,7 +1865,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       const scratchBoost = Math.max(0, vinylScratchSpring.step(0, dt));
       const bpmRatio = THREE.MathUtils.clamp(currentProps.mood.bpm / 120, 0.75, 1.45);
       const baseSpinSpeed = currentProps.isPlayingSnippet ? 3.5 * bpmRatio : 0.6;
-      platterGroup.rotation.y -= (baseSpinSpeed + scratchBoost) * dt;
+      if (!currentProps.reducedMotion) platterGroup.rotation.y -= (baseSpinSpeed + scratchBoost) * dt;
       faderKnobMesh.position.z = THREE.MathUtils.damp(
         faderKnobMesh.position.z,
         0.55 + (bpmRatio - 1) * 0.65,
@@ -1889,7 +1900,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       // PIXAR MASCOT DANCE CHOREOGRAPHY & SECONDARY SPRING FOLLOW-THROUGH
       // =======================================================================
       const beatFreq = (currentProps.mood.bpm / 60) * Math.PI;
-      const danceIntensity =
+      const danceIntensity = currentProps.reducedMotion ? 0 :
         currentProps.isPlayingSnippet || currentProps.mascotState === 'celebrating'
           ? 1.0
           : currentProps.mascotState === 'hyped'
@@ -1897,7 +1908,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
             : 0.35;
 
       if (
-        (currentProps.mascotState === 'celebrating' || currentProps.mascotState === 'hyped') &&
+        !currentProps.reducedMotion && (currentProps.mascotState === 'celebrating' || currentProps.mascotState === 'hyped') &&
         mascotBounceSpring.value < 0.04 &&
         Math.random() < 0.06
       ) {

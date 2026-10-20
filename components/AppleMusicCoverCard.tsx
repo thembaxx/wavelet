@@ -162,7 +162,7 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
             <>
               <div
                 className={`flex items-center gap-1.5 text-[11px] font-semibold whitespace-nowrap overflow-hidden ${
-                  isLight ? 'text-[#309F92]' : 'text-[#EDFF8C]'
+                  isLight ? 'text-[#12786C]' : 'text-[#EDFF8C]'
                 }`}
               >
                 <Waveform weight="bold" className="h-3.5 w-3.5 shrink-0" />
@@ -231,7 +231,7 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
                   isPlayed
                     ? isRevealed && isLight
                       ? 'bg-[#000000]'
-                      : 'bg-[#309F92]'
+                      : 'bg-[#12786C]'
                     : isRevealed && isLight
                     ? 'bg-[#000000]/22'
                     : isLight
@@ -293,7 +293,7 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
             }`}
           >
             {savedApple ? (
-              <CheckCircle weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
+              <CheckCircle weight="fill" className="h-3.5 w-3.5 text-[#12786C]" />
             ) : (
               <AppleLogo weight="fill" className="h-3.5 w-3.5 text-[#FA243C]" />
             )}

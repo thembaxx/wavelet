@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vinyl-rush-365-pwa-v2';
+const CACHE_NAME = 'wavelet-studio-v3';
 const PRECACHE_URLS = [
   '/',
   '/icon.svg',

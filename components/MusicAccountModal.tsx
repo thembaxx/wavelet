@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
+import { StudioDialog } from './StudioDialog';
 import {
   SpotifyLogo,
   AppleLogo,
@@ -24,6 +25,7 @@ export interface ConnectedMusicProfile {
 interface MusicAccountModalProps {
   isOpen: boolean;
   themeMode: ThemeMode;
+  reducedMotion?: boolean;
   onClose: () => void;
   connectedProfile: ConnectedMusicProfile | null;
   onConnectSuccess: (profile: ConnectedMusicProfile) => void;
@@ -33,6 +35,7 @@ interface MusicAccountModalProps {
 export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
   isOpen,
   themeMode,
+  reducedMotion = false,
   onClose,
   connectedProfile,
   onConnectSuccess,
@@ -138,28 +141,8 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="account-modal-title"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-3 pointer-events-auto"
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.98 }}
-            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className={`relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[28px] border p-5 shadow-2xl ${
-              isLight
-                ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
-                : 'border-white/15 bg-[#12161D] text-[#FFFFFF]'
-            }`}
-          >
+    <StudioDialog open={isOpen} onClose={onClose} labelledBy="account-modal-title" reducedMotion={reducedMotion}>
+      <div className="overflow-y-auto p-5">
             {/* Drag Handle for Mobile Sheet Ergonomics */}
             <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[#D1D1D1] dark:bg-white/20 sm:hidden" />
 
@@ -183,6 +166,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                   audioEngine.playUiTick(0.9, 'light');
                   onClose();
                 }}
+                autoFocus
                 aria-label="Close music account modal"
                 className={`flex h-11 w-11 items-center justify-center rounded-full border transition-colors ${
                   isLight
@@ -204,7 +188,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <CheckCircle weight="fill" className="h-5 w-5 text-[#309F92] shrink-0" />
+                    <CheckCircle weight="fill" className="h-5 w-5 text-[#12786C] shrink-0" />
                     <div className="min-w-0">
                       <div className="truncate text-sm font-bold">{connectedProfile.displayName}</div>
                       <div className="truncate text-xs opacity-75">
@@ -246,8 +230,8 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                   placeholder="e.g. Daft Punk, SZA, Tyla, Outkast"
                   className={`mt-1.5 w-full rounded-2xl border px-3.5 py-2.5 text-sm focus:outline-none ${
                     isLight
-                      ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000] placeholder-[#000000]/40 focus:border-[#309F92] focus:bg-[#FFFFFF]'
-                      : 'border-white/15 bg-black/40 text-white placeholder-white/40 focus:border-[#309F92]'
+                      ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000] placeholder-[#000000]/40 focus:border-[#12786C] focus:bg-[#FFFFFF]'
+                      : 'border-white/15 bg-black/40 text-white placeholder-white/40 focus:border-[#12786C]'
                   }`}
                 />
               </div>
@@ -320,7 +304,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                 className={`mt-3 rounded-2xl px-3.5 py-2 text-xs font-semibold ${
                   isLight
                     ? 'bg-[#EDFF8C] text-[#000000]'
-                    : 'bg-[#309F92]/25 text-[#EDFF8C]'
+                    : 'bg-[#12786C]/25 text-[#EDFF8C]'
                 }`}
               >
                 {statusMessage}
@@ -334,7 +318,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                   : 'border-white/10 bg-black/30 text-white/70'
               }`}
             >
-              <div className="flex items-center gap-2 font-bold text-[#309F92]">
+              <div className="flex items-center gap-2 font-bold text-[#12786C]">
                 <ShieldCheck weight="fill" className="h-4 w-4 shrink-0" />
                 <span>Ephemeral In-Memory Privacy</span>
               </div>
@@ -349,9 +333,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                 </div>
               )}
             </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+      </div>
+    </StudioDialog>
   );
 };

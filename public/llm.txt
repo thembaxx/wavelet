@@ -1,0 +1,7 @@
+# Wavelet
+
+> The canonical LLM-readable product reference is at /llms.txt.
+
+- [Wavelet product overview](/llms.txt)
+- [Full product reference](/llms-full.txt)
+- [Play Wavelet](/)

@@ -1,4 +1,4 @@
-import { type SongMoodProfile } from './game-rules';
+import type { SongMoodProfile } from './game-rules';
 
 export interface AudioSpectrumFrame {
   bass: number;
@@ -13,12 +13,16 @@ export interface AudioSpectrumFrame {
 
 export type HapticPattern = 'selection' | 'light' | 'medium' | 'heavy' | 'success' | 'error';
 
-class VinylAudioEngine {
+export class WaveletAudioEngine {
   private ctx: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private freqData: Uint8Array<ArrayBuffer> | null = null;
   private audioEl: HTMLAudioElement | null = null;
   private isMuted = false;
+  private volume = 0.7;
+  private soundEffectsEnabled = true;
+  private hapticsEnabled = true;
+  private masterGain: GainNode | null = null;
   private isPlayingSnippet = false;
   private snippetStartTime = 0;
   private snippetTargetDuration = 5;
@@ -37,6 +41,9 @@ class VinylAudioEngine {
         (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = this.isMuted ? 0 : this.volume;
+        this.masterGain.connect(this.ctx.destination);
         this.analyser = this.ctx.createAnalyser();
         this.analyser.fftSize = 64;
         this.analyser.smoothingTimeConstant = 0.78;
@@ -50,6 +57,7 @@ class VinylAudioEngine {
   }
 
   public triggerHaptic(pattern: HapticPattern = 'light') {
+    if (!this.hapticsEnabled) return;
     if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
     try {
       switch (pattern) {
@@ -79,6 +87,7 @@ class VinylAudioEngine {
 
   public setMuted(muted: boolean) {
     this.isMuted = muted;
+    if (this.ctx && this.masterGain) this.masterGain.gain.setTargetAtTime(muted ? 0 : this.volume, this.ctx.currentTime, 0.015);
     if (this.audioEl) {
       this.audioEl.muted = muted;
     }
@@ -88,13 +97,45 @@ class VinylAudioEngine {
     return this.isMuted;
   }
 
+  public setVolume(volume: number) {
+    this.volume = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 0.7;
+    if (this.ctx && this.masterGain) this.masterGain.gain.setTargetAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime, 0.015);
+    if (this.audioEl) this.audioEl.volume = this.volume * 0.85;
+  }
+
+  public setSoundEffectsEnabled(enabled: boolean) { this.soundEffectsEnabled = enabled; }
+  public setHapticsEnabled(enabled: boolean) { this.hapticsEnabled = enabled; }
+
+  public playDiscovery(companion = false) {
+    this.triggerHaptic('success');
+    if (this.isMuted || !this.soundEffectsEnabled) return;
+    const ctx = this.ensureContext();
+    if (!ctx || !this.masterGain) return;
+    const notes = companion ? [659.25, 783.99, 987.77] : [392, 523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((frequency, index) => {
+      const oscillator = ctx.createOscillator();
+      const envelope = ctx.createGain();
+      const start = ctx.currentTime + index * 0.085;
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(frequency, start);
+      envelope.gain.setValueAtTime(0, start);
+      envelope.gain.linearRampToValueAtTime(0.11, start + 0.008);
+      envelope.gain.exponentialRampToValueAtTime(0.001, start + 0.36);
+      oscillator.connect(envelope);
+      envelope.connect(this.masterGain!);
+      oscillator.start(start);
+      oscillator.stop(start + 0.38);
+      oscillator.onended = () => { oscillator.disconnect(); envelope.disconnect(); };
+    });
+  }
+
   /**
    * Tactile micro-interaction sound + synchronized haptic pulse.
    * Crafted like a warm acoustic woodblock / mechanical switch click.
    */
   public playUiTick(pitchMultiplier = 1, haptic: HapticPattern = 'selection') {
     this.triggerHaptic(haptic);
-    if (this.isMuted) return;
+    if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
 
@@ -115,7 +156,7 @@ class VinylAudioEngine {
 
     osc.connect(filter);
     filter.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(this.masterGain!);
     osc.start(now);
     osc.stop(now + 0.042);
   }
@@ -125,7 +166,7 @@ class VinylAudioEngine {
    */
   public playTabSwitch(opening = true) {
     this.triggerHaptic('light');
-    if (this.isMuted) return;
+    if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
 
@@ -140,7 +181,7 @@ class VinylAudioEngine {
       gain.gain.setValueAtTime(0.08, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this.masterGain!);
       osc.start(t);
       osc.stop(t + 0.075);
     });
@@ -148,7 +189,7 @@ class VinylAudioEngine {
 
   public playNeedleDrop() {
     this.triggerHaptic('medium');
-    if (this.isMuted) return;
+    if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
 
@@ -163,14 +204,14 @@ class VinylAudioEngine {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(this.masterGain!);
     osc.start(now);
     osc.stop(now + 0.14);
   }
 
   public playCorrectFanfare(streak = 1) {
     this.triggerHaptic('success');
-    if (this.isMuted) return;
+    if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
 
@@ -194,7 +235,7 @@ class VinylAudioEngine {
       gain.gain.exponentialRampToValueAtTime(0.001, start + 0.26);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this.masterGain!);
       osc.start(start);
       osc.stop(start + 0.28);
     });
@@ -202,7 +243,7 @@ class VinylAudioEngine {
 
   public playWrongScratch() {
     this.triggerHaptic('error');
-    if (this.isMuted) return;
+    if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
 
@@ -218,7 +259,7 @@ class VinylAudioEngine {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(this.masterGain!);
     osc.start(now);
     osc.stop(now + 0.33);
   }
@@ -246,12 +287,12 @@ class VinylAudioEngine {
         audio.crossOrigin = 'anonymous';
         audio.src = params.previewUrl;
         audio.muted = this.isMuted;
-        audio.volume = 0.85;
+        audio.volume = this.volume * 0.85;
         this.audioEl = audio;
         this.usingFallbackSynth = false;
 
         audio.play().catch(() => {
-          this.startProceduralGroove(ctx, params.mood);
+          if (this.audioEl === audio && this.isPlayingSnippet) this.startProceduralGroove(ctx, params.mood);
         });
       } catch {
         this.startProceduralGroove(ctx, params.mood);
@@ -267,7 +308,7 @@ class VinylAudioEngine {
 
   private startProceduralGroove(ctx: AudioContext | null, mood: SongMoodProfile) {
     this.usingFallbackSynth = true;
-    if (!ctx || this.isMuted) return;
+    if (!ctx) return;
 
     const beatIntervalMs = Math.max(240, Math.round((60 / (mood.bpm || 120)) * 500));
     let step = 0;
@@ -287,7 +328,7 @@ class VinylAudioEngine {
         kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
         kickOsc.connect(kickGain);
         if (this.analyser) kickGain.connect(this.analyser);
-        kickGain.connect(this.ctx.destination);
+        kickGain.connect(this.masterGain!);
         kickOsc.start(now);
         kickOsc.stop(now + 0.17);
       }
@@ -301,7 +342,7 @@ class VinylAudioEngine {
       synthGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
       synthOsc.connect(synthGain);
       if (this.analyser) synthGain.connect(this.analyser);
-      synthGain.connect(this.ctx.destination);
+      synthGain.connect(this.masterGain!);
       synthOsc.start(now);
       synthOsc.stop(now + 0.19);
 
@@ -407,4 +448,4 @@ class VinylAudioEngine {
   }
 }
 
-export const audioEngine = new VinylAudioEngine();
+export const audioEngine = new WaveletAudioEngine();

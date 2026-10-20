@@ -278,7 +278,7 @@ export const VINYL_TIERS = [
   { level: 3, name: 'Teal Groove Architect', grade: 'Grade A', minXp: 1500, nextXp: 3000, badgeHex: '#309F92' },
   { level: 4, name: 'Lime Platter Pro', grade: 'Grade A+', minXp: 3000, nextXp: 5500, badgeHex: '#000000' },
   { level: 5, name: 'Cobalt Studio Master', grade: 'Grade S', minXp: 5500, nextXp: 9000, badgeHex: '#4F5BD5' },
-  { level: 6, name: '365 Vinyl Legend', grade: 'Grade S+', minXp: 9000, nextXp: 15000, badgeHex: '#309F92' },
+  { level: 6, name: 'Wavelet Legend', grade: 'Grade S+', minXp: 9000, nextXp: 15000, badgeHex: '#309F92' },
 ] as const;
 
 export function calculateVinylTier(xp: number): VinylTierInfo {
@@ -328,7 +328,7 @@ export function calculateWinLossRatio(wins: number, losses: number): {
 export function createInitialProgression(): PlayerProgressionState {
   return {
     callsign: 'Studio Selector',
-    tagline: '365 Crate Digger · Tactile Audio',
+    tagline: 'Wavelet selector · Always listening',
     mascotId: 'pebble',
     xp: 650,
     coins: 150,
@@ -549,7 +549,7 @@ export function updateProgressionAfterRound(
 
   const next: PlayerProgressionState = {
     callsign: prev.callsign || 'Studio Selector',
-    tagline: prev.tagline || '365 Crate Digger · Tactile Audio',
+    tagline: prev.tagline || 'Wavelet selector · Always listening',
     mascotId: prev.mascotId || 'pebble',
     xp: nextXp,
     coins: prev.coins + coinsGained,

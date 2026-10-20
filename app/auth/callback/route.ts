@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Vinyl Rush 30s — Account Connected</title>
+    <title>Wavelet — Account Connected</title>
     <style>
       body {
         background: #0d0914;
@@ -138,7 +138,7 @@ export async function GET(req: NextRequest) {
   <body>
     <div class="card">
       <h2>Music Account Linked</h2>
-      <p>Returning to Vinyl Rush 30s...</p>
+      <p>Returning to Wavelet...</p>
     </div>
     <script>
       (function() {
@@ -155,6 +155,6 @@ export async function GET(req: NextRequest) {
 </html>`;
 
   return new NextResponse(html, {
-    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow' },
   });
 }

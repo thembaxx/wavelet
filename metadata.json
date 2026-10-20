@@ -1,6 +1,8 @@
 {
-  "name": "Vinyl Rush 30s — 3D Isometric Song Quiz",
-  "description": "A 3D isometric music-guessing party game with physics-driven vinyl turntables, real song snippets, animated mood gradients, reactive mascot GrooveBot, and Spotify & Apple Music integration.",
+  "name": "Wavelet \u2014 The Music Guessing Game",
+  "description": "Little clips. Big music energy. Guess the track, artist, genre, or year in a playful 3D music quiz.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

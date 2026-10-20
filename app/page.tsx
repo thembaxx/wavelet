@@ -1,5 +1,5 @@
-import { VinylRushGame } from '@/components/VinylRushGame';
+import { WaveletGame } from '@/components/WaveletGame';
 
 export default function HomePage() {
-  return <VinylRushGame />;
+  return <WaveletGame />;
 }

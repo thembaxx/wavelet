@@ -1,17 +1,13 @@
 import type { Metadata, Viewport } from 'next';
-import { Urbanist, JetBrains_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
+import { BRAND, getSiteUrl } from '@/lib/brand';
 import './globals.css';
 
-const urbanist = Urbanist({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-sans',
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['500', '600', '700'],
-  variable: '--font-mono',
+const satoshi = localFont({
+  src: '../public/fonts/Satoshi-Variable.woff2',
+  weight: '300 900',
+  variable: '--font-satoshi',
+  display: 'swap',
 });
 
 export const viewport: Viewport = {
@@ -23,30 +19,35 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Vinyl Rush 30s — 3D Isometric Song Quiz',
-  description:
-    'A mobile-first 3D isometric music-guessing game with physics-driven turntables, real song snippets, tactile sound and haptic feedback, and Spotify & Apple Music integration.',
+  metadataBase: getSiteUrl(),
+  title: { default: BRAND.title, template: '%s | Wavelet' },
+  description: BRAND.description,
+  applicationName: BRAND.name,
+  category: 'games',
+  alternates: { canonical: '/' },
+  robots: { index: true, follow: true },
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'VinylRush',
+    title: BRAND.name,
   },
   icons: {
     icon: '/icon.svg',
     apple: '/apple-touch-icon.png',
   },
   openGraph: {
-    title: 'Vinyl Rush 30s — 3D Isometric Song Quiz',
-    description:
-      'A mobile-first 3D isometric music-guessing game with physics-driven turntables, real song snippets, tactile sound and haptic feedback, and Spotify & Apple Music integration.',
+    title: BRAND.title,
+    description: BRAND.description,
+    siteName: BRAND.name,
+    locale: 'en_US',
+    url: '/',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Vinyl Rush 30s — 3D Isometric Song Quiz',
-    description:
-      'A mobile-first 3D isometric music-guessing game with physics-driven turntables, real song snippets, tactile sound and haptic feedback, and Spotify & Apple Music integration.',
+    title: BRAND.title,
+    description: BRAND.description,
   },
 };
 
@@ -54,7 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${urbanist.variable} ${jetbrainsMono.variable} bg-[#F1F1F1] text-[#000000] antialiased`}
+      className={`${satoshi.variable} bg-[#F1F1F1] text-[#000000] antialiased`}
     >
       <body
         suppressHydrationWarning
@@ -62,6 +63,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className="bg-[#F1F1F1] font-sans text-[#000000] overflow-hidden"
       >
         {children}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'WebApplication',
+          name: BRAND.name,
+          description: BRAND.description,
+          url: getSiteUrl().href,
+          image: new URL('/opengraph-image', getSiteUrl()).href,
+          applicationCategory: 'GameApplication',
+          genre: 'Music quiz',
+          operatingSystem: 'Any',
+          inLanguage: 'en',
+          isAccessibleForFree: true,
+          browserRequirements: 'JavaScript, Web Audio, and WebGL enabled',
+        }).replace(/</g, '\\u003c') }} />
       </body>
     </html>
   );

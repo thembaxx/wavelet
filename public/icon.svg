@@ -1,9 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="116" fill="#0D0914"/>
-  <circle cx="256" cy="256" r="184" fill="#181226" stroke="#FF2E93" stroke-width="10"/>
-  <circle cx="256" cy="256" r="144" stroke="#2D2246" stroke-width="4" stroke-dasharray="18 12"/>
-  <circle cx="256" cy="256" r="108" stroke="#00F5D4" stroke-width="4" stroke-dasharray="28 14"/>
-  <circle cx="256" cy="256" r="64" fill="#FF2E93"/>
-  <circle cx="256" cy="256" r="20" fill="#0D0914"/>
-  <path d="M352 112L392 152L330 236" stroke="#00F5D4" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <linearGradient id="wavelet-ribbon" x1="80" y1="140" x2="410" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#03C8BA"/>
+      <stop offset=".3" stop-color="#119E89"/>
+      <stop offset=".55" stop-color="#E0FF86"/>
+      <stop offset=".78" stop-color="#51DDB2"/>
+      <stop offset="1" stop-color="#009A88"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#FFFCF3"/>
+  <path d="M91 188C119 177 119 355 170 355S223 171 267 171 309 355 358 355 402 204 428 176" stroke="#086B61" stroke-width="55" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M91 181C119 170 119 348 170 348S223 164 267 164 309 348 358 348 402 197 428 169" stroke="url(#wavelet-ribbon)" stroke-width="51" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

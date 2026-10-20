@@ -116,7 +116,7 @@ export function sanitizeCallsign(input: string, fallback = 'Studio Selector'): s
 
 export function sanitizeTagline(
   input: string,
-  fallback = '365 Crate Digger · Tactile Audio'
+  fallback = 'Wavelet selector · Always listening'
 ): string {
   return (input ?? fallback).trim().slice(0, 80);
 }

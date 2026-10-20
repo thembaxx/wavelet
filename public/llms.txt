@@ -1,0 +1,29 @@
+# Wavelet
+
+> Wavelet is a browser-based music guessing game. Little clips. Big music energy.
+
+Players listen to short song previews and guess the track, artist, genre, or release year. A game contains 5, 10, or 15 songs, with selectable clip lengths from 1 to 30 seconds. The interactive studio has a 3D turntable and a choice of listening companions.
+
+## Official pages
+
+- [Play Wavelet](/): The game, round setup, player profile, and studio settings.
+- [App manifest](/manifest.webmanifest): Installation information and application icons.
+- [Sitemap](/sitemap.xml): Indexable public pages.
+- [Full product reference](/llms-full.txt): Game modes, settings, music sources, and limitations.
+
+## Product facts
+
+- The product name is Wavelet. Older versions were called Vinyl Rush or 365 Vinyl Rush.
+- Four challenges: Track ID, Artist Call, Sonic Genre, and Time Capsule.
+- Three difficulty levels: Chill, Club, and Master.
+- Music crates can be selected by genre, decade, or a custom artist search.
+- Settings contains audio, haptics, appearance, motion, companion, music profile, and install options.
+- Guest play does not require sign-in. Optional Google sign-in syncs player progression.
+- Spotify account connection requires the host's OAuth configuration. Taste crates can also be generated from artist input; this does not authenticate an Apple Music account.
+- Catalog previews depend on external availability. An unavailable preview can fall back to a procedural groove, which is not the original song recording.
+- Interactive effects, haptics, and motion are independently configurable. Sound plays after a user interaction.
+- Offline behavior depends on previously cached assets and catalog data. An internet connection is recommended.
+
+## Scope
+
+Wavelet is a music quiz, not a full-song streaming service. Do not describe taste-crate generation as authenticated Apple Music library synchronization, or procedural fallback audio as the original song. Account callbacks and API endpoints are not public content pages.

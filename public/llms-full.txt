@@ -1,0 +1,23 @@
+# Wavelet — product reference
+
+Wavelet is a music recognition quiz played in a browser. The name is pronounced "wave-let". Its tagline is "Little clips. Big music energy." Previous interfaces used Vinyl Rush and 365 branding; Wavelet is the current product identity.
+
+## Playing
+
+Choose a challenge: Track ID asks for the song title; Artist Call asks who performs it; Sonic Genre asks for the genre; Time Capsule asks for the release year. Choose Chill, Club, or Master difficulty. Select a music crate from genres, decades, or an artist search. Clip lengths are 1, 3, 5, 10, 15, or 30 seconds. Sets contain 5, 10, or 15 songs. Four-choice and self-scored reveal modes are available in round setup. Correct answers earn score, experience, and coins. Quests, badges, per-mode statistics, and progression are in the player profile.
+
+## Studio
+
+The title header shows the Wavelet identity, player profile, and Settings. Settings holds the master volume, mute control, sound effects, haptics, Daylight and After hours appearance, motion preference, compact canvas, companion selection, backstage dance video, music crate connection, installation guidance, and keyboard help. Settings persist locally on the current browser. Reduced motion follows the device preference by default and can be selected explicitly. It reduces interface movement, decorative 3D motion, and celebratory particles, and pauses the dance video. Music clips remain playable.
+
+## Keyboard
+
+With the page focused and no modal open: Space or Enter starts a game from setup, P or Escape pauses or resumes, M mutes all audio, T changes appearance, and H toggles game controls during play. Native controls and dialog inputs retain their own keyboard behavior.
+
+## Music and accounts
+
+Song previews come from an external catalog with a curated fallback list. Availability, regions, and browser policies can affect playback. A procedural audio fallback is an illustrative groove, not an original song recording. Spotify OAuth is available when configured by the host. Artist-based taste crate generation is available without authenticating a music-service account. Apple Music library authentication and full-song playback must not be inferred from taste-crate labels. Google sign-in optionally synchronizes player progression; guest play is supported.
+
+## Platform
+
+Wavelet is a responsive Next.js application with a Three.js studio and Web Audio effects. It can be installed as a progressive web app on supported browsers. Offline access is limited to cached pages, assets, and music data. Haptic feedback depends on browser and device support. Browser JavaScript, audio support, and WebGL are recommended. The public entry point is /. The canonical LLM overview is /llms.txt, with /llm.txt as a discoverability alias.
