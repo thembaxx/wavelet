@@ -1289,7 +1289,7 @@ export const VinylRushGame: React.FC = () => {
 
       {/* Responsive Mobile-First Shell Container */}
       <div
-        className={`pointer-events-none relative mx-auto flex h-full w-full flex-col justify-between transition-all duration-300 ${
+        className={`pointer-events-none relative z-20 mx-auto flex h-full w-full flex-col justify-between transition-all duration-300 ${
           isDesktopViewport && mobileFrameLocked
             ? isLight
               ? 'max-w-[430px] border-x border-[#D1D1D1]/80 shadow-[0_0_60px_rgba(0,0,0,0.06)]'
