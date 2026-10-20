@@ -16,21 +16,23 @@ export function usePWAInstall() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    setIsOnline(navigator.onLine);
-
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {
         // Ignore SW registration warning in restricted iframe contexts
       });
     }
 
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
-    setIsInstalled(isStandalone);
+    const syncEnv = () => {
+      setIsOnline(navigator.onLine);
+      const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+      setIsInstalled(isStandalone);
+      const ua = window.navigator.userAgent.toLowerCase();
+      setIsIOS(/iphone|ipad|ipod/.test(ua));
+    };
 
-    const ua = window.navigator.userAgent.toLowerCase();
-    setIsIOS(/iphone|ipad|ipod/.test(ua));
+    const initTimer = window.setTimeout(syncEnv, 0);
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -51,6 +53,7 @@ export function usePWAInstall() {
     window.addEventListener('offline', handleOffline);
 
     return () => {
+      window.clearTimeout(initTimer);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('online', handleOnline);

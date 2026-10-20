@@ -7,11 +7,9 @@ import {
   ShieldCheck,
   X,
   CheckCircle,
-  Sparkle,
   Trash,
-  ArrowSquareOut,
 } from '@phosphor-icons/react';
-import { type SongTrack } from '@/lib/game-rules';
+import { type SongTrack, type ThemeMode } from '@/lib/game-rules';
 import { audioEngine } from '@/lib/audio-engine';
 
 export interface ConnectedMusicProfile {
@@ -24,6 +22,7 @@ export interface ConnectedMusicProfile {
 
 interface MusicAccountModalProps {
   isOpen: boolean;
+  themeMode: ThemeMode;
   onClose: () => void;
   connectedProfile: ConnectedMusicProfile | null;
   onConnectSuccess: (profile: ConnectedMusicProfile) => void;
@@ -32,6 +31,7 @@ interface MusicAccountModalProps {
 
 export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
   isOpen,
+  themeMode,
   onClose,
   connectedProfile,
   onConnectSuccess,
@@ -45,6 +45,8 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
     configured: boolean;
     redirectUri: string;
   } | null>(null);
+
+  const isLight = themeMode === 'light';
 
   useEffect(() => {
     if (!isOpen) return;
@@ -95,7 +97,6 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
           setStatusMessage('Popup blocked — use Taste Sync below or allow popups.');
         }
       } else {
-        // Trigger Taste Sync immediately so the user can test personalized playlist generation right away
         await handleGeneratePersonalCrate('spotify');
       }
     } catch {
@@ -142,15 +143,25 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="account-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 pointer-events-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 pointer-events-auto"
     >
-      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[28px] border border-white/15 bg-[#130d1f] p-5 text-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
+      <div
+        className={`relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[30px] border p-5 shadow-2xl ${
+          isLight
+            ? 'border-stone-200 bg-[#FAF7F2] text-stone-900'
+            : 'border-white/15 bg-[#0e1626] text-white'
+        }`}
+      >
+        <div
+          className={`flex items-center justify-between border-b pb-3.5 ${
+            isLight ? 'border-stone-200' : 'border-white/10'
+          }`}
+        >
           <div>
-            <h2 id="account-modal-title" className="text-lg font-bold tracking-tight">
+            <h2 id="account-modal-title" className="text-lg font-extrabold tracking-tight">
               Spotify &amp; Apple Music Sync
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className={`text-xs ${isLight ? 'text-stone-500' : 'text-slate-400'}`}>
               Generate custom 30-second game crates from your listening history
             </p>
           </div>
@@ -161,7 +172,11 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
               onClose();
             }}
             aria-label="Close music account modal"
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-slate-200 hover:bg-white/20"
+            className={`flex h-10 w-10 items-center justify-center rounded-2xl transition-colors ${
+              isLight
+                ? 'bg-stone-200/80 text-stone-700 hover:bg-stone-300/80'
+                : 'bg-white/10 text-slate-200 hover:bg-white/20'
+            }`}
           >
             <X weight="bold" className="h-5 w-5" />
           </button>
@@ -172,12 +187,10 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
           <div className="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <CheckCircle weight="fill" className="h-5 w-5 text-emerald-400 shrink-0" />
+                <CheckCircle weight="fill" className="h-5 w-5 text-emerald-500 shrink-0" />
                 <div>
-                  <div className="text-sm font-semibold text-white">
-                    {connectedProfile.displayName}
-                  </div>
-                  <div className="text-xs text-slate-300">
+                  <div className="text-sm font-bold">{connectedProfile.displayName}</div>
+                  <div className={`text-xs ${isLight ? 'text-stone-600' : 'text-slate-300'}`}>
                     {connectedProfile.favoriteSummary} · {connectedProfile.customTracks.length} songs
                   </div>
                 </div>
@@ -189,7 +202,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                   onDisconnect();
                 }}
                 aria-label="Disconnect music account and purge data"
-                className="inline-flex min-h-[36px] items-center gap-1 rounded-xl bg-rose-500/20 px-2.5 py-1 text-xs font-medium text-rose-300 hover:bg-rose-500/30"
+                className="inline-flex min-h-[36px] items-center gap-1 rounded-xl bg-rose-500/20 px-2.5 py-1 text-xs font-bold text-rose-500 hover:bg-rose-500/30"
               >
                 <Trash weight="bold" className="h-3.5 w-3.5" />
                 <span>Revoke</span>
@@ -203,7 +216,9 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
           <div>
             <label
               htmlFor="taste-artists-input"
-              className="block text-xs font-semibold text-slate-300"
+              className={`block text-xs font-bold ${
+                isLight ? 'text-stone-700' : 'text-slate-300'
+              }`}
             >
               Favorite Artists, Genres, or Listening History Seed
             </label>
@@ -213,12 +228,20 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
               value={tasteInput}
               onChange={(e) => setTasteInput(e.target.value)}
               placeholder="e.g. Daft Punk, SZA, Tyla, Outkast"
-              className="mt-1.5 w-full rounded-xl border border-white/15 bg-black/40 px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[#00F5D4] focus:outline-none"
+              className={`mt-1.5 w-full rounded-2xl border px-3.5 py-2.5 text-sm focus:outline-none ${
+                isLight
+                  ? 'border-stone-300 bg-white text-stone-900 placeholder-stone-400 focus:border-[#FF4791]'
+                  : 'border-white/15 bg-black/40 text-white placeholder-slate-500 focus:border-[#00D2B8]'
+              }`}
             />
           </div>
 
           <div>
-            <span className="block text-xs font-semibold text-slate-300">
+            <span
+              className={`block text-xs font-bold ${
+                isLight ? 'text-stone-700' : 'text-slate-300'
+              }`}
+            >
               Preferred Release Era
             </span>
             <div className="mt-1.5 grid grid-cols-5 gap-1.5">
@@ -230,9 +253,11 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                     audioEngine.playUiTick();
                     setSelectedEra(era);
                   }}
-                  className={`min-h-[38px] rounded-xl text-xs font-semibold transition-colors ${
+                  className={`min-h-[38px] rounded-xl text-xs font-bold transition-colors ${
                     selectedEra === era
-                      ? 'bg-[#FF2E93] text-white'
+                      ? 'bg-[#FF4791] text-white shadow-sm'
+                      : isLight
+                      ? 'bg-stone-200/70 text-stone-700 hover:bg-stone-300/70'
                       : 'bg-white/5 text-slate-300 hover:bg-white/10'
                   }`}
                 >
@@ -247,7 +272,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
               type="button"
               disabled={isSyncing}
               onClick={handleSpotifyOAuthPopup}
-              className="flex min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-[#1DB954] px-4 py-2.5 text-sm font-bold text-slate-950 shadow-lg hover:bg-[#1ED760] transition-transform active:scale-[0.98] whitespace-nowrap"
+              className="flex min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-[#1DB954] px-4 py-2.5 text-sm font-extrabold text-slate-950 shadow-md hover:bg-[#1ED760] transition-transform active:scale-[0.98] whitespace-nowrap"
             >
               <SpotifyLogo weight="fill" className="h-5 w-5 shrink-0" />
               <span>{isSyncing ? 'Syncing...' : 'Sync with Spotify'}</span>
@@ -257,7 +282,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
               type="button"
               disabled={isSyncing}
               onClick={() => handleGeneratePersonalCrate('apple-music')}
-              className="flex min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-[#FA243C] px-4 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-[#FF3B52] transition-transform active:scale-[0.98] whitespace-nowrap"
+              className="flex min-h-[46px] items-center justify-center gap-2 rounded-2xl bg-[#FA243C] px-4 py-2.5 text-sm font-extrabold text-white shadow-md hover:bg-[#FF3B52] transition-transform active:scale-[0.98] whitespace-nowrap"
             >
               <AppleLogo weight="fill" className="h-5 w-5 shrink-0" />
               <span>{isSyncing ? 'Syncing...' : 'Sync Apple Music'}</span>
@@ -266,26 +291,46 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
         </div>
 
         {statusMessage && (
-          <div className="mt-3 rounded-xl bg-white/10 px-3.5 py-2 text-xs font-medium text-[#00F5D4]">
+          <div
+            className={`mt-3 rounded-2xl px-3.5 py-2 text-xs font-bold ${
+              isLight
+                ? 'bg-emerald-100 text-emerald-800'
+                : 'bg-white/10 text-[#00D2B8]'
+            }`}
+          >
             {statusMessage}
           </div>
         )}
 
         {/* Privacy & OAuth Redirect Info */}
-        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 text-xs text-slate-300 space-y-2">
-          <div className="flex items-center gap-2 font-semibold text-white">
-            <ShieldCheck weight="fill" className="h-4 w-4 text-[#00F5D4] shrink-0" />
+        <div
+          className={`mt-4 rounded-2xl border p-3.5 text-xs space-y-2 ${
+            isLight
+              ? 'border-stone-200 bg-white/80 text-stone-600'
+              : 'border-white/10 bg-white/[0.03] text-slate-300'
+          }`}
+        >
+          <div
+            className={`flex items-center gap-2 font-bold ${
+              isLight ? 'text-stone-900' : 'text-white'
+            }`}
+          >
+            <ShieldCheck weight="fill" className="h-4 w-4 text-emerald-500 shrink-0" />
             <span>Data Privacy &amp; Ephemeral Session Guarantee</span>
           </div>
-          <p className="leading-relaxed text-slate-400">
+          <p className="leading-relaxed">
             Vinyl Rush processes your listening history strictly in memory to build 30-second song
             quiz rounds. No personal identifiers or tokens are persisted to external databases, and
             you can revoke access with one tap.
           </p>
           {oauthInfo && (
-            <div className="pt-1 text-[11px] text-slate-400 border-t border-white/10">
+            <div
+              className={`pt-1 text-[11px] border-t ${
+                isLight ? 'border-stone-200 text-stone-500' : 'border-white/10 text-slate-400'
+              }`}
+            >
               <span>OAuth Callback URI: </span>
-              <code className="text-slate-200 break-all">{oauthInfo.redirectUri}</code>
+              <code className="break-all font-mono">{oauthInfo.redirectUri}</code>
             </div>
           )}
         </div>

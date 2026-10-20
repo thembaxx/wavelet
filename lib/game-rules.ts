@@ -4,6 +4,42 @@ export type FilterMode = 'genre' | 'artist' | 'year' | 'account';
 
 export type PlayMode = 'party-30s' | 'quiz-4choice';
 
+export type ThemeMode = 'light' | 'dark';
+
+export type MascotCharacterId = 'pebble' | 'bobacat' | 'sprout';
+
+export interface MascotCharacterProfile {
+  id: MascotCharacterId;
+  name: string;
+  tagline: string;
+  avatarImg: string;
+  accentColor: string;
+}
+
+export const MASCOT_CHARACTERS: MascotCharacterProfile[] = [
+  {
+    id: 'pebble',
+    name: 'Pebble',
+    tagline: 'Peanut Cozy & Scooter Groove',
+    avatarImg: '/assets/aistudio/IMG_5611_8f13d014.jpeg',
+    accentColor: '#FF6B9D',
+  },
+  {
+    id: 'bobacat',
+    name: 'BobaCat',
+    tagline: 'Blue Beanie Bass Kitty',
+    avatarImg: '/assets/aistudio/IMG_5644_58cdf86c.jpeg',
+    accentColor: '#6999C6',
+  },
+  {
+    id: 'sprout',
+    name: 'Sprout',
+    tagline: 'Sage Bucket Sunshine',
+    avatarImg: '/assets/aistudio/IMG_5583_ad7fd435.jpeg',
+    accentColor: '#8DA982',
+  },
+];
+
 export type MoodId =
   | 'euphoric-pop'
   | 'velvet-rnb'
@@ -19,6 +55,7 @@ export interface SongMoodProfile {
   secondaryHex: string;
   accentHex: string;
   bgDarkHex: string;
+  bgLightHex: string;
   bpm: number;
   energy: number; // 0.3 to 1.0
 }
@@ -75,10 +112,11 @@ export const MOOD_PROFILES: Record<MoodId, SongMoodProfile> = {
   'euphoric-pop': {
     id: 'euphoric-pop',
     label: 'Euphoric Pop Glow',
-    primaryHex: '#FF2E93',
-    secondaryHex: '#7928CA',
-    accentHex: '#00F5D4',
-    bgDarkHex: '#130924',
+    primaryHex: '#FF4791',
+    secondaryHex: '#8B5CF6',
+    accentHex: '#00D2B8',
+    bgDarkHex: '#0B111E',
+    bgLightHex: '#F7F4F0',
     bpm: 122,
     energy: 0.88,
   },
@@ -87,48 +125,53 @@ export const MOOD_PROFILES: Record<MoodId, SongMoodProfile> = {
     label: 'Velvet Late-Night R&B',
     primaryHex: '#C850C0',
     secondaryHex: '#4158D0',
-    accentHex: '#FFCC70',
-    bgDarkHex: '#0E1026',
+    accentHex: '#F59E0B',
+    bgDarkHex: '#0A0F1D',
+    bgLightHex: '#F4F3F8',
     bpm: 96,
     energy: 0.65,
   },
   'neon-synth': {
     id: 'neon-synth',
     label: 'Electro French Touch',
-    primaryHex: '#00DBDE',
-    secondaryHex: '#FC00FF',
-    accentHex: '#FFE600',
-    bgDarkHex: '#091426',
+    primaryHex: '#00B4D8',
+    secondaryHex: '#EC4899',
+    accentHex: '#10B981',
+    bgDarkHex: '#081320',
+    bgLightHex: '#EFF6F9',
     bpm: 126,
     energy: 0.94,
   },
   'golden-hiphop': {
     id: 'golden-hiphop',
     label: 'Boom-Bap Gold Crate',
-    primaryHex: '#F7971E',
-    secondaryHex: '#FFD200',
-    accentHex: '#FF416C',
-    bgDarkHex: '#1B1209',
+    primaryHex: '#F59E0B',
+    secondaryHex: '#EA580C',
+    accentHex: '#EC4899',
+    bgDarkHex: '#14100B',
+    bgLightHex: '#FAF5EC',
     bpm: 92,
     energy: 0.78,
   },
   'afro-pulse': {
     id: 'afro-pulse',
     label: 'Amapiano & Afro Log-Drum',
-    primaryHex: '#11998E',
-    secondaryHex: '#38EF7D',
-    accentHex: '#FF8008',
-    bgDarkHex: '#081C18',
+    primaryHex: '#10B981',
+    secondaryHex: '#65A30D',
+    accentHex: '#F97316',
+    bgDarkHex: '#081816',
+    bgLightHex: '#F1F7F3',
     bpm: 113,
     energy: 0.85,
   },
   'indie-amber': {
     id: 'indie-amber',
     label: 'Analog Vinyl Warmth',
-    primaryHex: '#FF512F',
-    secondaryHex: '#DD2476',
-    accentHex: '#F09819',
-    bgDarkHex: '#1A0D18',
+    primaryHex: '#F43F5E',
+    secondaryHex: '#D946EF',
+    accentHex: '#F59E0B',
+    bgDarkHex: '#150D16',
+    bgLightHex: '#F9F3F4',
     bpm: 116,
     energy: 0.72,
   },
@@ -169,7 +212,9 @@ export function calculateRoundPoints(params: {
 /**
  * Derives a visual & rhythmic mood profile from a song's genre, artist, and era.
  */
-export function deriveSongMood(song: Pick<SongTrack, 'genre' | 'releaseYear' | 'title' | 'artist' | 'bpm'>): SongMoodProfile {
+export function deriveSongMood(
+  song: Pick<SongTrack, 'genre' | 'releaseYear' | 'title' | 'artist' | 'bpm'>
+): SongMoodProfile {
   const g = (song.genre || '').toLowerCase();
   const a = (song.artist || '').toLowerCase();
 
@@ -230,7 +275,9 @@ export function deriveSongMood(song: Pick<SongTrack, 'genre' | 'releaseYear' | '
 /**
  * Generates direct streaming links for Apple Music and Spotify so players can open/save any track.
  */
-export function buildStreamingLinks(song: Pick<SongTrack, 'title' | 'artist' | 'appleMusicUrl' | 'spotifyUrl'>): {
+export function buildStreamingLinks(
+  song: Pick<SongTrack, 'title' | 'artist' | 'appleMusicUrl' | 'spotifyUrl'>
+): {
   appleMusicUrl: string;
   spotifyUrl: string;
 } {
@@ -245,7 +292,9 @@ export function buildStreamingLinks(song: Pick<SongTrack, 'title' | 'artist' | '
  * Deterministically builds 4 multiple-choice options including the target song.
  */
 export function buildQuizOptions(target: SongTrack, pool: SongTrack[], seed = 1): SongTrack[] {
-  const distractors = pool.filter((t) => t.id !== target.id && t.title.toLowerCase() !== target.title.toLowerCase());
+  const distractors = pool.filter(
+    (t) => t.id !== target.id && t.title.toLowerCase() !== target.title.toLowerCase()
+  );
   const selected: SongTrack[] = [target];
 
   let idx = Math.abs(seed);
@@ -285,7 +334,6 @@ export function filterAndSelectSongs(pool: SongTrack[], config: GameConfig): Son
   }
 
   if (filtered.length < 4) {
-    // Supplement from full pool if filter is too narrow
     const existingIds = new Set(filtered.map((s) => s.id));
     for (const track of pool) {
       if (!existingIds.has(track.id)) {

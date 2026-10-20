@@ -8,7 +8,6 @@ import {
   SpeakerSlash,
   Check,
   X,
-  Sparkle,
   SpotifyLogo,
   AppleLogo,
   CaretDown,
@@ -17,20 +16,24 @@ import {
   Desktop,
   ArrowsClockwise,
   Timer,
-  MusicNotesPlus,
-  Lightning,
   DownloadSimple,
   Eye,
   ArrowRight,
   MagnifyingGlass,
+  Sun,
+  Moon,
+  SlidersHorizontal,
+  FilmStrip,
 } from '@phosphor-icons/react';
 import {
   type SnippetDuration,
   type FilterMode,
   type PlayMode,
+  type ThemeMode,
+  type MascotCharacterId,
   type SongTrack,
   type GameSessionState,
-  MOOD_PROFILES,
+  MASCOT_CHARACTERS,
   deriveSongMood,
   calculateRoundPoints,
   buildQuizOptions,
@@ -52,7 +55,30 @@ import { usePWAInstall } from '@/hooks/use-pwa-install';
 const SNIPPET_OPTIONS: SnippetDuration[] = [1, 3, 5, 10, 15, 30];
 const SONG_COUNT_OPTIONS = [5, 10, 15];
 
+const QUICK_VIBE_CRATES: Array<{
+  id: string;
+  label: string;
+  mode: FilterMode;
+  value: string;
+}> = [
+  { id: 'all', label: 'All Hits', mode: 'genre', value: 'All' },
+  { id: 'pop', label: 'Pop Glow', mode: 'genre', value: 'Pop' },
+  { id: 'rnb', label: 'Velvet R&B', mode: 'genre', value: 'R&B/Soul' },
+  { id: 'hiphop', label: 'Hip-Hop', mode: 'genre', value: 'Hip-Hop/Rap' },
+  { id: 'afro', label: 'Afrobeats', mode: 'genre', value: 'Afrobeats' },
+  { id: 'electro', label: 'Electronic', mode: 'genre', value: 'Electronic' },
+  { id: '2020s', label: '2020s', mode: 'year', value: '2020s' },
+  { id: '2000s', label: '2000s', mode: 'year', value: '2000s' },
+  { id: '1990s', label: '90s Gold', mode: 'year', value: '1990s' },
+];
+
 export const VinylRushGame: React.FC = () => {
+  // Light / Dark Mode Theme & Nintendo 3D Vinyl Toy Character State
+  const [themeMode, setThemeMode] = useState<ThemeMode>('light');
+  const [characterId, setCharacterId] = useState<MascotCharacterId>('pebble');
+  const [showCameoVideo, setShowCameoVideo] = useState<boolean>(false);
+  const [isRulesDrawerOpen, setIsRulesDrawerOpen] = useState<boolean>(false);
+
   // Game configuration state
   const [filterMode, setFilterMode] = useState<FilterMode>('genre');
   const [filterValue, setFilterValue] = useState<string>('All');
@@ -92,7 +118,7 @@ export const VinylRushGame: React.FC = () => {
   const [isDockCollapsed, setIsDockCollapsed] = useState<boolean>(false);
   const [mascotState, setMascotState] = useState<MascotMoodState>('idle');
   const [mascotSpeech, setMascotSpeech] = useState<string>(
-    'Tap me or swipe the vinyl deck! Pick your snippet time and drop the needle.'
+    'Tap me to dance or spin the vinyl! Pick a vibe and drop the needle.'
   );
   const [roundFeedback, setRoundFeedback] = useState<{
     answered: boolean;
@@ -109,10 +135,16 @@ export const VinylRushGame: React.FC = () => {
   // Modals & Saved Crate
   const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
   const [connectedProfile, setConnectedProfile] = useState<ConnectedMusicProfile | null>(null);
-  const [savedCrateCount, setSavedCrateCount] = useState<number>(0);
+  const [, setSavedCrateCount] = useState<number>(0);
 
   const { isInstallable, isInstalled, isIOS, isOnline, install } = usePWAInstall();
   const [showIOSInstallTip, setShowIOSInstallTip] = useState<boolean>(false);
+
+  const isLight = themeMode === 'light';
+
+  const activeCharacter = useMemo(() => {
+    return MASCOT_CHARACTERS.find((c) => c.id === characterId) || MASCOT_CHARACTERS[0];
+  }, [characterId]);
 
   const currentSong = useMemo(() => {
     return session.playlist[session.currentIndex] || CURATED_REAL_SONGS[0];
@@ -130,12 +162,14 @@ export const VinylRushGame: React.FC = () => {
     );
   }, [currentSong, songPool, session.currentIndex]);
 
-  // Sync document.body.dataset.state & dynamic theme-color meta tag for seamless browser chrome
+  // Sync document.body.dataset.state & dynamic theme-color meta tag for seamless browser chrome in Light & Dark Mode
   useEffect(() => {
     if (typeof document === 'undefined') return;
+    const activeBgHex = isLight ? currentMood.bgLightHex : currentMood.bgDarkHex;
     document.body.dataset.state = session.status;
-    document.documentElement.style.backgroundColor = currentMood.bgDarkHex;
-    document.body.style.backgroundColor = currentMood.bgDarkHex;
+    document.body.dataset.theme = themeMode;
+    document.documentElement.style.backgroundColor = activeBgHex;
+    document.body.style.backgroundColor = activeBgHex;
 
     let metaTheme = document.querySelector('meta[name="theme-color"]');
     if (!metaTheme) {
@@ -143,8 +177,8 @@ export const VinylRushGame: React.FC = () => {
       metaTheme.setAttribute('name', 'theme-color');
       document.head.appendChild(metaTheme);
     }
-    metaTheme.setAttribute('content', currentMood.bgDarkHex);
-  }, [session.status, currentMood.bgDarkHex]);
+    metaTheme.setAttribute('content', activeBgHex);
+  }, [session.status, isLight, themeMode, currentMood.bgLightHex, currentMood.bgDarkHex]);
 
   // Detect desktop/tablet viewport for mobile-only disclaimer
   useEffect(() => {
@@ -200,16 +234,22 @@ export const VinylRushGame: React.FC = () => {
 
   // Initial live song fetch on mount
   useEffect(() => {
-    fetchLiveCrate('genre', 'All');
+    const timer = window.setTimeout(() => {
+      void fetchLiveCrate('genre', 'All');
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [fetchLiveCrate]);
 
   // Trigger playing the current song snippet
   const triggerSnippetPlay = useCallback(
     (song: SongTrack, durationSec: number) => {
       const mood = deriveSongMood(song);
+      setSnippetProgress(0);
       setIsPlayingSnippet(true);
       setMascotState('listening');
-      setMascotSpeech(`Spinning a ${durationSec}s cut... Listen to the rhythm!`);
+      setMascotSpeech(
+        `Dancing to a ${durationSec}s cut (${mood.bpm} BPM)... Feel that ${song.genre} groove!`
+      );
 
       audioEngine.playSnippet({
         previewUrl: song.previewUrl,
@@ -217,9 +257,10 @@ export const VinylRushGame: React.FC = () => {
         mood,
         onEnded: () => {
           setIsPlayingSnippet(false);
+          setSnippetProgress(0);
           setMascotState('idle');
           setMascotSpeech(
-            `Time's up! Did you catch that ${song.decade} ${song.genre} groove?`
+            `Needle lifted! Did you recognize that ${song.decade} ${song.genre} track?`
           );
         },
       });
@@ -230,7 +271,6 @@ export const VinylRushGame: React.FC = () => {
   // Track snippet elapsed progress bar
   useEffect(() => {
     if (!isPlayingSnippet) {
-      setSnippetProgress(0);
       return;
     }
     const start = performance.now();
@@ -261,6 +301,7 @@ export const VinylRushGame: React.FC = () => {
 
       setRoundFeedback(null);
       setIsDockCollapsed(false);
+      setIsRulesDrawerOpen(false);
       setSession({
         status: 'playing',
         config: {
@@ -302,11 +343,14 @@ export const VinylRushGame: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('autostart') === '1') {
       autostartFiredRef.current = true;
-      startNewGame(CURATED_REAL_SONGS);
+      const timer = window.setTimeout(() => {
+        void startNewGame(CURATED_REAL_SONGS);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [startNewGame]);
 
-  // Handle player answering Right or Wrong (either via 30s Party Judge buttons or 4-Choice Quiz)
+  // Handle player answering Right or Wrong
   const handleJudgeAnswer = useCallback(
     (correct: boolean, selectedSongId?: string) => {
       if (roundFeedback?.answered) return;
@@ -325,13 +369,13 @@ export const VinylRushGame: React.FC = () => {
         audioEngine.playCorrectFanfare(session.streak + 1);
         setMascotState('celebrating');
         setMascotSpeech(
-          `Nailed it! +${points} pts! "${currentSong.title}" by ${currentSong.artist}!`
+          `Yay!! +${points} pts! "${currentSong.title}" by ${currentSong.artist}!`
         );
       } else {
         audioEngine.playWrongScratch();
         setMascotState('sympathy');
         setMascotSpeech(
-          `Ah, tough break! That was "${currentSong.title}" by ${currentSong.artist}.`
+          `Aww, close one! That was "${currentSong.title}" by ${currentSong.artist}.`
         );
       }
 
@@ -370,7 +414,7 @@ export const VinylRushGame: React.FC = () => {
       setMascotState('celebrating');
       audioEngine.playCorrectFanfare(4);
       setMascotSpeech(
-        `Session complete! You scored ${nextState.score} points with a ${nextState.bestStreak}x best streak!`
+        `Encore complete! You scored ${nextState.score} pts with a ${nextState.bestStreak}x streak!`
       );
     } else {
       const nextSong = nextState.playlist[nextState.currentIndex];
@@ -380,7 +424,26 @@ export const VinylRushGame: React.FC = () => {
     }
   }, [roundFeedback, session, snippetProgress, snippetDuration, triggerSnippetPlay]);
 
-  // Global keyboard shortcuts (Enter/Space on Title, P/Escape for Pause, M for Mute, H for Collapse HUD)
+  // Toggle Light / Dark Theme
+  const toggleThemeMode = useCallback(() => {
+    audioEngine.playUiTick(1.22);
+    setThemeMode((prev) => (prev === 'light' ? 'dark' : 'light'));
+  }, []);
+
+  // Cycle Mascot Character ('pebble' -> 'bobacat' -> 'sprout')
+  const cycleMascotCharacter = useCallback(() => {
+    audioEngine.playUiTick(1.32);
+    setCharacterId((prev) => {
+      const idx = MASCOT_CHARACTERS.findIndex((c) => c.id === prev);
+      const next = MASCOT_CHARACTERS[(idx + 1) % MASCOT_CHARACTERS.length];
+      setMascotState('hyped');
+      setMascotSpeech(`Hi! I'm ${next.name} (${next.tagline})! Let's spin some tracks!`);
+      setTimeout(() => setMascotState(isPlayingSnippet ? 'listening' : 'idle'), 1600);
+      return next.id;
+    });
+  }, [isPlayingSnippet]);
+
+  // Global keyboard shortcuts (Enter/Space on Title, P/Escape for Pause, M for Mute, T for Theme, H for Collapse HUD)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -413,6 +476,9 @@ export const VinylRushGame: React.FC = () => {
           audioEngine.setMuted(next);
           return next;
         });
+      } else if (e.code === 'KeyT') {
+        e.preventDefault();
+        toggleThemeMode();
       } else if (e.code === 'KeyH' && session.status === 'playing') {
         e.preventDefault();
         setIsDockCollapsed((prev) => !prev);
@@ -421,7 +487,7 @@ export const VinylRushGame: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [session.status, isAccountModalOpen, startNewGame]);
+  }, [session.status, isAccountModalOpen, startNewGame, toggleThemeMode]);
 
   // Select Filter Category Handler
   const handleSelectFilterValue = async (mode: FilterMode, val: string) => {
@@ -441,50 +507,78 @@ export const VinylRushGame: React.FC = () => {
     }).points;
   }, [snippetDuration, session.streak]);
 
+  const emotionBadgeText = useMemo(() => {
+    if (mascotState === 'listening') return 'Dancing';
+    if (mascotState === 'celebrating') return 'Beaming!';
+    if (mascotState === 'sympathy') return 'Pouting';
+    if (mascotState === 'hyped') return 'Grooving!';
+    return 'Smiling';
+  }, [mascotState]);
+
+  const activeBgHex = isLight ? currentMood.bgLightHex : currentMood.bgDarkHex;
+
   return (
     <main
-      className="relative h-dvh w-screen overflow-hidden select-none text-white"
+      className={`relative h-dvh w-screen overflow-hidden select-none transition-colors duration-500 ${
+        isLight ? 'text-stone-900' : 'text-white'
+      }`}
       style={{
-        background: `radial-gradient(circle at 50% 15%, ${currentMood.primaryHex}33 0%, ${currentMood.bgDarkHex} 72%)`,
+        background: isLight
+          ? `radial-gradient(circle at 50% 18%, ${currentMood.primaryHex}1F 0%, ${activeBgHex} 70%)`
+          : `radial-gradient(circle at 50% 18%, ${currentMood.primaryHex}2E 0%, ${activeBgHex} 72%)`,
       }}
     >
-      {/* Full-Viewport 3D Isometric Three.js Vinyl & Mascot World */}
+      {/* Full-Viewport 3D Isometric Three.js Vinyl & Smooth Kawaii Toy Mascot World */}
       <IsometricVinylStage
         mood={currentMood}
         mascotState={mascotState}
+        characterId={characterId}
+        themeMode={themeMode}
         isPlayingSnippet={isPlayingSnippet}
         gameState={session.status}
         onMascotInteract={() => {
           setMascotState('hyped');
           setMascotSpeech(
-            `Yo! I'm GrooveBot! Shorter snippet times = bigger point multipliers!`
+            `Wheee! Shorter snippet times give up to +500 base points per song!`
           );
           setTimeout(() => setMascotState(isPlayingSnippet ? 'listening' : 'idle'), 1800);
         }}
         onTurntableInteract={() => {
-          setMascotSpeech(`Wicka-wicka scratch! Currently tuned to ${currentMood.label} (${currentMood.bpm} BPM).`);
+          setMascotSpeech(
+            `Scratch that groove! Tuned to ${currentMood.label} (${currentMood.bpm} BPM).`
+          );
         }}
       />
 
       {/* Offline PWA Connectivity Toast */}
       {!isOnline && (
-        <div className="fixed top-3 left-1/2 z-50 -translate-x-1/2 rounded-2xl border border-amber-400/40 bg-[#1c1308]/95 px-4 py-1.5 text-xs font-semibold text-amber-300 shadow-lg">
-          Offline Mode Active — Playing Cached Curated Crate &amp; Synth Grooves
+        <div className="fixed top-3 left-1/2 z-50 -translate-x-1/2 rounded-2xl border border-amber-400/50 bg-amber-950/95 px-4 py-1.5 text-xs font-bold text-amber-200 shadow-lg">
+          Offline Mode Active — Playing Cached Curated Crate
         </div>
       )}
 
-      {/* Desktop / Tablet Mobile-Only Disclaimer Bar (Non-blocking so all tests and desktop players can interact immediately) */}
+      {/* Desktop / Tablet Mobile-Only Disclaimer Bar */}
       {isDesktopViewport && showDesktopBanner && (
         <div
           role="region"
           aria-label="Mobile-only experience notice"
-          className="pointer-events-auto fixed top-3 left-1/2 z-40 flex w-[min(94vw,760px)] -translate-x-1/2 items-center justify-between gap-3 rounded-2xl border border-white/15 bg-[#120d1e]/95 px-4 py-2.5 text-xs shadow-2xl"
+          className={`pointer-events-auto fixed top-2.5 left-1/2 z-40 flex w-[min(94vw,760px)] -translate-x-1/2 items-center justify-between gap-3 rounded-2xl border px-4 py-2 text-xs shadow-xl transition-colors ${
+            isLight
+              ? 'border-stone-200/90 bg-white/95 text-stone-700'
+              : 'border-white/15 bg-[#0e1626]/95 text-slate-200'
+          }`}
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <DeviceMobile weight="duotone" className="h-5 w-5 shrink-0 text-[#00F5D4]" />
-            <p className="truncate text-slate-200">
-              <strong className="text-white">Mobile-First Party Game:</strong> Designed for handheld
-              thumb-zone gestures &amp; pass-and-play. Previewing in Mobile Frame mode.
+            <DeviceMobile
+              weight="duotone"
+              className="h-5 w-5 shrink-0"
+              style={{ color: currentMood.primaryHex }}
+            />
+            <p className="truncate">
+              <strong className={isLight ? 'text-stone-900' : 'text-white'}>
+                Mobile-First 3D Party Game:
+              </strong>{' '}
+              Crafted for handheld thumb gestures. Previewing in Mobile Frame mode.
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -494,7 +588,11 @@ export const VinylRushGame: React.FC = () => {
                 audioEngine.playUiTick();
                 setMobileFrameLocked((prev) => !prev);
               }}
-              className="inline-flex min-h-[34px] items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1 font-semibold text-white hover:bg-white/20 transition-colors whitespace-nowrap"
+              className={`inline-flex min-h-[32px] items-center gap-1.5 rounded-xl px-3 py-1 font-bold transition-colors whitespace-nowrap ${
+                isLight
+                  ? 'bg-stone-100 text-stone-800 hover:bg-stone-200'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
             >
               <Desktop weight="bold" className="h-3.5 w-3.5" />
               <span>{mobileFrameLocked ? 'Expand Full Width' : 'Mobile Frame (430px)'}</span>
@@ -506,7 +604,11 @@ export const VinylRushGame: React.FC = () => {
                 setShowDesktopBanner(false);
               }}
               aria-label="Dismiss desktop disclaimer"
-              className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 text-slate-400 hover:bg-white/15 hover:text-white"
+              className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors ${
+                isLight
+                  ? 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-900'
+                  : 'bg-white/5 text-slate-400 hover:bg-white/15 hover:text-white'
+              }`}
             >
               <X weight="bold" className="h-4 w-4" />
             </button>
@@ -514,80 +616,119 @@ export const VinylRushGame: React.FC = () => {
         </div>
       )}
 
-      {/* Responsive Game Shell Container (Mobile-Ergonomic Column or Full Width) */}
+      {/* Responsive Game Shell Container */}
       <div
         className={`pointer-events-none relative mx-auto flex h-full w-full flex-col justify-between transition-all duration-300 ${
           isDesktopViewport && mobileFrameLocked
-            ? 'max-w-[440px] border-x border-white/10 shadow-[0_0_90px_rgba(0,0,0,0.85)]'
+            ? isLight
+              ? 'max-w-[430px] border-x border-stone-300/70 shadow-[0_0_80px_rgba(28,25,23,0.12)]'
+              : 'max-w-[430px] border-x border-white/10 shadow-[0_0_90px_rgba(0,0,0,0.85)]'
             : 'max-w-5xl'
-        } ${isDesktopViewport && showDesktopBanner ? 'pt-18' : 'pt-3'} pb-3 px-3.5`}
+        } ${isDesktopViewport && showDesktopBanner ? 'pt-15' : 'pt-3'} pb-3 px-3`}
       >
         {/* =====================================================================
-            STATE 1: TITLE SCREEN STAGE
+            STATE 1: TITLE SCREEN STAGE (CLEAN NINTENDO 3D CAPSULE UI)
            ===================================================================== */}
         {session.status === 'title' && (
           <>
-            {/* Top Negative-Space Custom Inline SVG Title Lockup & Account / PWA Bar */}
+            {/* Top Header Bar: Brand Emblem + Theme Switch + Spotify/Apple Sync + Mute */}
             <div className="pointer-events-auto flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2">
-                {/* Custom Inline SVG Emblem Lockup */}
-                <div className="flex items-center min-w-0">
+              <div className="flex items-center justify-between gap-1.5">
+                {/* Custom Inline SVG Emblem Lockup (Adapts to Light & Dark Mode) */}
+                <div className="flex items-center min-w-0 shrink">
                   <svg
-                    viewBox="0 0 218 54"
-                    className="h-9 sm:h-10 w-auto drop-shadow-[0_4px_16px_rgba(255,46,147,0.45)]"
+                    viewBox="0 0 235 50"
+                    className="h-9 w-auto max-w-[172px]"
                     role="img"
                     aria-label="Vinyl Rush 30s"
                   >
                     <rect
                       x="2"
-                      y="4"
+                      y="3"
                       width="44"
                       height="44"
-                      rx="13"
-                      fill="#161026"
+                      rx="14"
+                      fill={isLight ? '#FFFFFF' : '#111A2E'}
                       stroke={currentMood.primaryHex}
                       strokeWidth="2.5"
                     />
-                    <circle cx="24" cy="26" r="14" fill="#0d0914" stroke="#00F5D4" strokeWidth="2" />
-                    <circle cx="24" cy="26" r="4.5" fill={currentMood.primaryHex} />
+                    <circle
+                      cx="24"
+                      cy="25"
+                      r="14"
+                      fill="#14121D"
+                      stroke={currentMood.accentHex}
+                      strokeWidth="2"
+                    />
+                    <circle cx="24" cy="25" r="4.5" fill={currentMood.primaryHex} />
                     <text
                       x="54"
-                      y="25"
-                      fill="#FFFFFF"
+                      y="24"
+                      fill={isLight ? '#1C1917' : '#FFFFFF'}
                       fontFamily="system-ui, -apple-system, sans-serif"
                       fontWeight="900"
-                      fontSize="20"
+                      fontSize="19"
                       letterSpacing="-0.5"
                     >
                       VINYL RUSH
                     </text>
                     <text
                       x="54"
-                      y="42"
-                      fill="#00F5D4"
+                      y="40"
+                      fill={currentMood.primaryHex}
                       fontFamily="monospace"
-                      fontWeight="700"
+                      fontWeight="800"
                       fontSize="10.5"
-                      letterSpacing="1.2"
+                      letterSpacing="1.1"
                     >
-                      30s BEAT QUIZ
+                      3D BEAT PARTY
                     </text>
                   </svg>
                 </div>
 
-                {/* Top Right Actions: Connect Music Account, PWA Install, Mute */}
-                <div className="flex items-center gap-1.5">
+                {/* Top Right Tactile Utility Buttons: Theme Switch, Account Sync, App Install, Mute */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Light / Dark Mode Theme Switcher */}
+                  <button
+                    type="button"
+                    data-testid="theme-toggle-btn"
+                    onClick={toggleThemeMode}
+                    aria-label={isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+                    className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-2xl border px-2.5 py-1.5 text-xs font-extrabold transition-all active:scale-95 whitespace-nowrap shrink-0 ${
+                      isLight
+                        ? 'border-stone-200/90 bg-white/95 text-stone-800 shadow-sm hover:bg-stone-100'
+                        : 'border-white/15 bg-[#101929]/90 text-amber-300 shadow-md hover:bg-white/15'
+                    }`}
+                  >
+                    {isLight ? (
+                      <>
+                        <Sun weight="fill" className="h-4 w-4 text-amber-500" />
+                        <span>Light</span>
+                      </>
+                    ) : (
+                      <>
+                        <Moon weight="fill" className="h-4 w-4 text-sky-300" />
+                        <span>Dark</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Spotify & Apple Music Sync Button */}
                   <button
                     type="button"
                     onClick={() => {
                       audioEngine.playUiTick(1.1);
                       setIsAccountModalOpen(true);
                     }}
-                    className="inline-flex min-h-[42px] items-center gap-1.5 rounded-2xl border border-white/15 bg-[#150f24]/90 px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1f1735] transition-colors whitespace-nowrap shrink-0"
+                    className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-2xl border px-2.5 py-1.5 text-xs font-bold transition-all active:scale-95 whitespace-nowrap shrink-0 ${
+                      isLight
+                        ? 'border-stone-200/90 bg-white/95 text-stone-800 shadow-sm hover:bg-stone-100'
+                        : 'border-white/15 bg-[#101929]/90 text-white shadow-md hover:bg-white/15'
+                    }`}
                   >
-                    <SpotifyLogo weight="fill" className="h-4 w-4 text-[#1ED760]" />
-                    <AppleLogo weight="fill" className="h-4 w-4 text-[#FF4D62]" />
-                    <span>{connectedProfile ? 'Synced' : 'Sync Music'}</span>
+                    <SpotifyLogo weight="fill" className="h-4 w-4 text-[#1DB954]" />
+                    <AppleLogo weight="fill" className="h-4 w-4 text-[#FA243C]" />
+                    <span>{connectedProfile ? 'Synced' : 'Sync'}</span>
                   </button>
 
                   {!isInstalled && (isInstallable || isIOS) && (
@@ -602,13 +743,17 @@ export const VinylRushGame: React.FC = () => {
                         }
                       }}
                       aria-label="Install Vinyl Rush PWA"
-                      className="inline-flex min-h-[42px] items-center gap-1 rounded-2xl border border-[#00F5D4]/40 bg-[#00F5D4]/15 px-2.5 py-1.5 text-xs font-semibold text-[#00F5D4] hover:bg-[#00F5D4]/25 whitespace-nowrap shrink-0"
+                      className={`flex h-[38px] w-[38px] items-center justify-center rounded-2xl border transition-all shrink-0 ${
+                        isLight
+                          ? 'border-stone-200/90 bg-white/95 text-stone-800 shadow-sm hover:bg-stone-100'
+                          : 'border-white/15 bg-[#101929]/90 text-[#00D2B8] hover:bg-white/15'
+                      }`}
                     >
                       <DownloadSimple weight="bold" className="h-4 w-4" />
-                      <span>App</span>
                     </button>
                   )}
 
+                  {/* Mute Toggle */}
                   <button
                     type="button"
                     onClick={() => {
@@ -617,276 +762,421 @@ export const VinylRushGame: React.FC = () => {
                       audioEngine.setMuted(next);
                     }}
                     aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
-                    className="flex h-[42px] w-[42px] items-center justify-center rounded-2xl border border-white/15 bg-[#150f24]/90 text-slate-200 hover:bg-white/15 shrink-0"
+                    className={`flex h-[38px] w-[38px] items-center justify-center rounded-2xl border transition-all shrink-0 ${
+                      isLight
+                        ? 'border-stone-200/90 bg-white/95 text-stone-700 shadow-sm hover:bg-stone-100'
+                        : 'border-white/15 bg-[#101929]/90 text-slate-200 hover:bg-white/15'
+                    }`}
                   >
                     {isMuted ? (
-                      <SpeakerSlash weight="bold" className="h-5 w-5 text-rose-400" />
+                      <SpeakerSlash weight="bold" className="h-4 w-4 text-rose-500" />
                     ) : (
-                      <SpeakerHigh weight="bold" className="h-5 w-5 text-[#00F5D4]" />
+                      <SpeakerHigh
+                        weight="bold"
+                        className="h-4 w-4"
+                        style={{ color: currentMood.primaryHex }}
+                      />
                     )}
                   </button>
                 </div>
               </div>
 
               {showIOSInstallTip && (
-                <div className="rounded-2xl border border-[#00F5D4]/40 bg-[#120d1e]/95 p-3 text-xs text-slate-200">
+                <div
+                  className={`rounded-2xl border p-3 text-xs font-medium ${
+                    isLight
+                      ? 'border-stone-200 bg-white/95 text-stone-700'
+                      : 'border-white/15 bg-[#101929]/95 text-slate-200'
+                  }`}
+                >
                   To install on iOS: tap <strong>Share</strong> in Safari and choose{' '}
                   <strong>Add to Home Screen</strong>.
                 </div>
               )}
 
-              {/* GrooveBot Mascot Interactive Dialogue Bubble */}
-              <div className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-[#120d1e]/85 px-3.5 py-2 text-xs text-slate-200 shadow-lg">
-                <Sparkle weight="fill" className="h-4 w-4 shrink-0 text-[#00F5D4]" />
-                <p className="truncate font-medium">
-                  <strong className="text-white">GrooveBot:</strong> {mascotSpeech}
-                </p>
+              {/* Expressive Mascot Companion Bar with Character Switcher & Emotion Pill */}
+              <div
+                className={`flex items-center justify-between gap-2 rounded-2xl border px-2.5 py-1.5 text-xs shadow-sm transition-colors ${
+                  isLight
+                    ? 'border-stone-200/90 bg-white/90 text-stone-700'
+                    : 'border-white/12 bg-[#101929]/85 text-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <button
+                    type="button"
+                    onClick={cycleMascotCharacter}
+                    title="Tap to switch vinyl character"
+                    className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-pink-400/50 bg-stone-100 shadow-xs active:scale-95 transition-transform"
+                  >
+                    <img
+                      src={activeCharacter.avatarImg}
+                      alt={activeCharacter.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={cycleMascotCharacter}
+                        className={`font-extrabold hover:underline ${
+                          isLight ? 'text-stone-900' : 'text-white'
+                        }`}
+                      >
+                        {activeCharacter.name}
+                      </button>
+                      <span
+                        className="rounded-md px-1.5 py-0.5 text-[10px] font-bold text-white"
+                        style={{ backgroundColor: activeCharacter.accentColor }}
+                      >
+                        {emotionBadgeText}
+                      </span>
+                    </div>
+                    <p className="truncate text-[11px] opacity-90">{mascotSpeech}</p>
+                  </div>
+                </div>
+
+                {/* Toggle Cameo Dance Video Preview */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    audioEngine.playUiTick();
+                    setShowCameoVideo((v) => !v);
+                  }}
+                  aria-label="Toggle 3D Mascot Dance Video"
+                  className={`inline-flex min-h-[30px] shrink-0 items-center gap-1 rounded-xl px-2 py-1 text-[11px] font-bold transition-colors ${
+                    showCameoVideo
+                      ? 'bg-[#FF4791] text-white'
+                      : isLight
+                      ? 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                      : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                  }`}
+                >
+                  <FilmStrip weight="bold" className="h-3.5 w-3.5" />
+                  <span>Dance Cam</span>
+                </button>
               </div>
+
+              {/* Optional Floating Cameo Dance Video Card (uses attached gemini_generated_video_7AE59D01_39556c31.mp4) */}
+              {showCameoVideo && (
+                <div
+                  className={`self-end overflow-hidden rounded-2xl border p-1.5 shadow-xl ${
+                    isLight
+                      ? 'border-stone-200 bg-white/95'
+                      : 'border-white/15 bg-[#101929]/95'
+                  }`}
+                >
+                  <video
+                    src="/assets/aistudio/gemini_generated_video_7AE59D01_39556c31.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="h-28 w-28 rounded-xl object-cover"
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Center Viewport left 100% unobstructed for the 3D Isometric Turntable & GrooveBot */}
+            {/* Center Viewport left 100% unobstructed for the 3D Isometric Turntable & Kawaii Mascot */}
             <div className="pointer-events-none flex-1" />
 
-            {/* Bottom Squircle Crate Configurator & Primary Start CTA Dock */}
+            {/* Bottom Uncluttered Nintendo-Style Capsule Dock (Simple by default, Powerful when expanded) */}
             <section
               aria-label="Game Configuration Dock"
-              className="pointer-events-auto rounded-[28px] border border-white/15 bg-[#120d1e]/95 p-4 shadow-2xl space-y-3"
+              className={`pointer-events-auto rounded-[28px] border p-3 shadow-2xl transition-all duration-300 space-y-2.5 ${
+                isLight
+                  ? 'border-stone-200/95 bg-white/95 text-stone-900 shadow-[0_16px_40px_rgba(28,25,23,0.1)]'
+                  : 'border-white/15 bg-[#0e1626]/95 text-white shadow-2xl'
+              }`}
             >
-              {/* Filter Mode Tabs: Genre | Artist | Year | My Account */}
-              <div className="grid grid-cols-4 gap-1 rounded-2xl bg-black/40 p-1">
-                {(
-                  [
-                    { id: 'genre', label: 'Genre' },
-                    { id: 'artist', label: 'Artist' },
-                    { id: 'year', label: 'Year' },
-                    { id: 'account', label: 'My Crate' },
-                  ] as const
-                ).map((tab) => (
+              {/* Row 1: Quick Vibe Pills + "Tune Rules" Progressive Disclosure Toggle */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar flex-1 min-w-0">
+                  {QUICK_VIBE_CRATES.map((crate) => {
+                    const isSelected =
+                      filterMode === crate.mode &&
+                      filterValue === crate.value &&
+                      !customSearchTerm;
+                    return (
+                      <button
+                        key={crate.id}
+                        type="button"
+                        onClick={() => handleSelectFilterValue(crate.mode, crate.value)}
+                        className={`min-h-[34px] shrink-0 rounded-xl px-3 py-1 text-xs font-extrabold transition-all whitespace-nowrap ${
+                          isSelected
+                            ? 'bg-[#FF4791] text-white shadow-xs'
+                            : isLight
+                            ? 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                            : 'bg-white/8 text-slate-200 hover:bg-white/15'
+                        }`}
+                      >
+                        {crate.label}
+                      </button>
+                    );
+                  })}
+
                   <button
-                    key={tab.id}
                     type="button"
                     onClick={() => {
                       audioEngine.playUiTick();
-                      setFilterMode(tab.id);
-                      if (tab.id === 'genre') handleSelectFilterValue('genre', 'All');
-                      if (tab.id === 'artist') handleSelectFilterValue('artist', 'Daft Punk');
-                      if (tab.id === 'year') handleSelectFilterValue('year', '2020s');
-                      if (tab.id === 'account') {
-                        if (!connectedProfile) {
-                          setIsAccountModalOpen(true);
-                        } else {
-                          handleSelectFilterValue('account', 'Synced');
-                        }
+                      if (!connectedProfile) {
+                        setIsAccountModalOpen(true);
+                      } else {
+                        handleSelectFilterValue('account', 'Synced');
                       }
                     }}
-                    className={`min-h-[38px] rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
-                      filterMode === tab.id
-                        ? 'bg-[#FF2E93] text-white shadow-sm'
-                        : 'text-slate-300 hover:text-white'
+                    className={`min-h-[34px] shrink-0 rounded-xl px-3 py-1 text-xs font-extrabold transition-all whitespace-nowrap ${
+                      filterMode === 'account'
+                        ? 'bg-[#1DB954] text-slate-950'
+                        : isLight
+                        ? 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                        : 'bg-white/8 text-slate-200 hover:bg-white/15'
                     }`}
                   >
-                    {tab.label}
+                    My Crate
                   </button>
-                ))}
+                </div>
+
+                {/* Tune Rules Button (Progressive Disclosure) */}
+                <button
+                  type="button"
+                  data-testid="tune-rules-btn"
+                  onClick={() => {
+                    audioEngine.playUiTick(1.12);
+                    setIsRulesDrawerOpen((prev) => !prev);
+                  }}
+                  aria-expanded={isRulesDrawerOpen}
+                  className={`inline-flex min-h-[34px] shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs font-extrabold transition-colors whitespace-nowrap ${
+                    isRulesDrawerOpen
+                      ? 'border-[#FF4791] bg-[#FF4791]/15 text-[#FF4791]'
+                      : isLight
+                      ? 'border-stone-200 bg-stone-100 text-stone-800 hover:bg-stone-200'
+                      : 'border-white/15 bg-white/10 text-white hover:bg-white/15'
+                  }`}
+                >
+                  <SlidersHorizontal weight="bold" className="h-3.5 w-3.5" />
+                  <span>{isRulesDrawerOpen ? 'Done' : `${snippetDuration}s · ${songCount}`}</span>
+                </button>
               </div>
 
-              {/* Dynamic Chips for Selected Filter Mode + Custom Artist/Song Search */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                  {filterMode === 'genre' &&
-                    GENRE_PRESETS.map((g) => (
-                      <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => handleSelectFilterValue('genre', g.id)}
-                        className={`min-h-[36px] shrink-0 rounded-xl px-3 py-1 text-xs font-semibold transition-colors whitespace-nowrap ${
-                          filterValue === g.id && !customSearchTerm
-                            ? 'bg-[#00F5D4] text-slate-950 font-bold'
-                            : 'bg-white/8 text-slate-200 hover:bg-white/15'
-                        }`}
-                      >
-                        {g.label}
-                      </button>
-                    ))}
-
-                  {filterMode === 'artist' &&
-                    ARTIST_PRESETS.map((a) => (
-                      <button
-                        key={a.id}
-                        type="button"
-                        onClick={() => handleSelectFilterValue('artist', a.id)}
-                        className={`min-h-[36px] shrink-0 rounded-xl px-3 py-1 text-xs font-semibold transition-colors whitespace-nowrap ${
-                          filterValue === a.id && !customSearchTerm
-                            ? 'bg-[#00F5D4] text-slate-950 font-bold'
-                            : 'bg-white/8 text-slate-200 hover:bg-white/15'
-                        }`}
-                      >
-                        {a.label}
-                      </button>
-                    ))}
-
-                  {filterMode === 'year' &&
-                    YEAR_PRESETS.map((y) => (
-                      <button
-                        key={y.id}
-                        type="button"
-                        onClick={() => handleSelectFilterValue('year', y.id)}
-                        className={`min-h-[36px] shrink-0 rounded-xl px-3 py-1 text-xs font-semibold transition-colors whitespace-nowrap ${
-                          filterValue === y.id && !customSearchTerm
-                            ? 'bg-[#00F5D4] text-slate-950 font-bold'
-                            : 'bg-white/8 text-slate-200 hover:bg-white/15'
-                        }`}
-                      >
-                        {y.label}
-                      </button>
-                    ))}
-
-                  {filterMode === 'account' && (
-                    <div className="flex w-full items-center justify-between gap-2 rounded-xl bg-white/5 px-3 py-1.5 text-xs">
-                      <span className="truncate text-slate-200">
-                        {connectedProfile
-                          ? `${connectedProfile.displayName} (${connectedProfile.customTracks.length} tracks)`
-                          : 'Connect Spotify or Apple Music for personal crates'}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setIsAccountModalOpen(true)}
-                        className="rounded-lg bg-[#00F5D4] px-2.5 py-1 font-bold text-slate-950 whitespace-nowrap"
-                      >
-                        {connectedProfile ? 'Edit Crate' : 'Connect'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Custom Live Search Input */}
-                <div className="relative flex items-center">
-                  <MagnifyingGlass
-                    weight="bold"
-                    className="pointer-events-none absolute left-3 h-4 w-4 text-slate-400"
-                  />
-                  <input
-                    type="text"
-                    value={customSearchTerm}
-                    onChange={(e) => setCustomSearchTerm(e.target.value)}
-                    placeholder="Or type any artist, genre, or year (e.g. Rihanna, 1995, House)..."
-                    aria-label="Custom artist, genre, or year search"
-                    className="w-full rounded-xl border border-white/10 bg-black/40 pl-9 pr-3 py-2 text-xs text-white placeholder-slate-400 focus:border-[#00F5D4] focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Snippet Duration & Song Count Stacked Cleanly */}
-              <div className="space-y-2">
-                <div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-300 mb-1">
-                    <span className="font-semibold">Snippet Play Time</span>
-                    <span className="font-mono tabular-nums text-[#00F5D4]">
-                      Up to +{potentialPoints} pts/song
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-6 gap-1 rounded-xl bg-black/40 p-1">
-                    {SNIPPET_OPTIONS.map((sec) => (
-                      <button
-                        key={sec}
-                        type="button"
-                        onClick={() => {
-                          audioEngine.playUiTick(1 + (30 - sec) * 0.01);
-                          setSnippetDuration(sec);
-                        }}
-                        className={`min-h-[34px] rounded-lg text-xs font-mono font-bold tabular-nums transition-colors ${
-                          snippetDuration === sec
-                            ? 'bg-[#FF2E93] text-white'
-                            : 'text-slate-300 hover:text-white'
-                        }`}
-                      >
-                        {sec}s
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
+              {/* Progressive Disclosure Studio Customizer Drawer (Powerful when you need it!) */}
+              {isRulesDrawerOpen && (
+                <div
+                  className={`rounded-2xl border p-3 space-y-2.5 transition-all ${
+                    isLight
+                      ? 'border-stone-200 bg-stone-50/90'
+                      : 'border-white/10 bg-black/35'
+                  }`}
+                >
+                  {/* Mascot Character Selector Row */}
                   <div>
-                    <span className="block text-[11px] font-semibold text-slate-300 mb-1">
-                      Songs (Rounds)
+                    <span
+                      className={`block text-[11px] font-bold mb-1 ${
+                        isLight ? 'text-stone-600' : 'text-slate-300'
+                      }`}
+                    >
+                      3D Vinyl Companion
                     </span>
-                    <div className="grid grid-cols-3 gap-1 rounded-xl bg-black/40 p-1">
-                      {SONG_COUNT_OPTIONS.map((count) => (
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {MASCOT_CHARACTERS.map((char) => (
                         <button
-                          key={count}
+                          key={char.id}
                           type="button"
                           onClick={() => {
-                            audioEngine.playUiTick();
-                            setSongCount(count);
+                            audioEngine.playUiTick(1.25);
+                            setCharacterId(char.id);
+                            setMascotState('hyped');
+                            setMascotSpeech(`Picked ${char.name}! Ready to dance!`);
                           }}
-                          className={`min-h-[34px] rounded-lg text-xs font-mono font-bold tabular-nums transition-colors ${
-                            songCount === count
-                              ? 'bg-[#00F5D4] text-slate-950'
-                              : 'text-slate-300 hover:text-white'
+                          className={`flex items-center gap-1.5 rounded-xl border px-2 py-1.5 text-left text-[11px] font-extrabold transition-all whitespace-nowrap ${
+                            characterId === char.id
+                              ? 'border-[#FF4791] bg-[#FF4791]/15'
+                              : isLight
+                              ? 'border-stone-200 bg-white hover:bg-stone-100'
+                              : 'border-white/10 bg-white/5 hover:bg-white/10'
                           }`}
                         >
-                          {count}
+                          <img
+                            src={char.avatarImg}
+                            alt={char.name}
+                            className="h-5 w-5 rounded-md object-cover shrink-0"
+                          />
+                          <span>{char.name}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
+                  {/* Snippet Duration Selector (1s, 3s, 5s, 10s, 15s, 30s) */}
                   <div>
-                    <span className="block text-[11px] font-semibold text-slate-300 mb-1">
-                      Judge Mode
-                    </span>
-                    <div className="grid grid-cols-2 gap-1 rounded-xl bg-black/40 p-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          audioEngine.playUiTick();
-                          setPlayMode('party-30s');
-                        }}
-                        className={`min-h-[34px] rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap px-1.5 ${
-                          playMode === 'party-30s'
-                            ? 'bg-[#FF2E93] text-white'
-                            : 'text-slate-300 hover:text-white'
+                    <div className="flex items-center justify-between text-[11px] mb-1">
+                      <span
+                        className={`font-bold ${
+                          isLight ? 'text-stone-600' : 'text-slate-300'
                         }`}
                       >
-                        30s Judge
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          audioEngine.playUiTick();
-                          setPlayMode('quiz-4choice');
-                        }}
-                        className={`min-h-[34px] rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap px-1.5 ${
-                          playMode === 'quiz-4choice'
-                            ? 'bg-[#FF2E93] text-white'
-                            : 'text-slate-300 hover:text-white'
-                        }`}
+                        Snippet Play Time
+                      </span>
+                      <span
+                        className="font-mono font-bold tabular-nums"
+                        style={{ color: currentMood.primaryHex }}
                       >
-                        4-Choice
-                      </button>
+                        Up to +{potentialPoints} pts/song
+                      </span>
+                    </div>
+                    <div
+                      className={`grid grid-cols-6 gap-1 rounded-xl p-1 ${
+                        isLight ? 'bg-stone-200/70' : 'bg-black/40'
+                      }`}
+                    >
+                      {SNIPPET_OPTIONS.map((sec) => (
+                        <button
+                          key={sec}
+                          type="button"
+                          onClick={() => {
+                            audioEngine.playUiTick(1 + (30 - sec) * 0.01);
+                            setSnippetDuration(sec);
+                          }}
+                          className={`min-h-[32px] rounded-lg text-xs font-mono font-extrabold tabular-nums transition-colors ${
+                            snippetDuration === sec
+                              ? 'bg-[#FF4791] text-white shadow-xs'
+                              : isLight
+                              ? 'text-stone-700 hover:text-stone-950'
+                              : 'text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          {sec}s
+                        </button>
+                      ))}
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Primary Start CTA (with data-start="true") */}
+                  {/* Song Count & Judge Mode */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span
+                        className={`block text-[11px] font-bold mb-1 ${
+                          isLight ? 'text-stone-600' : 'text-slate-300'
+                        }`}
+                      >
+                        Songs (Rounds)
+                      </span>
+                      <div
+                        className={`grid grid-cols-3 gap-1 rounded-xl p-1 ${
+                          isLight ? 'bg-stone-200/70' : 'bg-black/40'
+                        }`}
+                      >
+                        {SONG_COUNT_OPTIONS.map((count) => (
+                          <button
+                            key={count}
+                            type="button"
+                            onClick={() => {
+                              audioEngine.playUiTick();
+                              setSongCount(count);
+                            }}
+                            className={`min-h-[32px] rounded-lg text-xs font-mono font-extrabold tabular-nums transition-colors ${
+                              songCount === count
+                                ? 'bg-[#00D2B8] text-slate-950'
+                                : isLight
+                                ? 'text-stone-700 hover:text-stone-950'
+                                : 'text-slate-300 hover:text-white'
+                            }`}
+                          >
+                            {count}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span
+                        className={`block text-[11px] font-bold mb-1 ${
+                          isLight ? 'text-stone-600' : 'text-slate-300'
+                        }`}
+                      >
+                        Judge Mode
+                      </span>
+                      <div
+                        className={`grid grid-cols-2 gap-1 rounded-xl p-1 ${
+                          isLight ? 'bg-stone-200/70' : 'bg-black/40'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            audioEngine.playUiTick();
+                            setPlayMode('party-30s');
+                          }}
+                          className={`min-h-[32px] rounded-lg text-[11px] font-extrabold transition-colors whitespace-nowrap px-1.5 ${
+                            playMode === 'party-30s'
+                              ? 'bg-[#FF4791] text-white'
+                              : isLight
+                              ? 'text-stone-700 hover:text-stone-950'
+                              : 'text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          30s Judge
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            audioEngine.playUiTick();
+                            setPlayMode('quiz-4choice');
+                          }}
+                          className={`min-h-[32px] rounded-lg text-[11px] font-extrabold transition-colors whitespace-nowrap px-1.5 ${
+                            playMode === 'quiz-4choice'
+                              ? 'bg-[#FF4791] text-white'
+                              : isLight
+                              ? 'text-stone-700 hover:text-stone-950'
+                              : 'text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          4-Choice
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Custom Artist / Era / Genre Search Input */}
+                  <div className="relative flex items-center">
+                    <MagnifyingGlass
+                      weight="bold"
+                      className={`pointer-events-none absolute left-3 h-4 w-4 ${
+                        isLight ? 'text-stone-400' : 'text-slate-400'
+                      }`}
+                    />
+                    <input
+                      type="text"
+                      value={customSearchTerm}
+                      onChange={(e) => setCustomSearchTerm(e.target.value)}
+                      placeholder="Search any artist, genre, or year (e.g. Daft Punk, SZA, 1998)..."
+                      aria-label="Custom artist, genre, or year search"
+                      className={`w-full rounded-xl border pl-9 pr-3 py-2 text-xs focus:outline-none ${
+                        isLight
+                          ? 'border-stone-300 bg-white text-stone-900 placeholder-stone-400 focus:border-[#FF4791]'
+                          : 'border-white/10 bg-black/40 text-white placeholder-slate-400 focus:border-[#00D2B8]'
+                      }`}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Tactile Nintendo-Style 3D Primary Start Button (with data-start="true") */}
               <button
                 type="button"
                 data-start="true"
                 onClick={() => startNewGame()}
-                className="flex min-h-[50px] w-full items-center justify-center gap-2.5 rounded-2xl bg-[#FF2E93] px-5 py-3 text-base font-extrabold tracking-tight text-white shadow-[0_8px_28px_rgba(255,46,147,0.45)] hover:bg-[#ff439e] active:scale-[0.98] transition-all whitespace-nowrap"
+                className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl border-b-4 border-[#c81e64] bg-[#FF4791] px-4 py-2.5 text-sm font-black tracking-tight text-white shadow-[0_8px_24px_rgba(255,71,145,0.38)] hover:bg-[#ff599c] active:translate-y-0.5 active:border-b-2 transition-all whitespace-nowrap"
               >
-                <Play weight="fill" className="h-5 w-5" />
+                <Play weight="fill" className="h-5 w-5 shrink-0" />
                 <span>
-                  {`Drop the Needle · Play ${songCount} Songs (${snippetDuration}s)`}
+                  {isLoadingSongs
+                    ? `Drop the Needle · Play ${songCount} Songs (${snippetDuration}s)`
+                    : `Drop the Needle · Play ${songCount} Songs (${snippetDuration}s)`}
                 </span>
               </button>
-
-              {/* Single Flat Borderless Control Hint Line */}
-              <p className="text-center text-[11px] text-slate-400">
-                Swipe 3D Turntable to Scratch · Tap GrooveBot · Enter/Space Start · P Pause · M Mute
-              </p>
             </section>
           </>
         )}
@@ -896,44 +1186,95 @@ export const VinylRushGame: React.FC = () => {
            ===================================================================== */}
         {session.status === 'playing' && (
           <>
-            {/* Top Perimeter Status Cluster */}
+            {/* Top Perimeter Nintendo Status Cluster */}
             <div className="pointer-events-auto flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2 rounded-2xl border border-white/15 bg-[#120d1e]/90 px-3.5 py-2 shadow-xl">
+              <div
+                className={`flex items-center justify-between gap-2 rounded-2xl border px-3.5 py-2 shadow-lg transition-colors ${
+                  isLight
+                    ? 'border-stone-200/95 bg-white/90 text-stone-900'
+                    : 'border-white/15 bg-[#0e1626]/90 text-white'
+                }`}
+              >
                 {/* Score, Streak & Round Readouts (Tabular Numerals) */}
                 <div className="flex items-center gap-4">
                   <div>
-                    <div className="text-[10px] font-bold tracking-wider uppercase text-slate-400">
+                    <div
+                      className={`text-[10px] font-extrabold tracking-wider uppercase ${
+                        isLight ? 'text-stone-400' : 'text-slate-400'
+                      }`}
+                    >
                       SCORE
                     </div>
                     <div
                       data-testid="hud-score"
-                      className="text-xl font-black font-mono tabular-nums text-white"
+                      className="text-xl font-black font-mono tabular-nums"
                     >
-                      {Math.round(session.score)}
+                      {Math.round(session.score + (roundFeedback?.points || 0))}
                     </div>
                   </div>
 
                   <div>
-                    <div className="text-[10px] font-bold tracking-wider uppercase text-slate-400">
+                    <div
+                      className={`text-[10px] font-extrabold tracking-wider uppercase ${
+                        isLight ? 'text-stone-400' : 'text-slate-400'
+                      }`}
+                    >
                       STREAK
                     </div>
-                    <div className="text-xl font-black font-mono tabular-nums text-[#00F5D4]">
-                      {session.streak}x
+                    <div
+                      className="text-xl font-black font-mono tabular-nums"
+                      style={{ color: currentMood.primaryHex }}
+                    >
+                      {roundFeedback?.answered
+                        ? roundFeedback.correct
+                          ? session.streak + 1
+                          : 0
+                        : session.streak}
+                      x
                     </div>
                   </div>
 
                   <div>
-                    <div className="text-[10px] font-bold tracking-wider uppercase text-slate-400">
+                    <div
+                      className={`text-[10px] font-extrabold tracking-wider uppercase ${
+                        isLight ? 'text-stone-400' : 'text-slate-400'
+                      }`}
+                    >
                       SONG
                     </div>
-                    <div className="text-xl font-black font-mono tabular-nums text-slate-200">
+                    <div
+                      className={`text-xl font-black font-mono tabular-nums ${
+                        isLight ? 'text-stone-700' : 'text-slate-200'
+                      }`}
+                    >
                       {session.currentIndex + 1}/{session.playlist.length}
                     </div>
                   </div>
                 </div>
 
-                {/* Right Utility Controls: Account, Mute [M], Pause [P] */}
+                {/* Right Utility Controls: Theme Switch [T], Account, Mute [M], Pause [P] */}
                 <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={(e) => {
+                      e.currentTarget.blur();
+                      toggleThemeMode();
+                    }}
+                    aria-label={isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
+                      isLight
+                        ? 'border-stone-200 bg-stone-100 text-amber-500 hover:bg-stone-200'
+                        : 'border-white/15 bg-white/5 text-sky-300 hover:bg-white/15'
+                    }`}
+                  >
+                    {isLight ? (
+                      <Sun weight="fill" className="h-4 w-4" />
+                    ) : (
+                      <Moon weight="fill" className="h-4 w-4" />
+                    )}
+                  </button>
+
                   <button
                     type="button"
                     tabIndex={-1}
@@ -943,9 +1284,13 @@ export const VinylRushGame: React.FC = () => {
                       setIsAccountModalOpen(true);
                     }}
                     aria-label="Open Spotify and Apple Music settings"
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-[#1ED760] hover:bg-white/15"
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
+                      isLight
+                        ? 'border-stone-200 bg-stone-100 text-[#1DB954] hover:bg-stone-200'
+                        : 'border-white/15 bg-white/5 text-[#1ED760] hover:bg-white/15'
+                    }`}
                   >
-                    <SpotifyLogo weight="fill" className="h-5 w-5" />
+                    <SpotifyLogo weight="fill" className="h-4 w-4" />
                   </button>
 
                   <button
@@ -958,12 +1303,20 @@ export const VinylRushGame: React.FC = () => {
                       audioEngine.setMuted(next);
                     }}
                     aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-slate-200 hover:bg-white/15"
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
+                      isLight
+                        ? 'border-stone-200 bg-stone-100 text-stone-700 hover:bg-stone-200'
+                        : 'border-white/15 bg-white/5 text-slate-200 hover:bg-white/15'
+                    }`}
                   >
                     {isMuted ? (
-                      <SpeakerSlash weight="bold" className="h-5 w-5 text-rose-400" />
+                      <SpeakerSlash weight="bold" className="h-4 w-4 text-rose-500" />
                     ) : (
-                      <SpeakerHigh weight="bold" className="h-5 w-5 text-[#00F5D4]" />
+                      <SpeakerHigh
+                        weight="bold"
+                        className="h-4 w-4"
+                        style={{ color: currentMood.primaryHex }}
+                      />
                     )}
                   </button>
 
@@ -977,20 +1330,49 @@ export const VinylRushGame: React.FC = () => {
                       setSession((prev) => ({ ...prev, status: 'paused' }));
                     }}
                     aria-label="Pause game"
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-slate-200 hover:bg-white/15"
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
+                      isLight
+                        ? 'border-stone-200 bg-stone-100 text-stone-700 hover:bg-stone-200'
+                        : 'border-white/15 bg-white/5 text-slate-200 hover:bg-white/15'
+                    }`}
                   >
-                    <Pause weight="bold" className="h-5 w-5" />
+                    <Pause weight="bold" className="h-4 w-4" />
                   </button>
                 </div>
               </div>
 
-              {/* Mascot Live Status Bar */}
-              <div className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#120d1e]/85 px-3 py-1.5 text-xs text-slate-200">
-                <span className="truncate">
-                  <strong className="text-[#00F5D4]">GrooveBot:</strong> {mascotSpeech}
-                </span>
-                <span className="shrink-0 font-mono tabular-nums text-[11px] text-slate-400">
-                  {snippetDuration}s cut
+              {/* Mascot Live Reaction Pill */}
+              <div
+                className={`flex items-center justify-between gap-2 rounded-2xl border px-3 py-1.5 text-xs transition-colors ${
+                  isLight
+                    ? 'border-stone-200/90 bg-white/85 text-stone-700'
+                    : 'border-white/10 bg-[#0e1626]/85 text-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <button
+                    type="button"
+                    onClick={cycleMascotCharacter}
+                    className="h-6 w-6 shrink-0 overflow-hidden rounded-lg border border-pink-400/40"
+                  >
+                    <img
+                      src={activeCharacter.avatarImg}
+                      alt={activeCharacter.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                  <span className="truncate">
+                    <strong className={isLight ? 'text-stone-900' : 'text-white'}>
+                      {activeCharacter.name}:
+                    </strong>{' '}
+                    {mascotSpeech}
+                  </span>
+                </div>
+                <span
+                  className="shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold text-white"
+                  style={{ backgroundColor: activeCharacter.accentColor }}
+                >
+                  {emotionBadgeText}
                 </span>
               </div>
             </div>
@@ -1006,7 +1388,11 @@ export const VinylRushGame: React.FC = () => {
                   audioEngine.playUiTick();
                   setIsDockCollapsed((prev) => !prev);
                 }}
-                className="mb-1.5 inline-flex min-h-[30px] items-center gap-1.5 rounded-full border border-white/15 bg-[#120d1e]/90 px-3.5 py-1 text-[11px] font-semibold text-slate-300 hover:text-white"
+                className={`mb-1.5 inline-flex min-h-[28px] items-center gap-1.5 rounded-full border px-3.5 py-1 text-[11px] font-bold transition-colors ${
+                  isLight
+                    ? 'border-stone-200 bg-white/90 text-stone-600 hover:text-stone-900'
+                    : 'border-white/15 bg-[#0e1626]/90 text-slate-300 hover:text-white'
+                }`}
               >
                 {isDockCollapsed ? (
                   <>
@@ -1024,12 +1410,17 @@ export const VinylRushGame: React.FC = () => {
               {!isDockCollapsed && (
                 <section
                   aria-label="Active Song Quiz Controls"
-                  className="w-full rounded-[28px] border border-white/15 bg-[#120d1e]/95 p-3.5 shadow-2xl space-y-3"
+                  className={`w-full rounded-[28px] border p-3 shadow-2xl space-y-2.5 transition-colors ${
+                    isLight
+                      ? 'border-stone-200/95 bg-white/95 text-stone-900 shadow-[0_16px_40px_rgba(28,25,23,0.1)]'
+                      : 'border-white/15 bg-[#0e1626]/95 text-white'
+                  }`}
                 >
                   {/* Apple Music-style Animated Cover Art & Mood Card */}
                   <AppleMusicCoverCard
                     song={currentSong}
                     mood={currentMood}
+                    themeMode={themeMode}
                     isRevealed={session.isRevealed}
                     isPlaying={isPlayingSnippet}
                     compact
@@ -1041,9 +1432,17 @@ export const VinylRushGame: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => triggerSnippetPlay(currentSong, snippetDuration)}
-                      className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-2xl bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15 active:scale-[0.98] transition-all whitespace-nowrap"
+                      className={`flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-2xl px-3 py-2 text-xs font-extrabold active:scale-[0.98] transition-all whitespace-nowrap min-w-0 ${
+                        isLight
+                          ? 'bg-stone-100 text-stone-900 hover:bg-stone-200'
+                          : 'bg-white/10 text-white hover:bg-white/15'
+                      }`}
                     >
-                      <Play weight="fill" className="h-4 w-4 shrink-0 text-[#00F5D4]" />
+                      <Play
+                        weight="fill"
+                        className="h-4 w-4 shrink-0"
+                        style={{ color: currentMood.primaryHex }}
+                      />
                       <span className="truncate">
                         {isPlayingSnippet
                           ? `Playing ${snippetDuration}s...`
@@ -1065,9 +1464,13 @@ export const VinylRushGame: React.FC = () => {
                           setSnippetDuration(nextDur);
                           triggerSnippetPlay(currentSong, nextDur);
                         }}
-                        className="inline-flex min-h-[44px] items-center gap-1 rounded-2xl border border-[#00F5D4]/30 bg-[#00F5D4]/10 px-2.5 py-2 text-xs font-bold text-[#00F5D4] hover:bg-[#00F5D4]/20 whitespace-nowrap shrink-0"
+                        className={`inline-flex min-h-[40px] items-center gap-1 rounded-2xl border px-2.5 py-2 text-xs font-extrabold whitespace-nowrap shrink-0 ${
+                          isLight
+                            ? 'border-pink-200 bg-pink-50 text-[#FF4791] hover:bg-pink-100'
+                            : 'border-[#00D2B8]/30 bg-[#00D2B8]/10 text-[#00D2B8] hover:bg-[#00D2B8]/20'
+                        }`}
                       >
-                        <Timer weight="bold" className="h-4 w-4" />
+                        <Timer weight="bold" className="h-3.5 w-3.5" />
                         <span>+Time</span>
                       </button>
                     )}
@@ -1081,19 +1484,27 @@ export const VinylRushGame: React.FC = () => {
                           m === 'party-30s' ? 'quiz-4choice' : 'party-30s'
                         );
                       }}
-                      className="inline-flex min-h-[44px] items-center gap-1 rounded-2xl border border-white/10 bg-white/5 px-2.5 py-2 text-xs font-semibold text-slate-300 hover:text-white whitespace-nowrap shrink-0"
+                      className={`inline-flex min-h-[40px] items-center gap-1 rounded-2xl border px-2.5 py-2 text-xs font-bold whitespace-nowrap shrink-0 ${
+                        isLight
+                          ? 'border-stone-200 bg-stone-100 text-stone-700 hover:bg-stone-200'
+                          : 'border-white/10 bg-white/5 text-slate-300 hover:text-white'
+                      }`}
                     >
                       <span>{playMode === 'party-30s' ? '4-Choice' : '30s Judge'}</span>
                     </button>
                   </div>
 
                   {/* Snippet Progress Bar */}
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className={`h-1.5 w-full overflow-hidden rounded-full ${
+                      isLight ? 'bg-stone-200' : 'bg-white/10'
+                    }`}
+                  >
                     <div
                       className="h-full transition-all duration-75"
                       style={{
                         width: `${Math.round(snippetProgress * 100)}%`,
-                        backgroundColor: currentMood.accentHex,
+                        backgroundColor: currentMood.primaryHex,
                       }}
                     />
                   </div>
@@ -1108,32 +1519,36 @@ export const VinylRushGame: React.FC = () => {
                             audioEngine.playUiTick(1.15);
                             setSession((prev) => ({ ...prev, isRevealed: true }));
                             setMascotSpeech(
-                              `It's "${currentSong.title}" by ${currentSong.artist}! Did you get it right?`
+                              `It's "${currentSong.title}" by ${currentSong.artist}! Did you guess it?`
                             );
                           }}
-                          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#FF2E93] to-[#7928CA] px-4 py-2.5 text-sm font-extrabold text-white shadow-lg active:scale-[0.98] transition-transform"
+                          className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl border-b-4 border-[#c81e64] bg-[#FF4791] px-4 py-2.5 text-sm font-black text-white shadow-md active:translate-y-0.5 transition-all"
                         >
                           <Eye weight="bold" className="h-5 w-5" />
                           <span>Reveal Song &amp; Score Round</span>
                         </button>
                       ) : (
-                        <div className="grid grid-cols-2 gap-2.5">
+                        <div className="grid grid-cols-2 gap-2">
                           <button
                             type="button"
                             onClick={() => handleJudgeAnswer(true)}
-                            className="flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-2.5 text-sm font-extrabold text-slate-950 shadow-lg hover:bg-emerald-400 active:scale-[0.98] transition-all whitespace-nowrap"
+                            className="flex min-h-[46px] items-center justify-center gap-1.5 rounded-2xl border-b-4 border-emerald-700 bg-emerald-500 px-3 py-2 text-xs font-black text-white shadow-md hover:bg-emerald-400 active:translate-y-0.5 transition-all whitespace-nowrap"
                           >
-                            <Check weight="bold" className="h-5 w-5" />
-                            <span>Got It Right (+{potentialPoints})</span>
+                            <Check weight="bold" className="h-4 w-4 shrink-0" />
+                            <span>Right (+{potentialPoints})</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => handleJudgeAnswer(false)}
-                            className="flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-rose-500/25 border border-rose-500/50 px-4 py-2.5 text-sm font-bold text-rose-200 hover:bg-rose-500/35 active:scale-[0.98] transition-all whitespace-nowrap"
+                            className={`flex min-h-[46px] items-center justify-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-extrabold active:scale-[0.98] transition-all whitespace-nowrap ${
+                              isLight
+                                ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                : 'border-rose-500/50 bg-rose-500/25 text-rose-200 hover:bg-rose-500/35'
+                            }`}
                           >
-                            <X weight="bold" className="h-5 w-5" />
-                            <span>Wrong / Missed</span>
+                            <X weight="bold" className="h-4 w-4 shrink-0" />
+                            <span>Wrong (0)</span>
                           </button>
                         </div>
                       )}
@@ -1142,7 +1557,7 @@ export const VinylRushGame: React.FC = () => {
 
                   {/* MODE B: 4-CHOICE INTERACTIVE QUIZ */}
                   {playMode === 'quiz-4choice' && !roundFeedback?.answered && (
-                    <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                    <div className="grid grid-cols-2 gap-1.5">
                       {quizOptions.map((option) => (
                         <button
                           key={option.id}
@@ -1150,12 +1565,24 @@ export const VinylRushGame: React.FC = () => {
                           onClick={() =>
                             handleJudgeAnswer(option.id === currentSong.id, option.id)
                           }
-                          className="flex min-h-[46px] flex-col justify-center rounded-2xl border border-white/12 bg-white/[0.06] px-3.5 py-2 text-left hover:border-[#00F5D4] hover:bg-white/12 active:scale-[0.99] transition-all"
+                          className={`flex min-h-[46px] flex-col justify-center rounded-2xl border px-3 py-1.5 text-left active:scale-[0.99] transition-all ${
+                            isLight
+                              ? 'border-stone-200 bg-stone-50 hover:border-[#FF4791] hover:bg-pink-50/40'
+                              : 'border-white/12 bg-white/[0.06] hover:border-[#00D2B8] hover:bg-white/12'
+                          }`}
                         >
-                          <span className="truncate text-xs font-bold text-white">
+                          <span
+                            className={`truncate text-xs font-extrabold ${
+                              isLight ? 'text-stone-900' : 'text-white'
+                            }`}
+                          >
                             {option.title}
                           </span>
-                          <span className="truncate text-[11px] text-slate-300">
+                          <span
+                            className={`truncate text-[11px] ${
+                              isLight ? 'text-stone-500' : 'text-slate-300'
+                            }`}
+                          >
                             {option.artist} · {option.releaseYear}
                           </span>
                         </button>
@@ -1165,18 +1592,34 @@ export const VinylRushGame: React.FC = () => {
 
                   {/* Post-Guess Outcome Banner & Next Song Button */}
                   {roundFeedback?.answered && (
-                    <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/8 p-2.5">
+                    <div
+                      className={`flex items-center justify-between gap-2.5 rounded-2xl border p-2.5 ${
+                        isLight
+                          ? 'border-stone-200 bg-stone-100/90'
+                          : 'border-white/15 bg-white/8'
+                      }`}
+                    >
                       <div className="min-w-0">
                         <div
-                          className={`text-xs font-extrabold ${
-                            roundFeedback.correct ? 'text-emerald-400' : 'text-rose-300'
+                          className={`text-xs font-black ${
+                            roundFeedback.correct
+                              ? isLight
+                                ? 'text-emerald-600'
+                                : 'text-emerald-400'
+                              : isLight
+                              ? 'text-rose-600'
+                              : 'text-rose-300'
                           }`}
                         >
                           {roundFeedback.correct
                             ? `Correct! +${roundFeedback.points} Points`
                             : 'Missed Track — 0 Points'}
                         </div>
-                        <div className="truncate text-[11px] text-slate-300">
+                        <div
+                          className={`truncate text-[11px] font-medium ${
+                            isLight ? 'text-stone-600' : 'text-slate-300'
+                          }`}
+                        >
                           {currentSong.title} — {currentSong.artist}
                         </div>
                       </div>
@@ -1184,7 +1627,7 @@ export const VinylRushGame: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleNextRound}
-                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[#00F5D4] px-4 py-2 text-xs font-extrabold text-slate-950 hover:bg-[#2affdf] active:scale-[0.98] transition-all whitespace-nowrap shrink-0"
+                        className="inline-flex min-h-[42px] items-center gap-1.5 rounded-xl bg-[#FF4791] px-3.5 py-2 text-xs font-black text-white shadow-sm hover:bg-[#ff599c] active:scale-[0.98] transition-all whitespace-nowrap shrink-0"
                       >
                         <span>
                           {session.currentIndex + 1 >= session.playlist.length
@@ -1209,26 +1652,49 @@ export const VinylRushGame: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="pause-modal-title"
-            className="pointer-events-auto my-auto mx-auto w-full max-w-sm rounded-[28px] border border-white/15 bg-[#130d1f]/95 p-6 text-center shadow-2xl space-y-4"
+            className={`pointer-events-auto my-auto mx-auto w-full max-w-sm rounded-[30px] border p-6 text-center shadow-2xl space-y-4 ${
+              isLight
+                ? 'border-stone-200 bg-white/95 text-stone-900'
+                : 'border-white/15 bg-[#0e1626]/95 text-white'
+            }`}
           >
             <h2 id="pause-modal-title" className="text-2xl font-black tracking-tight">
               Turntable Paused
             </h2>
-            <p className="text-xs text-slate-300">
+            <p className={`text-xs ${isLight ? 'text-stone-500' : 'text-slate-300'}`}>
               Round {session.currentIndex + 1} of {session.playlist.length} ·{' '}
               {session.config.snippetDuration}s Snippet Mode
             </p>
 
-            <div className="grid grid-cols-2 gap-3 rounded-2xl bg-black/40 p-3">
+            <div
+              className={`grid grid-cols-2 gap-3 rounded-2xl p-3 ${
+                isLight ? 'bg-stone-100' : 'bg-black/40'
+              }`}
+            >
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">SCORE</div>
-                <div className="text-xl font-black font-mono tabular-nums text-white">
+                <div
+                  className={`text-[10px] font-bold uppercase ${
+                    isLight ? 'text-stone-400' : 'text-slate-400'
+                  }`}
+                >
+                  SCORE
+                </div>
+                <div className="text-xl font-black font-mono tabular-nums">
                   {session.score}
                 </div>
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">STREAK</div>
-                <div className="text-xl font-black font-mono tabular-nums text-[#00F5D4]">
+                <div
+                  className={`text-[10px] font-bold uppercase ${
+                    isLight ? 'text-stone-400' : 'text-slate-400'
+                  }`}
+                >
+                  STREAK
+                </div>
+                <div
+                  className="text-xl font-black font-mono tabular-nums"
+                  style={{ color: currentMood.primaryHex }}
+                >
                   {session.streak}x
                 </div>
               </div>
@@ -1241,7 +1707,7 @@ export const VinylRushGame: React.FC = () => {
                   audioEngine.playUiTick(1.1);
                   setSession((prev) => ({ ...prev, status: 'playing' }));
                 }}
-                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[#00F5D4] px-4 py-2.5 text-sm font-extrabold text-slate-950"
+                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl border-b-4 border-[#c81e64] bg-[#FF4791] px-4 py-2.5 text-sm font-black text-white"
               >
                 <Play weight="fill" className="h-4 w-4" />
                 <span>Resume Turntable</span>
@@ -1250,7 +1716,11 @@ export const VinylRushGame: React.FC = () => {
               <button
                 type="button"
                 onClick={() => startNewGame()}
-                className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 py-2 text-sm font-bold text-white hover:bg-white/15"
+                className={`flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-bold transition-colors ${
+                  isLight
+                    ? 'bg-stone-100 text-stone-800 hover:bg-stone-200'
+                    : 'bg-white/10 text-white hover:bg-white/15'
+                }`}
               >
                 <ArrowsClockwise weight="bold" className="h-4 w-4" />
                 <span>Restart Session</span>
@@ -1262,7 +1732,11 @@ export const VinylRushGame: React.FC = () => {
                   audioEngine.stopSnippet(false);
                   setSession((prev) => ({ ...prev, status: 'title' }));
                 }}
-                className="flex min-h-[44px] w-full items-center justify-center rounded-2xl text-xs font-semibold text-slate-300 hover:text-white"
+                className={`flex min-h-[42px] w-full items-center justify-center rounded-2xl text-xs font-bold ${
+                  isLight
+                    ? 'text-stone-500 hover:text-stone-900'
+                    : 'text-slate-300 hover:text-white'
+                }`}
               >
                 Back to Crate Setup
               </button>
@@ -1278,28 +1752,49 @@ export const VinylRushGame: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="gameover-modal-title"
-            className="pointer-events-auto my-auto mx-auto flex max-h-[88vh] w-full max-w-md flex-col rounded-[28px] border border-white/15 bg-[#130d1f]/95 p-5 shadow-2xl"
+            className={`pointer-events-auto my-auto mx-auto flex max-h-[88vh] w-full max-w-md flex-col rounded-[30px] border p-5 shadow-2xl ${
+              isLight
+                ? 'border-stone-200 bg-white/95 text-stone-900'
+                : 'border-white/15 bg-[#0e1626]/95 text-white'
+            }`}
           >
             <div className="text-center">
               <h2 id="gameover-modal-title" className="text-2xl font-black tracking-tight">
                 Session Complete!
               </h2>
-              <p className="mt-0.5 text-xs text-slate-300">
-                GrooveBot salutes your ear! Save your favorite tracks to Spotify or Apple Music.
+              <p className={`mt-0.5 text-xs ${isLight ? 'text-stone-500' : 'text-slate-300'}`}>
+                {activeCharacter.name} loved your rhythm! Save your favorite tracks to Spotify or
+                Apple Music.
               </p>
             </div>
 
             {/* 3 Mastery Stat Tiles (Tabular Numerals) */}
-            <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-black/40 p-3 text-center">
+            <div
+              className={`mt-4 grid grid-cols-3 gap-2 rounded-2xl p-3 text-center ${
+                isLight ? 'bg-stone-100' : 'bg-black/40'
+              }`}
+            >
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">FINAL SCORE</div>
-                <div className="text-xl font-black font-mono tabular-nums text-white">
+                <div
+                  className={`text-[10px] font-bold uppercase ${
+                    isLight ? 'text-stone-400' : 'text-slate-400'
+                  }`}
+                >
+                  FINAL SCORE
+                </div>
+                <div className="text-xl font-black font-mono tabular-nums">
                   {Math.round(session.score)}
                 </div>
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">ACCURACY</div>
-                <div className="text-xl font-black font-mono tabular-nums text-[#00F5D4]">
+                <div
+                  className={`text-[10px] font-bold uppercase ${
+                    isLight ? 'text-stone-400' : 'text-slate-400'
+                  }`}
+                >
+                  ACCURACY
+                </div>
+                <div className="text-xl font-black font-mono tabular-nums text-emerald-500">
                   {session.history.length > 0
                     ? Math.round((session.correctCount / session.history.length) * 100)
                     : 0}
@@ -1307,8 +1802,14 @@ export const VinylRushGame: React.FC = () => {
                 </div>
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">BEST STREAK</div>
-                <div className="text-xl font-black font-mono tabular-nums text-[#FF2E93]">
+                <div
+                  className={`text-[10px] font-bold uppercase ${
+                    isLight ? 'text-stone-400' : 'text-slate-400'
+                  }`}
+                >
+                  BEST STREAK
+                </div>
+                <div className="text-xl font-black font-mono tabular-nums text-[#FF4791]">
                   {session.bestStreak}x
                 </div>
               </div>
@@ -1321,25 +1822,33 @@ export const VinylRushGame: React.FC = () => {
                 return (
                   <div
                     key={`${item.song.id}-${idx}`}
-                    className="flex items-center justify-between gap-2.5 rounded-2xl border border-white/10 bg-white/[0.04] p-2.5"
+                    className={`flex items-center justify-between gap-2.5 rounded-2xl border p-2.5 ${
+                      isLight
+                        ? 'border-stone-200 bg-stone-50'
+                        : 'border-white/10 bg-white/[0.04]'
+                    }`}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <span
-                          className={`text-xs font-bold ${
-                            item.correct ? 'text-emerald-400' : 'text-rose-400'
+                          className={`text-xs font-extrabold ${
+                            item.correct ? 'text-emerald-500' : 'text-rose-500'
                           }`}
                         >
                           {item.correct ? `+${item.pointsEarned}` : '0'} pts
                         </span>
-                        <span aria-hidden="true" className="text-slate-500">
+                        <span aria-hidden="true" className="opacity-40">
                           ·
                         </span>
-                        <span className="truncate text-xs font-bold text-white">
+                        <span className="truncate text-xs font-extrabold">
                           {item.song.title}
                         </span>
                       </div>
-                      <div className="truncate text-[11px] text-slate-300">
+                      <div
+                        className={`truncate text-[11px] ${
+                          isLight ? 'text-stone-500' : 'text-slate-300'
+                        }`}
+                      >
                         {item.song.artist} · {item.song.releaseYear}
                       </div>
                     </div>
@@ -1350,7 +1859,7 @@ export const VinylRushGame: React.FC = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Add ${item.song.title} to Spotify`}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1DB954]/20 text-[#1ED760] hover:bg-[#1DB954]/35"
+                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1DB954]/20 text-[#1DB954] hover:bg-[#1DB954]/35"
                       >
                         <SpotifyLogo weight="fill" className="h-4 w-4" />
                       </a>
@@ -1359,7 +1868,7 @@ export const VinylRushGame: React.FC = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Open ${item.song.title} in Apple Music`}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FA243C]/20 text-[#FF4D62] hover:bg-[#FA243C]/35"
+                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FA243C]/20 text-[#FA243C] hover:bg-[#FA243C]/35"
                       >
                         <AppleLogo weight="fill" className="h-4 w-4" />
                       </a>
@@ -1370,12 +1879,16 @@ export const VinylRushGame: React.FC = () => {
             </div>
 
             {/* Play Again & Back to Title Actions */}
-            <div className="mt-4 grid grid-cols-2 gap-2.5 pt-2 border-t border-white/10">
+            <div
+              className={`mt-4 grid grid-cols-2 gap-2.5 pt-2 border-t ${
+                isLight ? 'border-stone-200' : 'border-white/10'
+              }`}
+            >
               <button
                 type="button"
                 data-start="true"
                 onClick={() => startNewGame()}
-                className="flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[#FF2E93] px-4 py-2.5 text-sm font-extrabold text-white shadow-lg hover:bg-[#ff47a0]"
+                className="flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border-b-4 border-[#c81e64] bg-[#FF4791] px-4 py-2.5 text-sm font-black text-white shadow-md hover:bg-[#ff599c]"
               >
                 <ArrowsClockwise weight="bold" className="h-4 w-4" />
                 <span>Play Again</span>
@@ -1387,7 +1900,11 @@ export const VinylRushGame: React.FC = () => {
                   audioEngine.playUiTick();
                   setSession((prev) => ({ ...prev, status: 'title' }));
                 }}
-                className="flex min-h-[48px] items-center justify-center rounded-2xl bg-white/10 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/15"
+                className={`flex min-h-[48px] items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-bold ${
+                  isLight
+                    ? 'bg-stone-100 text-stone-800 hover:bg-stone-200'
+                    : 'bg-white/10 text-white hover:bg-white/15'
+                }`}
               >
                 Change Crate
               </button>
@@ -1399,6 +1916,7 @@ export const VinylRushGame: React.FC = () => {
       {/* Spotify & Apple Music Account Connect Modal */}
       <MusicAccountModal
         isOpen={isAccountModalOpen}
+        themeMode={themeMode}
         onClose={() => setIsAccountModalOpen(false)}
         connectedProfile={connectedProfile}
         onConnectSuccess={(profile) => {
