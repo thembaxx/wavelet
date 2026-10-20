@@ -1358,34 +1358,56 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
 
       for (let i = 0; i < shapeCount; i++) {
         const shape = floatingShapes[i];
-        const a = elapsed * 1.6 + (i * Math.PI * 2) / shapeCount;
-        const r = 1.18 + Math.sin(elapsed * 2.5 + i) * 0.14;
+        const shapeMat = shape.material as THREE.MeshStandardMaterial;
+        const targetMoodColor =
+          i % 3 === 0
+            ? _targetPrimaryColor
+            : i % 3 === 1
+              ? _targetSecondaryColor
+              : _targetAccentColor;
+        shapeMat.color.lerp(targetMoodColor, dt * 4.5);
+        shapeMat.emissive.lerp(targetMoodColor, dt * 4.5);
+        shapeMat.emissiveIntensity = currentProps.isPlayingSnippet
+          ? 0.35 + spectrum.energy * 0.45
+          : 0.25;
+
+        const a = elapsed * (1.4 + spectrum.mid * 0.8) + (i * Math.PI * 2) / shapeCount;
+        const r = 1.18 + Math.sin(elapsed * 2.5 + i) * 0.14 + spectrum.bass * 0.18;
+        const beatLift = Math.abs(Math.sin(elapsed * beatFreq + i * 0.7)) * spectrum.bass * 0.38;
         shape.position.set(
           Math.cos(a) * r,
-          1.1 + ((elapsed * 0.75 + i * 0.4) % 2.1),
+          1.05 + ((elapsed * 0.75 + i * 0.4) % 2.0) + beatLift,
           Math.sin(a) * r
         );
         const s =
           currentProps.isPlayingSnippet || currentProps.mascotState === 'celebrating'
-            ? 0.72 + spectrum.energy * 0.55
-            : 0.38;
+            ? 0.72 + spectrum.energy * 0.65
+            : 0.42;
         shape.scale.setScalar(s);
-        shape.rotation.y = elapsed * 1.8;
-        shape.rotation.x = elapsed * 1.3;
+        shape.rotation.y = elapsed * (1.8 + spectrum.treble * 1.4);
+        shape.rotation.x = elapsed * (1.3 + spectrum.bass * 1.1);
       }
 
       for (let i = 0; i < eqCount; i++) {
         const coord = eqCoords[i];
         const binVal = spectrum.bins[i] || 0.1;
-        const barHeight = 0.26 + binVal * 2.55;
+        const barHeight = 0.26 + binVal * 2.65;
 
         _tempPos.set(coord.x, 0.01, coord.z);
         _tempScale.set(1, barHeight, 1);
         _tempQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -coord.angle);
         _tempMatrix.compose(_tempPos, _tempQuat, _tempScale);
         eqInstanced.setMatrixAt(i, _tempMatrix);
+
+        const mixRatio = i / Math.max(1, eqCount - 1);
+        _tempColor.copy(_targetPrimaryColor).lerp(_targetSecondaryColor, mixRatio);
+        if (binVal > 0.55) {
+          _tempColor.lerp(_targetAccentColor, (binVal - 0.55) * 1.4);
+        }
+        eqInstanced.setColorAt(i, _tempColor);
       }
       eqInstanced.instanceMatrix.needsUpdate = true;
+      if (eqInstanced.instanceColor) eqInstanced.instanceColor.needsUpdate = true;
 
       renderer.render(scene, camera);
     };
@@ -1407,12 +1429,28 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     };
   }, []);
 
+  const isLight = themeMode === 'light';
+
   return (
     <div
-      ref={mountRef}
-      data-testid="vinyl-3d-stage"
       className="absolute inset-0 w-full h-full overflow-hidden select-none touch-none"
       aria-hidden="true"
-    />
+    >
+      {/* Dynamic Mood & Rhythm Animated Gradient Aura */}
+      <div
+        className="pointer-events-none absolute inset-0 transition-all duration-700"
+        style={{
+          background: isLight
+            ? `radial-gradient(circle at 22% 18%, ${mood.primaryHex}22 0%, transparent 52%), radial-gradient(circle at 82% 28%, ${mood.secondaryHex}40 0%, transparent 48%), radial-gradient(circle at 50% 78%, ${mood.accentHex}18 0%, transparent 58%)`
+            : `radial-gradient(circle at 22% 18%, ${mood.primaryHex}35 0%, transparent 55%), radial-gradient(circle at 82% 28%, ${mood.secondaryHex}24 0%, transparent 50%), radial-gradient(circle at 50% 78%, ${mood.accentHex}28 0%, transparent 60%)`,
+          opacity: isPlayingSnippet ? 1 : 0.72,
+        }}
+      />
+      <div
+        ref={mountRef}
+        data-testid="vinyl-3d-stage"
+        className="relative z-10 w-full h-full"
+      />
+    </div>
   );
 };

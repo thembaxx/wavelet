@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import type { User } from 'firebase/auth';
 import {
   Play,
   Pause,
@@ -35,24 +36,34 @@ import {
   CheckCircle,
   LockSimple,
   ArrowUpRight,
+  UserCircle,
+  SignOut,
+  PencilSimple,
+  ChartBar,
 } from '@phosphor-icons/react';
 import {
   type SnippetDuration,
   type FilterMode,
   type PlayMode,
+  type GuessChallengeMode,
+  type DifficultyTier,
   type ThemeMode,
   type MascotCharacterId,
   type SongTrack,
   type GameSessionState,
   type PlayerProgressionState,
   MASCOT_CHARACTERS,
+  GAME_CHALLENGE_MODES,
+  DIFFICULTY_TIERS,
   ALL_BADGES,
   deriveSongMood,
   calculateRoundPoints,
-  buildQuizOptions,
+  getEffectiveDifficulty,
+  buildModeChallengeOptions,
   advanceRoundState,
   buildStreamingLinks,
   calculateVinylTier,
+  calculateWinLossRatio,
   createInitialProgression,
   updateProgressionAfterRound,
 } from '@/lib/game-rules';
@@ -61,6 +72,16 @@ import {
   GENRE_PRESETS,
 } from '@/lib/music-catalog';
 import { audioEngine } from '@/lib/audio-engine';
+import {
+  signInWithGooglePopup,
+  signOutUser,
+  subscribeToAuthChanges,
+  subscribeToUserProfile,
+  syncOrInitializeUserProfile,
+  persistUserProfileUpdate,
+  sanitizeCallsign,
+  sanitizeTagline,
+} from '@/lib/firebase';
 import { IsometricVinylStage, type MascotMoodState } from './IsometricVinylStage';
 import { AppleMusicCoverCard } from './AppleMusicCoverCard';
 import { MusicAccountModal, type ConnectedMusicProfile } from './MusicAccountModal';
@@ -87,7 +108,7 @@ const QUICK_VIBE_CRATES: Array<{
 ];
 
 /**
- * 9-Dot (3x3) Geometric Brand Mark with #309F92 center dot (Inspired directly by IMG_5844 & IMG_5846!)
+ * 9-Dot (3x3) Geometric Brand Mark with #309F92 center dot (Inspired directly by IMG_5844 & IMG_5846)
  */
 const NineDotBrandMark: React.FC<{ isLight: boolean }> = ({ isLight }) => (
   <div
@@ -99,27 +120,24 @@ const NineDotBrandMark: React.FC<{ isLight: boolean }> = ({ isLight }) => (
     aria-hidden="true"
   >
     <div className="grid grid-cols-3 gap-1">
-      {Array.from({ length: 9 }).map((_, idx) => {
-        const isCenter = idx === 4;
-        return (
-          <span
-            key={idx}
-            className={`h-1.5 w-1.5 rounded-full ${
-              isCenter
-                ? 'bg-[#309F92]'
-                : isLight
+      {Array.from({ length: 9 }).map((_, idx) => (
+        <span
+          key={idx}
+          className={`h-1.5 w-1.5 rounded-full ${
+            idx === 4
+              ? 'bg-[#309F92]'
+              : isLight
                 ? 'bg-[#000000]'
                 : 'bg-[#FFFFFF]'
-            }`}
-          />
-        );
-      })}
+          }`}
+        />
+      ))}
     </div>
   </div>
 );
 
 /**
- * Radial Tick-Mark Arc Gauge ("Lead Score 90 · Grade A · → Steady" from IMG_5846 & IMG_5847!)
+ * Radial Segmented Tick-Mark Gauge (Inspired directly by IMG_5846 "Lead Score 90 · Grade A" card)
  */
 const SegmentedTickArcGauge: React.FC<{
   value: number;
@@ -127,36 +145,83 @@ const SegmentedTickArcGauge: React.FC<{
   statusLabel: string;
   isLight: boolean;
 }> = ({ value, gradeLabel, statusLabel, isLight }) => {
-  const clamped = Math.max(0, Math.min(100, Math.round(value)));
-  const totalTicks = 44;
-  const activeTicks = Math.round((clamped / 100) * totalTicks);
+  const totalTicks = 29;
+  const clampedVal = Math.max(0, Math.min(100, value));
+  const activeTickCount = Math.round((clampedVal / 100) * totalTicks);
 
   return (
     <div
-      className={`relative flex items-center justify-between rounded-[24px] border p-4 ${
+      className={`relative overflow-hidden rounded-[24px] border p-4 ${
         isLight
-          ? 'border-[#D1D1D1] bg-[#FFFFFF]'
-          : 'border-white/12 bg-[#12161D]'
+          ? 'border-[#D1D1D1] bg-[#F1F1F1]/70 text-[#000000]'
+          : 'border-white/12 bg-black/35 text-[#FFFFFF]'
       }`}
     >
-      {/* Left: Radial Tick-Mark Oval Ring + Big Urbanist Number */}
-      <div className="relative flex h-24 w-48 items-center justify-center">
-        <svg
-          viewBox="0 0 200 104"
-          className="pointer-events-none absolute inset-0 h-full w-full"
-          aria-hidden="true"
-        >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div
+            className={`flex h-7 w-7 items-center justify-center rounded-[9px] border ${
+              isLight ? 'border-[#D1D1D1] bg-[#FFFFFF]' : 'border-white/15 bg-white/5'
+            }`}
+          >
+            <div className="grid grid-cols-3 gap-0.5">
+              {Array.from({ length: 9 }).map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1 w-1 rounded-full ${
+                    i === 4 ? 'bg-[#309F92]' : isLight ? 'bg-[#000000]' : 'bg-white'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+          <span className="text-sm font-bold tracking-tight">Rhythm Score</span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span className="rounded-full bg-[#309F92] px-2.5 py-0.5 text-[11px] font-bold text-[#FFFFFF]">
+            {gradeLabel}
+          </span>
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+              isLight
+                ? 'bg-[#FFFFFF] text-[#000000] border border-[#D1D1D1]'
+                : 'bg-white/10 text-white'
+            }`}
+          >
+            {statusLabel}
+          </span>
+        </div>
+      </div>
+
+      {/* Semi-Circular Radial Tick Arc SVG */}
+      <div className="relative mt-2 flex flex-col items-center justify-center">
+        <svg viewBox="0 0 240 125" className="w-full max-w-[230px] overflow-visible">
           {Array.from({ length: totalTicks }).map((_, i) => {
-            const angle = (i / totalTicks) * Math.PI * 2 - Math.PI / 2;
-            const rx = 86;
-            const ry = 40;
-            const cx = 100;
-            const cy = 52;
-            const x1 = cx + Math.cos(angle) * (rx - 6);
-            const y1 = cy + Math.sin(angle) * (ry - 6);
-            const x2 = cx + Math.cos(angle) * (rx + 2);
-            const y2 = cy + Math.sin(angle) * (ry + 2);
-            const isFilled = i < activeTicks;
+            const t = i / (totalTicks - 1);
+            const angleDeg = -180 + t * 180;
+            const angleRad = (angleDeg * Math.PI) / 180;
+            const cx = 120;
+            const cy = 110;
+            const rInner = 76;
+            const rOuter = i % 4 === 0 ? 96 : 90;
+
+            const x1 = cx + Math.cos(angleRad) * rInner;
+            const y1 = cy + Math.sin(angleRad) * rInner;
+            const x2 = cx + Math.cos(angleRad) * rOuter;
+            const y2 = cy + Math.sin(angleRad) * rOuter;
+
+            const isLit = i < activeTickCount;
+            const strokeColor = isLit
+              ? i / totalTicks > 0.65
+                ? '#309F92'
+                : isLight
+                  ? '#000000'
+                  : '#EDFF8C'
+              : isLight
+                ? '#D1D1D1'
+                : 'rgba(255,255,255,0.18)';
+
             return (
               <line
                 key={i}
@@ -164,56 +229,33 @@ const SegmentedTickArcGauge: React.FC<{
                 y1={y1}
                 x2={x2}
                 y2={y2}
-                stroke={
-                  isFilled
-                    ? '#309F92'
-                    : isLight
-                    ? '#E2E2E2'
-                    : 'rgba(255,255,255,0.14)'
-                }
-                strokeWidth="2.2"
+                stroke={strokeColor}
+                strokeWidth={i % 4 === 0 ? 3.2 : 2.2}
                 strokeLinecap="round"
               />
             );
           })}
         </svg>
 
-        <div className="relative z-10 flex items-center gap-2.5">
-          <span className="text-4xl font-bold tracking-tight tabular-nums">
-            {clamped}
-          </span>
-          <div className="flex flex-col items-start">
-            <span
-              className={`text-[11px] font-semibold ${
-                isLight ? 'text-[#000000]/70' : 'text-white/70'
-              }`}
-            >
-              {gradeLabel}
-            </span>
-            <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-[#EDFF8C] px-2 py-0.5 text-[10px] font-bold text-[#000000]">
-              <span>→ {statusLabel}</span>
-            </span>
+        <div className="-mt-12 text-center">
+          <div className="font-mono text-4xl font-extrabold tracking-tight tabular-nums">
+            {clampedVal}
+          </div>
+          <div
+            className={`text-[11px] font-medium ${
+              isLight ? 'text-[#000000]/55' : 'text-white/55'
+            }`}
+          >
+            Accuracy Index
           </div>
         </div>
-      </div>
-
-      {/* Right: Key Performance Breakdown */}
-      <div className="hidden sm:flex flex-col items-end text-right">
-        <span
-          className={`text-xs font-semibold ${
-            isLight ? 'text-[#000000]/55' : 'text-white/55'
-          }`}
-        >
-          Rhythm Index
-        </span>
-        <span className="text-sm font-bold text-[#309F92]">Top Ear Tier</span>
       </div>
     </div>
   );
 };
 
 /**
- * Horizontal Round Process Capsule (Inspired directly by "Opportunity Sales Process" in IMG_5847!)
+ * Horizontal Round Process Bar (Inspired directly by IMG_5847 01-02-03-04-05 step bar)
  */
 const RoundStepProcessBar: React.FC<{
   totalRounds: number;
@@ -221,18 +263,17 @@ const RoundStepProcessBar: React.FC<{
   history: GameSessionState['history'];
   isLight: boolean;
 }> = ({ totalRounds, currentIndex, history, isLight }) => {
-  // Show up to 6 visible nodes so mobile layout stays spacious
-  const displayCount = Math.min(totalRounds, 6);
-
+  const steps = Math.min(15, Math.max(1, totalRounds));
   return (
     <div
-      className={`flex items-center justify-between gap-1.5 rounded-full p-1.5 ${
+      className={`flex items-center gap-1 rounded-full border p-1 ${
         isLight
-          ? 'bg-gradient-to-r from-[#309F92]/25 via-[#309F92]/15 to-[#EDFF8C]/55 border border-[#000000]/8'
-          : 'bg-gradient-to-r from-[#309F92]/30 via-[#12161D] to-[#EDFF8C]/20 border border-white/10'
+          ? 'border-[#D1D1D1] bg-[#FFFFFF]/90'
+          : 'border-white/12 bg-[#12161D]/90'
       }`}
+      aria-label={`Round ${currentIndex + 1} of ${totalRounds}`}
     >
-      {Array.from({ length: displayCount }).map((_, idx) => {
+      {Array.from({ length: steps }).map((_, idx) => {
         const pastItem = history[idx];
         const isCurrent = idx === currentIndex;
         const isCompleted = idx < currentIndex;
@@ -240,26 +281,40 @@ const RoundStepProcessBar: React.FC<{
         return (
           <div
             key={idx}
-            className="flex flex-1 items-center justify-center"
+            className={`relative flex h-7 flex-1 items-center justify-center rounded-full text-[11px] font-mono font-bold tabular-nums transition-all ${
+              isCurrent
+                ? 'bg-gradient-to-r from-[#309F92] to-[#EDFF8C] text-[#000000] shadow-xs'
+                : isCompleted
+                  ? pastItem?.correct
+                    ? isLight
+                      ? 'bg-[#EDFF8C]/75 text-[#000000]'
+                      : 'bg-[#309F92]/40 text-[#EDFF8C]'
+                    : isLight
+                      ? 'bg-[#F1F1F1] text-[#000000]/45'
+                      : 'bg-white/10 text-white/40'
+                  : isLight
+                    ? 'bg-[#F1F1F1]/80 text-[#000000]/40'
+                    : 'bg-white/5 text-white/35'
+            }`}
           >
             <div
-              className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-mono font-bold tabular-nums transition-all ${
+              className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${
                 isCurrent
-                  ? 'bg-[#FFFFFF] text-[#000000] shadow-sm ring-2 ring-[#309F92]'
+                  ? 'bg-[#000000] text-[#FFFFFF]'
                   : isCompleted
-                  ? pastItem?.correct
-                    ? 'bg-[#309F92] text-[#FFFFFF]'
-                    : 'bg-[#000000]/75 text-[#FFFFFF]'
-                  : isLight
-                  ? 'bg-[#FFFFFF]/75 text-[#000000]/45'
-                  : 'bg-white/10 text-white/40'
+                    ? pastItem?.correct
+                      ? 'bg-[#309F92] text-[#FFFFFF]'
+                      : 'bg-[#000000]/75 text-[#FFFFFF]'
+                    : isLight
+                      ? 'bg-[#FFFFFF]/75 text-[#000000]/45'
+                      : 'bg-white/10 text-white/40'
               }`}
             >
               {isCompleted ? (
                 pastItem?.correct ? (
-                  <Check weight="bold" className="h-3.5 w-3.5" />
+                  <Check weight="bold" className="h-3 w-3" />
                 ) : (
-                  <X weight="bold" className="h-3.5 w-3.5" />
+                  <X weight="bold" className="h-3 w-3" />
                 )
               ) : (
                 idx + 1
@@ -279,23 +334,38 @@ export const VinylRushGame: React.FC = () => {
   const [showCameoVideo, setShowCameoVideo] = useState<boolean>(false);
   const [isRulesDrawerOpen, setIsRulesDrawerOpen] = useState<boolean>(false);
   const [isPassModalOpen, setIsPassModalOpen] = useState<boolean>(false);
+  const [passModalTab, setPassModalTab] = useState<'profile' | 'modes' | 'quests'>('profile');
+
+  // Firebase Auth & Profile Editing State
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [isAuthBusy, setIsAuthBusy] = useState<boolean>(false);
+  const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
+  const [draftCallsign, setDraftCallsign] = useState<string>('Studio Selector');
+  const [draftTagline, setDraftTagline] = useState<string>('365 Crate Digger · Tactile Audio');
 
   // Gamification & Player Progression State
   const [progression, setProgression] = useState<PlayerProgressionState>(() =>
     createInitialProgression()
   );
+  const progressionRef = useRef<PlayerProgressionState>(progression);
+  useEffect(() => {
+    progressionRef.current = progression;
+  }, [progression]);
+
   const [artistHintText, setArtistHintText] = useState<string | null>(null);
   const [eliminatedOptionIds, setEliminatedOptionIds] = useState<string[]>([]);
   const [doubleBoostActive, setDoubleBoostActive] = useState<boolean>(false);
   const [lastXpToast, setLastXpToast] = useState<string | null>(null);
 
-  // Game configuration state
+  // Game configuration state (including Distinct Challenge Modes & Difficulty Scaling)
+  const [challengeMode, setChallengeMode] = useState<GuessChallengeMode>('track');
+  const [difficulty, setDifficulty] = useState<DifficultyTier>('club');
   const [filterMode, setFilterMode] = useState<FilterMode>('genre');
   const [filterValue, setFilterValue] = useState<string>('All');
   const [customSearchTerm, setCustomSearchTerm] = useState<string>('');
   const [snippetDuration, setSnippetDuration] = useState<SnippetDuration>(5);
   const [songCount, setSongCount] = useState<number>(5);
-  const [playMode, setPlayMode] = useState<PlayMode>('party-30s');
+  const [playMode, setPlayMode] = useState<PlayMode>('quiz-4choice');
 
   // Song catalog & loading state
   const [songPool, setSongPool] = useState<SongTrack[]>(CURATED_REAL_SONGS);
@@ -309,7 +379,9 @@ export const VinylRushGame: React.FC = () => {
       filterValue: 'All',
       snippetDuration: 5,
       songCount: 5,
-      playMode: 'party-30s',
+      playMode: 'quiz-4choice',
+      challengeMode: 'track',
+      difficulty: 'club',
     },
     playlist: CURATED_REAL_SONGS.slice(0, 5),
     currentIndex: 0,
@@ -328,7 +400,7 @@ export const VinylRushGame: React.FC = () => {
   const [isDockCollapsed, setIsDockCollapsed] = useState<boolean>(false);
   const [mascotState, setMascotState] = useState<MascotMoodState>('idle');
   const [mascotSpeech, setMascotSpeech] = useState<string>(
-    'Tap the vinyl or mascot to groove. Choose your snippet time and drop the needle.'
+    'Pick a Game Mode (Track, Artist, Genre, or Year), set your difficulty, and drop the needle.'
   );
   const [roundFeedback, setRoundFeedback] = useState<{
     answered: boolean;
@@ -336,7 +408,7 @@ export const VinylRushGame: React.FC = () => {
     points: number;
     xpGained: number;
     coinsGained: number;
-    selectedSongId?: string;
+    selectedOptionId?: string;
   } | null>(null);
 
   // Desktop / Tablet Mobile-First Disclaimer & Mobile Viewport Frame simulator
@@ -357,9 +429,33 @@ export const VinylRushGame: React.FC = () => {
     return MASCOT_CHARACTERS.find((c) => c.id === characterId) || MASCOT_CHARACTERS[0];
   }, [characterId]);
 
+  const activeChallengeModeDef = useMemo(() => {
+    const modeId = session.status === 'playing' ? session.config.challengeMode || challengeMode : challengeMode;
+    return GAME_CHALLENGE_MODES.find((m) => m.id === modeId) || GAME_CHALLENGE_MODES[0];
+  }, [session.status, session.config.challengeMode, challengeMode]);
+
+  const effectiveDifficultyInfo = useMemo(() => {
+    const baseDiff = session.status === 'playing' ? session.config.difficulty || difficulty : difficulty;
+    return getEffectiveDifficulty(baseDiff, session.streak);
+  }, [session.status, session.config.difficulty, difficulty, session.streak]);
+
+  const activeDifficultyDef = useMemo(() => {
+    return (
+      DIFFICULTY_TIERS.find((d) => d.id === effectiveDifficultyInfo.effectiveTier) ||
+      DIFFICULTY_TIERS[1]
+    );
+  }, [effectiveDifficultyInfo.effectiveTier]);
+
   const tierInfo = useMemo(() => {
     return calculateVinylTier(progression.xp);
   }, [progression.xp]);
+
+  const overallWlStats = useMemo(() => {
+    return calculateWinLossRatio(
+      progression.totalWins ?? progression.totalCorrect,
+      progression.totalLosses ?? 0
+    );
+  }, [progression.totalWins, progression.totalCorrect, progression.totalLosses]);
 
   const currentSong = useMemo(() => {
     return session.playlist[session.currentIndex] || CURATED_REAL_SONGS[0];
@@ -369,24 +465,58 @@ export const VinylRushGame: React.FC = () => {
     return deriveSongMood(currentSong);
   }, [currentSong]);
 
-  const quizOptions = useMemo(() => {
-    return buildQuizOptions(
-      currentSong,
-      songPool.length >= 4 ? songPool : CURATED_REAL_SONGS,
-      session.currentIndex + 1
-    );
-  }, [currentSong, songPool, session.currentIndex]);
+  const challengeOptions = useMemo(() => {
+    const activeMode =
+      session.status === 'playing'
+        ? session.config.challengeMode || challengeMode
+        : challengeMode;
+    const baseDiff =
+      session.status === 'playing' ? session.config.difficulty || difficulty : difficulty;
+
+    return buildModeChallengeOptions({
+      target: currentSong,
+      pool: songPool.length >= 4 ? songPool : CURATED_REAL_SONGS,
+      challengeMode: activeMode,
+      difficulty: baseDiff,
+      streak: session.streak,
+      seed: session.currentIndex + 1,
+    });
+  }, [
+    currentSong,
+    songPool,
+    session.status,
+    session.config.challengeMode,
+    session.config.difficulty,
+    session.streak,
+    session.currentIndex,
+    challengeMode,
+    difficulty,
+  ]);
 
   // Load saved gamification progression on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const timer = window.setTimeout(() => {
       try {
-        const raw = window.localStorage.getItem('vinyl_rush_progression_v1');
+        const raw = window.localStorage.getItem('vinyl_rush_progression_v2');
         if (raw) {
           const parsed = JSON.parse(raw) as PlayerProgressionState;
           if (typeof parsed.xp === 'number' && Array.isArray(parsed.quests)) {
-            setProgression(parsed);
+            const initial = createInitialProgression();
+            const merged: PlayerProgressionState = {
+              ...initial,
+              ...parsed,
+              modeStats: {
+                ...initial.modeStats,
+                ...(parsed.modeStats || {}),
+              },
+            };
+            setProgression(merged);
+            setDraftCallsign(merged.callsign || 'Studio Selector');
+            setDraftTagline(merged.tagline || '365 Crate Digger · Tactile Audio');
+            if (merged.mascotId) {
+              setCharacterId(merged.mascotId);
+            }
           }
         }
       } catch {
@@ -396,11 +526,46 @@ export const VinylRushGame: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, []);
 
-  // Persist progression whenever it updates
+  // Subscribe to Firebase Auth & real-time Firestore user profile
+  useEffect(() => {
+    let profileUnsub: (() => void) | null = null;
+    const authUnsub = subscribeToAuthChanges((user) => {
+      setAuthUser(user);
+      if (profileUnsub) {
+        profileUnsub();
+        profileUnsub = null;
+      }
+      if (user) {
+        void syncOrInitializeUserProfile(user, progressionRef.current)
+          .then((synced) => {
+            setProgression(synced);
+            setDraftCallsign(synced.callsign);
+            setDraftTagline(synced.tagline);
+            if (synced.mascotId) setCharacterId(synced.mascotId);
+          })
+          .catch(() => {
+            // Handled by handleFirestoreError
+          });
+
+        profileUnsub = subscribeToUserProfile(user.uid, progressionRef.current, (cloudMerged) => {
+          setProgression(cloudMerged);
+          setDraftCallsign(cloudMerged.callsign);
+          setDraftTagline(cloudMerged.tagline);
+        });
+      }
+    });
+
+    return () => {
+      authUnsub();
+      if (profileUnsub) profileUnsub();
+    };
+  }, []);
+
+  // Persist progression locally whenever it updates
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      window.localStorage.setItem('vinyl_rush_progression_v1', JSON.stringify(progression));
+      window.localStorage.setItem('vinyl_rush_progression_v2', JSON.stringify(progression));
     } catch {
       // Ignore storage errors
     }
@@ -484,29 +649,32 @@ export const VinylRushGame: React.FC = () => {
   }, [fetchLiveCrate]);
 
   // Trigger playing the current song snippet
-  const triggerSnippetPlay = useCallback((song: SongTrack, durationSec: number) => {
-    const mood = deriveSongMood(song);
-    setSnippetProgress(0);
-    setIsPlayingSnippet(true);
-    setMascotState('listening');
-    setMascotSpeech(
-      `Spinning ${durationSec}s cut · ${mood.bpm} BPM · ${song.genre}`
-    );
+  const triggerSnippetPlay = useCallback(
+    (song: SongTrack, durationSec: number, modeOverride?: GuessChallengeMode) => {
+      const mood = deriveSongMood(song);
+      const activeMode = modeOverride || challengeMode;
+      const modeDef =
+        GAME_CHALLENGE_MODES.find((m) => m.id === activeMode) || GAME_CHALLENGE_MODES[0];
 
-    audioEngine.playSnippet({
-      previewUrl: song.previewUrl,
-      durationSec,
-      mood,
-      onEnded: () => {
-        setIsPlayingSnippet(false);
-        setSnippetProgress(0);
-        setMascotState('idle');
-        setMascotSpeech(
-          `Needle lifted. Did you recognize that ${song.decade} ${song.genre} track?`
-        );
-      },
-    });
-  }, []);
+      setSnippetProgress(0);
+      setIsPlayingSnippet(true);
+      setMascotState('listening');
+      setMascotSpeech(`${modeDef.title} · Spinning ${durationSec}s cut · ${mood.bpm} BPM`);
+
+      audioEngine.playSnippet({
+        previewUrl: song.previewUrl,
+        durationSec,
+        mood,
+        onEnded: () => {
+          setIsPlayingSnippet(false);
+          setSnippetProgress(0);
+          setMascotState('idle');
+          setMascotSpeech(`Needle lifted · ${modeDef.promptLabel}`);
+        },
+      });
+    },
+    [challengeMode]
+  );
 
   // Track snippet elapsed progress bar
   useEffect(() => {
@@ -527,6 +695,29 @@ export const VinylRushGame: React.FC = () => {
     setArtistHintText(null);
     setEliminatedOptionIds([]);
     setDoubleBoostActive(false);
+  }, []);
+
+  // Select Challenge Mode (Track, Artist, Genre, Year)
+  const handleSelectChallengeMode = useCallback((mode: GuessChallengeMode) => {
+    audioEngine.playUiTick(1.18, 'selection');
+    setChallengeMode(mode);
+    const modeDef = GAME_CHALLENGE_MODES.find((m) => m.id === mode);
+    if (modeDef) {
+      setMascotState('hyped');
+      setMascotSpeech(`${modeDef.title} selected · ${modeDef.subtitle}`);
+    }
+  }, []);
+
+  // Select Difficulty Tier (Chill, Club, Master) and scale default snippet duration
+  const handleSelectDifficulty = useCallback((tier: DifficultyTier) => {
+    audioEngine.playUiTick(1.22, 'selection');
+    setDifficulty(tier);
+    const def = DIFFICULTY_TIERS.find((d) => d.id === tier);
+    if (def) {
+      setSnippetDuration(def.recommendedSnippet);
+      setMascotState('hyped');
+      setMascotSpeech(`${def.label} · ${def.description}`);
+    }
   }, []);
 
   // Start a new game session
@@ -557,6 +748,8 @@ export const VinylRushGame: React.FC = () => {
           snippetDuration,
           songCount,
           playMode,
+          challengeMode,
+          difficulty,
         },
         playlist: selectedPlaylist,
         currentIndex: 0,
@@ -568,7 +761,7 @@ export const VinylRushGame: React.FC = () => {
         isRevealed: false,
       });
 
-      triggerSnippetPlay(firstSong, snippetDuration);
+      triggerSnippetPlay(firstSong, snippetDuration, challengeMode);
     },
     [
       songPool,
@@ -579,6 +772,8 @@ export const VinylRushGame: React.FC = () => {
       snippetDuration,
       songCount,
       playMode,
+      challengeMode,
+      difficulty,
       resetRoundPowerUps,
       triggerSnippetPlay,
     ]
@@ -598,20 +793,43 @@ export const VinylRushGame: React.FC = () => {
     }
   }, [startNewGame]);
 
-  // Power-Up 1: Artist Clue
+  // Power-Up 1: Mode-Aware Studio Clue
   const handleUseArtistHint = useCallback(() => {
     if (artistHintText || roundFeedback?.answered) return;
     audioEngine.playUiTick(1.35, 'medium');
-    const maskedArtist = currentSong.artist
-      .split(' ')
-      .map((w) => (w.length > 2 ? `${w[0]}${'·'.repeat(Math.min(4, w.length - 1))}` : w))
-      .join(' ');
-    const clue = `Clue: ${maskedArtist} (${currentSong.releaseYear})`;
+    const activeMode = session.config.challengeMode || challengeMode;
+
+    let clue = '';
+    if (activeMode === 'artist') {
+      clue = `Clue: Track is "${currentSong.title}" (${currentSong.releaseYear})`;
+    } else if (activeMode === 'genre') {
+      clue = `Clue: ${currentSong.artist} · "${currentSong.title}" (${currentSong.decade})`;
+    } else if (activeMode === 'year') {
+      clue = `Clue: ${currentSong.decade} Era · "${currentSong.title}" by ${currentSong.artist}`;
+    } else {
+      const maskedArtist = currentSong.artist
+        .split(' ')
+        .map((w) => (w.length > 2 ? `${w[0]}${'·'.repeat(Math.min(4, w.length - 1))}` : w))
+        .join(' ');
+      clue = `Clue: ${maskedArtist} (${currentSong.releaseYear})`;
+    }
+
     setArtistHintText(clue);
-    setProgression((p) => ({ ...p, coins: Math.max(0, p.coins - 15) }));
+    setProgression((p) => {
+      const updated = { ...p, coins: Math.max(0, p.coins - 15) };
+      void persistUserProfileUpdate(authUser, updated);
+      return updated;
+    });
     setMascotState('hyped');
-    setMascotSpeech(`${clue} · Album: ${currentSong.album}`);
-  }, [artistHintText, roundFeedback?.answered, currentSong]);
+    setMascotSpeech(clue);
+  }, [
+    artistHintText,
+    roundFeedback?.answered,
+    session.config.challengeMode,
+    challengeMode,
+    currentSong,
+    authUser,
+  ]);
 
   // Power-Up 2: 50/50 Cut
   const handleUseFiftyFifty = useCallback(() => {
@@ -620,46 +838,65 @@ export const VinylRushGame: React.FC = () => {
     if (playMode !== 'quiz-4choice') {
       setPlayMode('quiz-4choice');
     }
-    const wrongIds = quizOptions
-      .filter((o) => o.id !== currentSong.id)
+    const wrongIds = challengeOptions
+      .filter((o) => !o.isCorrect)
       .slice(0, 2)
       .map((o) => o.id);
     setEliminatedOptionIds(wrongIds);
-    setProgression((p) => ({ ...p, coins: Math.max(0, p.coins - 25) }));
+    setProgression((p) => {
+      const updated = { ...p, coins: Math.max(0, p.coins - 25) };
+      void persistUserProfileUpdate(authUser, updated);
+      return updated;
+    });
     setMascotState('hyped');
-    setMascotSpeech('50/50 Cut applied — 2 wrong tracks removed.');
-  }, [eliminatedOptionIds.length, roundFeedback?.answered, playMode, quizOptions, currentSong.id]);
+    setMascotSpeech('50/50 Cut applied — 2 wrong choices removed.');
+  }, [
+    eliminatedOptionIds.length,
+    roundFeedback?.answered,
+    playMode,
+    challengeOptions,
+    authUser,
+  ]);
 
   // Power-Up 3: 2x Double Drop Booster
   const handleUseDoubleBoost = useCallback(() => {
     if (doubleBoostActive || roundFeedback?.answered) return;
     audioEngine.playCorrectFanfare(1);
     setDoubleBoostActive(true);
-    setProgression((p) => ({ ...p, coins: Math.max(0, p.coins - 30) }));
+    setProgression((p) => {
+      const updated = { ...p, coins: Math.max(0, p.coins - 30) };
+      void persistUserProfileUpdate(authUser, updated);
+      return updated;
+    });
     setMascotState('celebrating');
     setMascotSpeech('2x Score Booster active for this round.');
-  }, [doubleBoostActive, roundFeedback?.answered]);
+  }, [doubleBoostActive, roundFeedback?.answered, authUser]);
 
   // Handle player answering Right or Wrong
   const handleJudgeAnswer = useCallback(
-    (correct: boolean, selectedSongId?: string) => {
+    (correct: boolean, selectedOptionId?: string) => {
       if (roundFeedback?.answered) return;
       audioEngine.stopSnippet(false);
       setIsPlayingSnippet(false);
 
+      const activeMode = session.config.challengeMode || challengeMode;
+      const activeDiff = effectiveDifficultyInfo.effectiveTier;
       const remainingRatio = Math.max(0.15, 1 - snippetProgress);
+
       const { points, isFever } = calculateRoundPoints({
         correct,
         snippetSeconds: snippetDuration,
         streak: session.streak,
         timeRemainingRatio: remainingRatio,
         doubleBoost: doubleBoostActive,
+        difficulty: activeDiff,
       });
 
       const newStreak = correct ? session.streak + 1 : 0;
       const isLastSong = session.currentIndex + 1 >= session.playlist.length;
       const setPerfect =
         isLastSong && session.correctCount + (correct ? 1 : 0) === session.playlist.length;
+      const nextSetTotalScore = session.score + points;
 
       const { next: updatedProg, xpGained, coinsGained, newlyCompletedQuests } =
         updateProgressionAfterRound(progression, {
@@ -669,9 +906,12 @@ export const VinylRushGame: React.FC = () => {
           newStreak,
           isSetComplete: isLastSong,
           setPerfect,
+          challengeMode: activeMode,
+          setTotalScore: nextSetTotalScore,
         });
 
       setProgression(updatedProg);
+      void persistUserProfileUpdate(authUser, updatedProg);
 
       if (newlyCompletedQuests.length > 0) {
         setLastXpToast(
@@ -686,13 +926,13 @@ export const VinylRushGame: React.FC = () => {
         setMascotSpeech(
           `${isFever ? 'Fever Streak · ' : ''}+${points} pts · "${currentSong.title}" by ${
             currentSong.artist
-          }`
+          } (${currentSong.releaseYear})`
         );
       } else {
         audioEngine.playWrongScratch();
         setMascotState('sympathy');
         setMascotSpeech(
-          `Track was "${currentSong.title}" by ${currentSong.artist} (+${xpGained} XP)`
+          `Answer: "${currentSong.title}" · ${currentSong.artist} · ${currentSong.genre} (${currentSong.releaseYear})`
         );
       }
 
@@ -703,21 +943,28 @@ export const VinylRushGame: React.FC = () => {
         points,
         xpGained,
         coinsGained,
-        selectedSongId,
+        selectedOptionId,
       });
     },
     [
       roundFeedback?.answered,
-      snippetProgress,
-      snippetDuration,
+      session.config.challengeMode,
       session.streak,
       session.currentIndex,
       session.playlist.length,
       session.correctCount,
+      session.score,
+      challengeMode,
+      effectiveDifficultyInfo.effectiveTier,
+      snippetProgress,
+      snippetDuration,
       doubleBoostActive,
       progression,
+      authUser,
       currentSong.title,
       currentSong.artist,
+      currentSong.releaseYear,
+      currentSong.genre,
     ]
   );
 
@@ -740,12 +987,16 @@ export const VinylRushGame: React.FC = () => {
       setMascotState('celebrating');
       audioEngine.playCorrectFanfare(4);
       setMascotSpeech(
-        `Session complete · ${nextState.score} pts · Level ${tierInfo.level} ${tierInfo.name}`
+        `Set complete · ${nextState.score} pts · Level ${tierInfo.level} ${tierInfo.name}`
       );
     } else {
       const nextSong = nextState.playlist[nextState.currentIndex];
       if (nextSong) {
-        triggerSnippetPlay(nextSong, snippetDuration);
+        triggerSnippetPlay(
+          nextSong,
+          snippetDuration,
+          nextState.config.challengeMode || challengeMode
+        );
       }
     }
   }, [
@@ -758,6 +1009,7 @@ export const VinylRushGame: React.FC = () => {
     tierInfo.name,
     triggerSnippetPlay,
     snippetDuration,
+    challengeMode,
   ]);
 
   // Toggle Light / Dark Theme
@@ -774,10 +1026,64 @@ export const VinylRushGame: React.FC = () => {
       const next = MASCOT_CHARACTERS[(idx + 1) % MASCOT_CHARACTERS.length];
       setMascotState('hyped');
       setMascotSpeech(`${next.name} active · ${next.tagline}`);
+      setProgression((p) => {
+        const updated = { ...p, mascotId: next.id };
+        void persistUserProfileUpdate(authUser, updated);
+        return updated;
+      });
       setTimeout(() => setMascotState(isPlayingSnippet ? 'listening' : 'idle'), 1600);
       return next.id;
     });
-  }, [isPlayingSnippet]);
+  }, [isPlayingSnippet, authUser]);
+
+  // Save custom Callsign & Tagline in User Profile Modal
+  const handleSaveProfileIdentity = useCallback(() => {
+    audioEngine.playUiTick(1.25, 'medium');
+    const cleanCallsign = sanitizeCallsign(draftCallsign);
+    const cleanTagline = sanitizeTagline(draftTagline);
+    setDraftCallsign(cleanCallsign);
+    setDraftTagline(cleanTagline);
+    setIsEditingProfile(false);
+    setProgression((prev) => {
+      const updated: PlayerProgressionState = {
+        ...prev,
+        callsign: cleanCallsign,
+        tagline: cleanTagline,
+        mascotId: characterId,
+      };
+      void persistUserProfileUpdate(authUser, updated);
+      return updated;
+    });
+    setLastXpToast(`Profile Saved · ${cleanCallsign}`);
+    setTimeout(() => setLastXpToast(null), 2600);
+  }, [draftCallsign, draftTagline, characterId, authUser]);
+
+  // Sign in with Google for Cloud Profile Sync
+  const handleGoogleSignIn = useCallback(async () => {
+    if (isAuthBusy) return;
+    setIsAuthBusy(true);
+    audioEngine.playUiTick(1.2, 'medium');
+    try {
+      const user = await signInWithGooglePopup();
+      const synced = await syncOrInitializeUserProfile(user, progressionRef.current);
+      setProgression(synced);
+      setDraftCallsign(synced.callsign);
+      setDraftTagline(synced.tagline);
+      setLastXpToast(`Cloud Synced · Welcome ${synced.callsign}`);
+      setTimeout(() => setLastXpToast(null), 3000);
+    } catch {
+      // Popup closed by user or restricted in preview
+    } finally {
+      setIsAuthBusy(false);
+    }
+  }, [isAuthBusy]);
+
+  const handleGoogleSignOut = useCallback(async () => {
+    audioEngine.playUiTick(0.95, 'light');
+    await signOutUser();
+    setLastXpToast('Signed out of Cloud Profile');
+    setTimeout(() => setLastXpToast(null), 2400);
+  }, []);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -844,8 +1150,14 @@ export const VinylRushGame: React.FC = () => {
       streak: session.streak,
       timeRemainingRatio: 0.8,
       doubleBoost: doubleBoostActive,
+      difficulty: effectiveDifficultyInfo.effectiveTier,
     }).points;
-  }, [snippetDuration, session.streak, doubleBoostActive]);
+  }, [
+    snippetDuration,
+    session.streak,
+    doubleBoostActive,
+    effectiveDifficultyInfo.effectiveTier,
+  ]);
 
   const emotionBadgeText = useMemo(() => {
     if (mascotState === 'listening') return 'Dancing';
@@ -890,7 +1202,7 @@ export const VinylRushGame: React.FC = () => {
         onMascotInteract={() => {
           setMascotState('hyped');
           setMascotSpeech(
-            'Complete Daily Groove Quests in your Vinyl Pass for bonus XP.'
+            `${progression.callsign} · Overall ${progression.overallScore} pts · ${overallWlStats.winRatePercent}% Win Rate`
           );
           setTimeout(() => setMascotState(isPlayingSnippet ? 'listening' : 'idle'), 1800);
         }}
@@ -901,7 +1213,7 @@ export const VinylRushGame: React.FC = () => {
         }}
       />
 
-      {/* Quest / XP Achievement Toast */}
+      {/* Quest / XP / Profile Achievement Toast */}
       <AnimatePresence>
         {lastXpToast && (
           <motion.div
@@ -1003,7 +1315,7 @@ export const VinylRushGame: React.FC = () => {
                   <NineDotBrandMark isLight={isLight} />
                   <div className="min-w-0 leading-tight">
                     <div className="text-base font-bold tracking-tight truncate">
-                      Vinyl Rush
+                      {progression.callsign || 'Vinyl Rush'}
                     </div>
                     <div
                       className={`flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap ${
@@ -1012,14 +1324,18 @@ export const VinylRushGame: React.FC = () => {
                     >
                       <span>Lv.{tierInfo.level}</span>
                       <span aria-hidden="true">·</span>
-                      <span className="font-mono tabular-nums">{progression.xp} XP</span>
+                      <span className="font-mono tabular-nums">{progression.overallScore} pts</span>
+                      <span aria-hidden="true">·</span>
+                      <span className="font-mono tabular-nums text-[#309F92]">
+                        {overallWlStats.winRatePercent}% W
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Zone 2: Tactile Circular Utility Controls (Matching IMG_5846 & IMG_5847) */}
                 <div className="flex items-center gap-1.5 shrink-0">
-                  {/* Vinyl Pass & Rhythm Score Gauge Trigger */}
+                  {/* Player Profile, Stats & Vinyl Pass Trigger */}
                   <motion.button
                     type="button"
                     whileTap={{ scale: 0.94 }}
@@ -1034,7 +1350,7 @@ export const VinylRushGame: React.FC = () => {
                         : 'border-[#EDFF8C]/35 bg-[#EDFF8C] text-[#000000]'
                     }`}
                   >
-                    <Trophy weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
+                    <UserCircle weight="fill" className="h-4 w-4 text-[#309F92]" />
                     <span className="font-mono tabular-nums">{tierInfo.grade}</span>
                     <ArrowUpRight weight="bold" className="h-3 w-3 opacity-70" />
                   </motion.button>
@@ -1174,8 +1490,8 @@ export const VinylRushGame: React.FC = () => {
                     showCameoVideo
                       ? 'bg-[#309F92] text-[#FFFFFF]'
                       : isLight
-                      ? 'bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
-                      : 'bg-white/10 text-white hover:bg-white/15'
+                        ? 'bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                        : 'bg-white/10 text-white hover:bg-white/15'
                   }`}
                 >
                   <FilmStrip weight="bold" className="h-3.5 w-3.5" />
@@ -1208,21 +1524,115 @@ export const VinylRushGame: React.FC = () => {
               </AnimatePresence>
             </motion.div>
 
-            {/* Unobstructed 3D Center Stage (80%+ Viewport Whitespace & 3D Presence) */}
+            {/* Unobstructed 3D Center Stage */}
             <div className="pointer-events-none flex-1" />
 
-            {/* Bottom Minimal Card Dock (Inspired directly by IMG_5847 & IMG_5815) */}
+            {/* Bottom Minimal Card Dock (Distinct Game Modes + Difficulty Scaling + Crate Selector) */}
             <motion.section
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
               aria-label="Game Configuration Dock"
-              className={`pointer-events-auto rounded-[28px] border p-3.5 transition-all duration-300 space-y-3 ${
+              className={`pointer-events-auto rounded-[28px] border p-3.5 transition-all duration-300 space-y-2.5 ${
                 isLight
                   ? 'border-[#D1D1D1] bg-[#FFFFFF]/96 text-[#000000] shadow-[0_16px_40px_rgba(0,0,0,0.06)]'
                   : 'border-white/12 bg-[#12161D]/96 text-[#FFFFFF] shadow-2xl'
               }`}
             >
+              {/* Row 0: 4 Distinct Game Modes (Track, Artist, Genre, Year) + Difficulty Scaling */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className={`text-[11px] font-bold tracking-tight ${
+                      isLight ? 'text-[#000000]/70' : 'text-white/70'
+                    }`}
+                  >
+                    Game Mode · {activeChallengeModeDef.subtitle}
+                  </span>
+
+                  {/* Difficulty Tier Selector Pill (Chill 1.0x / Club 1.35x / Master 1.85x) */}
+                  <div
+                    className={`inline-flex items-center gap-0.5 rounded-full border p-0.5 ${
+                      isLight ? 'border-[#D1D1D1] bg-[#F1F1F1]' : 'border-white/15 bg-black/40'
+                    }`}
+                    role="group"
+                    aria-label="Difficulty Scaling"
+                  >
+                    {DIFFICULTY_TIERS.map((tier) => {
+                      const active = difficulty === tier.id;
+                      return (
+                        <button
+                          key={tier.id}
+                          type="button"
+                          onClick={() => handleSelectDifficulty(tier.id)}
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold transition-colors ${
+                            active
+                              ? 'bg-[#309F92] text-[#FFFFFF]'
+                              : isLight
+                                ? 'text-[#000000]/65 hover:text-[#000000]'
+                                : 'text-white/65 hover:text-white'
+                          }`}
+                        >
+                          {tier.shortLabel}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-4 gap-1.5" role="group" aria-label="Guessing Game Modes">
+                  {GAME_CHALLENGE_MODES.map((m) => {
+                    const isSelected = challengeMode === m.id;
+                    const modeRecord = progression.modeStats?.[m.id];
+                    const modeWl = calculateWinLossRatio(
+                      modeRecord?.wins ?? 0,
+                      modeRecord?.losses ?? 0
+                    );
+                    return (
+                      <motion.button
+                        key={m.id}
+                        type="button"
+                        whileTap={{ scale: 0.96 }}
+                        data-testid={`mode-${m.id}-btn`}
+                        onClick={() => handleSelectChallengeMode(m.id)}
+                        className={`flex flex-col justify-between rounded-[18px] border p-2 text-left transition-all min-w-0 ${
+                          isSelected
+                            ? isLight
+                              ? 'border-[#000000] bg-[#EDFF8C] text-[#000000] shadow-xs'
+                              : 'border-[#EDFF8C] bg-[#EDFF8C] text-[#000000]'
+                            : isLight
+                              ? 'border-[#D1D1D1] bg-[#F1F1F1]/75 text-[#000000] hover:bg-[#F1F1F1]'
+                              : 'border-white/10 bg-white/5 text-white hover:bg-white/10'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 w-full">
+                          <span className="font-mono text-[9px] font-bold uppercase tracking-wider opacity-60">
+                            {m.shortLabel}
+                          </span>
+                          <span
+                            className={`h-2 w-2 shrink-0 ${
+                              m.shapeType === 'circle'
+                                ? 'rounded-full'
+                                : m.shapeType === 'arch'
+                                  ? 'rounded-t-full'
+                                  : m.shapeType === 'pill'
+                                    ? 'rounded-full w-3'
+                                    : 'rounded-[3px]'
+                            } ${isSelected ? 'bg-[#309F92]' : 'bg-current opacity-35'}`}
+                          />
+                        </div>
+                        <div className="mt-1 truncate text-xs font-extrabold tracking-tight">
+                          {m.title}
+                        </div>
+                        <div className="mt-0.5 truncate font-mono text-[10px] tabular-nums opacity-70">
+                          {modeWl.totalRounds > 0 ? `${modeWl.winRatePercent}% W` : 'Ready'}
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Row 1: Horizontal Crate Selector Tabs + Progressive Disclosure "Tune Rules" Pill */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar flex-1 min-w-0">
@@ -1237,14 +1647,14 @@ export const VinylRushGame: React.FC = () => {
                         type="button"
                         whileTap={{ scale: 0.95 }}
                         onClick={() => handleSelectFilterValue(crate.mode, crate.value)}
-                        className={`min-h-[36px] shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors whitespace-nowrap ${
+                        className={`min-h-[34px] shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors whitespace-nowrap ${
                           isSelected
                             ? isLight
                               ? 'bg-[#000000] text-[#FFFFFF]'
                               : 'bg-[#EDFF8C] text-[#000000]'
                             : isLight
-                            ? 'bg-[#F1F1F1] text-[#000000]/75 hover:bg-[#E5E5E5]'
-                            : 'bg-white/8 text-white/80 hover:bg-white/15'
+                              ? 'bg-[#F1F1F1] text-[#000000]/75 hover:bg-[#E5E5E5]'
+                              : 'bg-white/8 text-white/80 hover:bg-white/15'
                         }`}
                       >
                         {crate.label}
@@ -1263,12 +1673,12 @@ export const VinylRushGame: React.FC = () => {
                         handleSelectFilterValue('account', 'Synced');
                       }
                     }}
-                    className={`min-h-[36px] shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors whitespace-nowrap ${
+                    className={`min-h-[34px] shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors whitespace-nowrap ${
                       filterMode === 'account'
                         ? 'bg-[#309F92] text-[#FFFFFF]'
                         : isLight
-                        ? 'bg-[#F1F1F1] text-[#000000]/75 hover:bg-[#E5E5E5]'
-                        : 'bg-white/8 text-white/80 hover:bg-white/15'
+                          ? 'bg-[#F1F1F1] text-[#000000]/75 hover:bg-[#E5E5E5]'
+                          : 'bg-white/8 text-white/80 hover:bg-white/15'
                     }`}
                   >
                     My Crate
@@ -1285,12 +1695,12 @@ export const VinylRushGame: React.FC = () => {
                     setIsRulesDrawerOpen((prev) => !prev);
                   }}
                   aria-expanded={isRulesDrawerOpen}
-                  className={`inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors whitespace-nowrap ${
+                  className={`inline-flex min-h-[34px] shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-colors whitespace-nowrap ${
                     isRulesDrawerOpen
                       ? 'border-[#309F92] bg-[#309F92] text-[#FFFFFF]'
                       : isLight
-                      ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
-                      : 'border-white/15 bg-white/10 text-white hover:bg-white/15'
+                        ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                        : 'border-white/15 bg-white/10 text-white hover:bg-white/15'
                   }`}
                 >
                   <SlidersHorizontal weight="bold" className="h-3.5 w-3.5" />
@@ -1315,6 +1725,43 @@ export const VinylRushGame: React.FC = () => {
                           : 'border-white/10 bg-black/40'
                       }`}
                     >
+                      {/* Difficulty Scaling Details */}
+                      <div>
+                        <div className="flex items-center justify-between text-[11px] mb-1">
+                          <span
+                            className={`font-semibold ${
+                              isLight ? 'text-[#000000]/65' : 'text-white/65'
+                            }`}
+                          >
+                            Difficulty Scaling ({activeDifficultyDef.multiplier}x Points)
+                          </span>
+                          <span className="font-mono text-[10px] font-bold text-[#309F92]">
+                            {activeDifficultyDef.cluePolicy}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {DIFFICULTY_TIERS.map((tier) => (
+                            <button
+                              key={tier.id}
+                              type="button"
+                              onClick={() => handleSelectDifficulty(tier.id)}
+                              className={`rounded-[14px] border px-2.5 py-1.5 text-left transition-colors ${
+                                difficulty === tier.id
+                                  ? 'border-[#309F92] bg-[#309F92] text-[#FFFFFF]'
+                                  : isLight
+                                    ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
+                                    : 'border-white/10 bg-white/5 text-white'
+                              }`}
+                            >
+                              <div className="text-xs font-bold">{tier.shortLabel}</div>
+                              <div className="font-mono text-[10px] opacity-80">
+                                {tier.multiplier}x · {tier.recommendedSnippet}s
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* Mascot Companion Selector */}
                       <div>
                         <span
@@ -1342,8 +1789,8 @@ export const VinylRushGame: React.FC = () => {
                                     ? 'border-[#000000] bg-[#EDFF8C] text-[#000000]'
                                     : 'border-[#EDFF8C] bg-[#EDFF8C] text-[#000000]'
                                   : isLight
-                                  ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
-                                  : 'border-white/10 bg-white/5 text-white'
+                                    ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
+                                    : 'border-white/10 bg-white/5 text-white'
                               }`}
                             >
                               <img
@@ -1351,7 +1798,7 @@ export const VinylRushGame: React.FC = () => {
                                 alt={char.name}
                                 className="h-5 w-5 rounded-full object-cover shrink-0"
                               />
-                              <span>{char.name}</span>
+                              <span className="truncate">{char.name}</span>
                             </motion.button>
                           ))}
                         </div>
@@ -1390,8 +1837,8 @@ export const VinylRushGame: React.FC = () => {
                                     ? 'bg-[#000000] text-[#FFFFFF]'
                                     : 'bg-[#EDFF8C] text-[#000000]'
                                   : isLight
-                                  ? 'text-[#000000]/70 hover:text-[#000000]'
-                                  : 'text-white/70 hover:text-white'
+                                    ? 'text-[#000000]/70 hover:text-[#000000]'
+                                    : 'text-white/70 hover:text-white'
                               }`}
                             >
                               {sec}s
@@ -1427,8 +1874,8 @@ export const VinylRushGame: React.FC = () => {
                                   songCount === count
                                     ? 'bg-[#309F92] text-[#FFFFFF]'
                                     : isLight
-                                    ? 'text-[#000000]/70 hover:text-[#000000]'
-                                    : 'text-white/70 hover:text-white'
+                                      ? 'text-[#000000]/70 hover:text-[#000000]'
+                                      : 'text-white/70 hover:text-white'
                                 }`}
                               >
                                 {count}
@@ -1443,31 +1890,13 @@ export const VinylRushGame: React.FC = () => {
                               isLight ? 'text-[#000000]/65' : 'text-white/65'
                             }`}
                           >
-                            Answer Mode
+                            Answer Format
                           </span>
                           <div
                             className={`grid grid-cols-2 gap-1 rounded-full p-1 ${
                               isLight ? 'bg-[#FFFFFF] border border-[#D1D1D1]' : 'bg-black/50'
                             }`}
                           >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                audioEngine.playUiTick(1.05, 'selection');
-                                setPlayMode('party-30s');
-                              }}
-                              className={`min-h-[32px] rounded-full text-[11px] font-bold transition-colors whitespace-nowrap px-2 ${
-                                playMode === 'party-30s'
-                                  ? isLight
-                                    ? 'bg-[#000000] text-[#FFFFFF]'
-                                    : 'bg-[#EDFF8C] text-[#000000]'
-                                  : isLight
-                                  ? 'text-[#000000]/70'
-                                  : 'text-white/70'
-                              }`}
-                            >
-                              30s Judge
-                            </button>
                             <button
                               type="button"
                               onClick={() => {
@@ -1480,11 +1909,29 @@ export const VinylRushGame: React.FC = () => {
                                     ? 'bg-[#000000] text-[#FFFFFF]'
                                     : 'bg-[#EDFF8C] text-[#000000]'
                                   : isLight
-                                  ? 'text-[#000000]/70'
-                                  : 'text-white/70'
+                                    ? 'text-[#000000]/70'
+                                    : 'text-white/70'
                               }`}
                             >
                               4-Choice
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                audioEngine.playUiTick(1.05, 'selection');
+                                setPlayMode('party-30s');
+                              }}
+                              className={`min-h-[32px] rounded-full text-[11px] font-bold transition-colors whitespace-nowrap px-2 ${
+                                playMode === 'party-30s'
+                                  ? isLight
+                                    ? 'bg-[#000000] text-[#FFFFFF]'
+                                    : 'bg-[#EDFF8C] text-[#000000]'
+                                  : isLight
+                                    ? 'text-[#000000]/70'
+                                    : 'text-white/70'
+                              }`}
+                            >
+                              30s Judge
                             </button>
                           </div>
                         </div>
@@ -1524,22 +1971,20 @@ export const VinylRushGame: React.FC = () => {
                 onClick={() => startNewGame()}
                 className={`flex min-h-[50px] w-full items-center justify-between rounded-full px-5 py-2.5 text-sm font-bold tracking-tight transition-colors whitespace-nowrap ${primaryBtnClasses}`}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <Play weight="fill" className="h-4 w-4 shrink-0" />
-                  <span>
-                    {isLoadingSongs
-                      ? `Drop the Needle · Play ${songCount} Songs`
-                      : `Drop the Needle · Play ${songCount} Songs`}
+                  <span className="truncate">
+                    Drop the Needle · {activeChallengeModeDef.title} ({songCount} Songs)
                   </span>
                 </div>
                 <span
-                  className={`rounded-full px-2.5 py-0.5 font-mono text-xs font-bold tabular-nums ${
+                  className={`ml-2 shrink-0 rounded-full px-2.5 py-0.5 font-mono text-xs font-bold tabular-nums ${
                     isLight
                       ? 'bg-[#EDFF8C] text-[#000000]'
                       : 'bg-[#000000] text-[#EDFF8C]'
                   }`}
                 >
-                  {snippetDuration}s
+                  {snippetDuration}s · {activeDifficultyDef.shortLabel}
                 </span>
               </motion.button>
             </motion.section>
@@ -1558,14 +2003,14 @@ export const VinylRushGame: React.FC = () => {
               className="pointer-events-auto flex flex-col gap-2"
             >
               <div
-                className={`flex items-center justify-between gap-2 rounded-[24px] border px-4 py-2.5 shadow-sm transition-colors ${
+                className={`flex items-center justify-between gap-2 rounded-[24px] border px-3.5 py-2.5 shadow-sm transition-colors ${
                   isLight
                     ? 'border-[#D1D1D1] bg-[#FFFFFF]/95 text-[#000000]'
                     : 'border-white/12 bg-[#12161D]/95 text-[#FFFFFF]'
                 }`}
               >
-                {/* Score, Streak & Round Readouts (Tabular Numerals) */}
-                <div className="flex items-center gap-4">
+                {/* Score, Streak, Mode & Round Readouts (Tabular Numerals) */}
+                <div className="flex items-center gap-3 min-w-0">
                   <div>
                     <div
                       className={`text-[10px] font-semibold ${
@@ -1576,7 +2021,7 @@ export const VinylRushGame: React.FC = () => {
                     </div>
                     <div
                       data-testid="hud-score"
-                      className="text-xl font-bold font-mono tabular-nums"
+                      className="text-lg font-bold font-mono tabular-nums"
                     >
                       {Math.round(session.score + (roundFeedback?.points || 0))}
                     </div>
@@ -1593,7 +2038,7 @@ export const VinylRushGame: React.FC = () => {
                         <Fire weight="fill" className="h-3.5 w-3.5 text-[#E07A47]" />
                       )}
                     </div>
-                    <div className="text-xl font-bold font-mono tabular-nums text-[#309F92]">
+                    <div className="text-lg font-bold font-mono tabular-nums text-[#309F92]">
                       {roundFeedback?.answered
                         ? roundFeedback.correct
                           ? session.streak + 1
@@ -1603,22 +2048,23 @@ export const VinylRushGame: React.FC = () => {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <div
-                      className={`text-[10px] font-semibold ${
+                      className={`text-[10px] font-semibold truncate ${
                         isLight ? 'text-[#000000]/55' : 'text-white/55'
                       }`}
                     >
-                      Round
+                      {activeChallengeModeDef.shortLabel} · {activeDifficultyDef.shortLabel}
+                      {effectiveDifficultyInfo.isScaledUp ? '+' : ''}
                     </div>
-                    <div className="text-xl font-bold font-mono tabular-nums">
+                    <div className="text-lg font-bold font-mono tabular-nums">
                       {session.currentIndex + 1}/{session.playlist.length}
                     </div>
                   </div>
                 </div>
 
                 {/* Right Circular Controls */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <motion.button
                     type="button"
                     whileTap={{ scale: 0.92 }}
@@ -1628,7 +2074,7 @@ export const VinylRushGame: React.FC = () => {
                       audioEngine.playTabSwitch(true);
                       setIsPassModalOpen(true);
                     }}
-                    aria-label="Open Vinyl Pass and Quests"
+                    aria-label="Open User Profile and Vinyl Pass"
                     className="inline-flex h-9 items-center gap-1 rounded-full bg-[#EDFF8C] px-2.5 text-xs font-bold text-[#000000]"
                   >
                     <Coins weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
@@ -1741,7 +2187,7 @@ export const VinylRushGame: React.FC = () => {
                     exit={{ opacity: 0, y: 16 }}
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                     aria-label="Active Song Quiz Controls"
-                    className={`w-full rounded-[28px] border p-3.5 space-y-2.5 transition-colors ${
+                    className={`w-full overflow-hidden rounded-[28px] border p-3.5 space-y-2.5 transition-colors ${
                       isLight
                         ? 'border-[#D1D1D1] bg-[#FFFFFF]/96 text-[#000000] shadow-[0_16px_40px_rgba(0,0,0,0.08)]'
                         : 'border-white/12 bg-[#12161D]/96 text-[#FFFFFF] shadow-2xl'
@@ -1758,133 +2204,174 @@ export const VinylRushGame: React.FC = () => {
                       snippetDuration={snippetDuration}
                       compact
                       artistHintText={artistHintText}
-                      onReplaySnippet={() => triggerSnippetPlay(currentSong, snippetDuration)}
+                      onReplaySnippet={() =>
+                        triggerSnippetPlay(
+                          currentSong,
+                          snippetDuration,
+                          session.config.challengeMode || challengeMode
+                        )
+                      }
                       onSaveTrack={() => {
-                        setProgression((p) => ({
-                          ...p,
-                          unlockedBadges: Array.from(
-                            new Set([...p.unlockedBadges, 'crate-curator'])
-                          ),
-                        }));
+                        setProgression((p) => {
+                          const updated: PlayerProgressionState = {
+                            ...p,
+                            xp: p.xp + 50,
+                            coins: p.coins + 15,
+                            unlockedBadges: Array.from(
+                              new Set([...p.unlockedBadges, 'crate-curator'])
+                            ).slice(0, 20),
+                          };
+                          void persistUserProfileUpdate(authUser, updated);
+                          return updated;
+                        });
+                        setLastXpToast('Saved to Library · +50 XP · +15 Coins');
+                        setTimeout(() => setLastXpToast(null), 2600);
                       }}
                     />
 
-                    {/* Compact Transport + Power-Up Action Pill Bar (Inspired by IMG_5847 Bottom Pill Bar!) */}
+                    {/* Zero-Overflow 2-Row Transport + Power-Up Grid (Fixes IMG_5849 horizontal clipping!) */}
                     {!roundFeedback?.answered && (
-                      <div className="flex items-center justify-between gap-1.5">
-                        {/* Left: Power-Up Boosters */}
-                        <div
-                          className={`flex items-center gap-1 rounded-full p-1 ${
-                            isLight ? 'bg-[#F1F1F1]' : 'bg-white/8'
-                          }`}
-                        >
+                      <div className="space-y-1.5">
+                        {/* Row 1: Playback, +Time & Answer Format Switch (3 equal columns, never overflows) */}
+                        <div className="grid grid-cols-3 gap-1.5">
                           <motion.button
                             type="button"
-                            whileTap={{ scale: 0.94 }}
-                            disabled={Boolean(artistHintText)}
-                            onClick={handleUseArtistHint}
-                            className={`inline-flex min-h-[32px] items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors whitespace-nowrap ${
-                              artistHintText
-                                ? 'bg-[#309F92] text-[#FFFFFF]'
-                                : isLight
-                                ? 'bg-[#FFFFFF] text-[#000000] shadow-2xs hover:bg-[#EDFF8C]'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                          >
-                            <Lightbulb weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
-                            <span>{artistHintText ? 'Clue On' : 'Clue'}</span>
-                          </motion.button>
-
-                          <motion.button
-                            type="button"
-                            whileTap={{ scale: 0.94 }}
-                            disabled={eliminatedOptionIds.length > 0}
-                            onClick={handleUseFiftyFifty}
-                            className={`inline-flex min-h-[32px] items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors whitespace-nowrap ${
-                              eliminatedOptionIds.length > 0
-                                ? 'bg-[#309F92] text-[#FFFFFF]'
-                                : isLight
-                                ? 'bg-[#FFFFFF] text-[#000000] shadow-2xs hover:bg-[#EDFF8C]'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                          >
-                            <Scissors weight="bold" className="h-3.5 w-3.5" />
-                            <span>50/50</span>
-                          </motion.button>
-
-                          <motion.button
-                            type="button"
-                            whileTap={{ scale: 0.94 }}
-                            disabled={doubleBoostActive}
-                            onClick={handleUseDoubleBoost}
-                            className={`inline-flex min-h-[32px] items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors whitespace-nowrap ${
-                              doubleBoostActive
-                                ? 'bg-[#EDFF8C] text-[#000000]'
-                                : isLight
-                                ? 'bg-[#FFFFFF] text-[#000000] shadow-2xs hover:bg-[#EDFF8C]'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                          >
-                            <Lightning weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
-                            <span>2x</span>
-                          </motion.button>
-                        </div>
-
-                        {/* Right: Replay, +Time & Mode Switch */}
-                        <div className="flex items-center gap-1">
-                          <motion.button
-                            type="button"
-                            whileTap={{ scale: 0.94 }}
-                            onClick={() => triggerSnippetPlay(currentSong, snippetDuration)}
-                            className={`inline-flex min-h-[34px] items-center gap-1 rounded-full px-3 py-1 text-xs font-bold whitespace-nowrap ${
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() =>
+                              triggerSnippetPlay(
+                                currentSong,
+                                snippetDuration,
+                                session.config.challengeMode || challengeMode
+                              )
+                            }
+                            className={`flex min-h-[36px] min-w-0 items-center justify-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
                               isLight
                                 ? 'bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
                                 : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                           >
-                            <Play weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
-                            <span>{isPlayingSnippet ? `${snippetDuration}s` : 'Replay'}</span>
+                            <Play weight="fill" className="h-3.5 w-3.5 shrink-0 text-[#309F92]" />
+                            <span className="truncate">
+                              {isPlayingSnippet ? `${snippetDuration}s` : 'Replay'}
+                            </span>
                           </motion.button>
-
-                          {snippetDuration < 30 && (
-                            <motion.button
-                              type="button"
-                              whileTap={{ scale: 0.94 }}
-                              onClick={() => {
-                                const nextDur: SnippetDuration =
-                                  snippetDuration < 5
-                                    ? 5
-                                    : snippetDuration < 15
-                                    ? 15
-                                    : 30;
-                                setSnippetDuration(nextDur);
-                                triggerSnippetPlay(currentSong, nextDur);
-                              }}
-                              className="inline-flex min-h-[34px] items-center gap-1 rounded-full bg-[#EDFF8C] px-2.5 py-1 text-xs font-bold text-[#000000] whitespace-nowrap"
-                            >
-                              <Timer weight="bold" className="h-3.5 w-3.5" />
-                              <span>+Time</span>
-                            </motion.button>
-                          )}
 
                           <motion.button
                             type="button"
-                            whileTap={{ scale: 0.94 }}
+                            whileTap={{ scale: 0.95 }}
+                            disabled={snippetDuration >= 30}
+                            onClick={() => {
+                              const nextDur: SnippetDuration =
+                                snippetDuration < 5 ? 5 : snippetDuration < 15 ? 15 : 30;
+                              setSnippetDuration(nextDur);
+                              triggerSnippetPlay(
+                                currentSong,
+                                nextDur,
+                                session.config.challengeMode || challengeMode
+                              );
+                            }}
+                            className={`flex min-h-[36px] min-w-0 items-center justify-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
+                              snippetDuration >= 30
+                                ? 'opacity-45 cursor-not-allowed bg-[#F1F1F1] text-[#000000]'
+                                : 'bg-[#EDFF8C] text-[#000000]'
+                            }`}
+                          >
+                            <Timer weight="bold" className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">
+                              {snippetDuration >= 30 ? '30s Max' : '+Time'}
+                            </span>
+                          </motion.button>
+
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.95 }}
                             onClick={() => {
                               audioEngine.playUiTick(1.05, 'selection');
                               setPlayMode((m) =>
                                 m === 'party-30s' ? 'quiz-4choice' : 'party-30s'
                               );
                             }}
-                            className={`inline-flex min-h-[34px] items-center rounded-full border px-2.5 py-1 text-[11px] font-bold whitespace-nowrap ${
+                            className={`flex min-h-[36px] min-w-0 items-center justify-center rounded-full border px-2.5 py-1 text-xs font-bold transition-colors ${
                               isLight
-                                ? 'border-[#D1D1D1] text-[#000000]/75'
-                                : 'border-white/15 text-white/80'
+                                ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]/80 hover:bg-[#F1F1F1]'
+                                : 'border-white/15 bg-white/5 text-white/85 hover:bg-white/10'
                             }`}
                           >
-                            {playMode === 'party-30s' ? '4-Choice' : 'Judge'}
+                            <span className="truncate">
+                              {playMode === 'party-30s' ? '4-Choice' : '30s Judge'}
+                            </span>
                           </motion.button>
                         </div>
+
+                        {/* Row 2: Studio Power-Up Boosters (3 equal columns inside a pill container) */}
+                        <div
+                          className={`grid grid-cols-3 gap-1.5 rounded-full p-1 ${
+                            isLight ? 'bg-[#F1F1F1]' : 'bg-white/8'
+                          }`}
+                        >
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.95 }}
+                            disabled={Boolean(artistHintText)}
+                            onClick={handleUseArtistHint}
+                            className={`flex min-h-[32px] min-w-0 items-center justify-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold transition-colors ${
+                              artistHintText
+                                ? 'bg-[#309F92] text-[#FFFFFF]'
+                                : isLight
+                                  ? 'bg-[#FFFFFF] text-[#000000] shadow-2xs hover:bg-[#EDFF8C]'
+                                  : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                          >
+                            <Lightbulb weight="fill" className="h-3.5 w-3.5 shrink-0 text-[#309F92]" />
+                            <span className="truncate">{artistHintText ? 'Clue On' : 'Clue'}</span>
+                          </motion.button>
+
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.95 }}
+                            disabled={eliminatedOptionIds.length > 0}
+                            onClick={handleUseFiftyFifty}
+                            className={`flex min-h-[32px] min-w-0 items-center justify-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold transition-colors ${
+                              eliminatedOptionIds.length > 0
+                                ? 'bg-[#309F92] text-[#FFFFFF]'
+                                : isLight
+                                  ? 'bg-[#FFFFFF] text-[#000000] shadow-2xs hover:bg-[#EDFF8C]'
+                                  : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                          >
+                            <Scissors weight="bold" className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">50/50</span>
+                          </motion.button>
+
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.95 }}
+                            disabled={doubleBoostActive}
+                            onClick={handleUseDoubleBoost}
+                            className={`flex min-h-[32px] min-w-0 items-center justify-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold transition-colors ${
+                              doubleBoostActive
+                                ? 'bg-[#EDFF8C] text-[#000000]'
+                                : isLight
+                                  ? 'bg-[#FFFFFF] text-[#000000] shadow-2xs hover:bg-[#EDFF8C]'
+                                  : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                          >
+                            <Lightning weight="fill" className="h-3.5 w-3.5 shrink-0 text-[#309F92]" />
+                            <span className="truncate">{doubleBoostActive ? '2x On' : '2x Boost'}</span>
+                          </motion.button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Active Mode Prompt Header */}
+                    {!roundFeedback?.answered && (
+                      <div className="flex items-center justify-between px-1 text-[11px]">
+                        <span className="font-bold text-[#309F92] truncate">
+                          {activeChallengeModeDef.badgeCode} · {activeChallengeModeDef.promptLabel}
+                        </span>
+                        <span className="font-mono font-bold tabular-nums opacity-65 shrink-0 ml-2">
+                          +{potentialPoints} pts
+                        </span>
                       </div>
                     )}
 
@@ -1899,13 +2386,13 @@ export const VinylRushGame: React.FC = () => {
                               audioEngine.playUiTick(1.15, 'medium');
                               setSession((prev) => ({ ...prev, isRevealed: true }));
                               setMascotSpeech(
-                                `"${currentSong.title}" by ${currentSong.artist}. Did you get it?`
+                                `"${currentSong.title}" · ${currentSong.artist} · ${currentSong.genre} (${currentSong.releaseYear})`
                               );
                             }}
                             className={`flex min-h-[46px] w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold transition-colors ${primaryBtnClasses}`}
                           >
                             <Eye weight="bold" className="h-4 w-4" />
-                            <span>Reveal Song &amp; Score Round</span>
+                            <span>Reveal {activeChallengeModeDef.shortLabel} &amp; Score Round</span>
                           </motion.button>
                         ) : (
                           <div className="grid grid-cols-2 gap-2">
@@ -1937,10 +2424,10 @@ export const VinylRushGame: React.FC = () => {
                       </div>
                     )}
 
-                    {/* MODE B: 4-CHOICE INTERACTIVE QUIZ */}
+                    {/* MODE B: 4-CHOICE INTERACTIVE QUIZ (Adapts to Track, Artist, Genre, or Year!) */}
                     {playMode === 'quiz-4choice' && !roundFeedback?.answered && (
                       <div className="grid grid-cols-2 gap-1.5">
-                        {quizOptions.map((option) => {
+                        {challengeOptions.map((option) => {
                           const isEliminated = eliminatedOptionIds.includes(option.id);
                           return (
                             <motion.button
@@ -1948,22 +2435,20 @@ export const VinylRushGame: React.FC = () => {
                               type="button"
                               whileTap={{ scale: 0.97 }}
                               disabled={isEliminated}
-                              onClick={() =>
-                                handleJudgeAnswer(option.id === currentSong.id, option.id)
-                              }
-                              className={`flex min-h-[46px] flex-col justify-center rounded-[18px] border px-3 py-1.5 text-left transition-colors ${
+                              onClick={() => handleJudgeAnswer(option.isCorrect, option.id)}
+                              className={`flex min-h-[48px] min-w-0 flex-col justify-center rounded-[18px] border px-3 py-1.5 text-left transition-colors ${
                                 isEliminated
                                   ? 'opacity-30 line-through cursor-not-allowed border-[#D1D1D1]'
                                   : isLight
-                                  ? 'border-[#D1D1D1] bg-[#F1F1F1]/70 hover:bg-[#EDFF8C] hover:border-[#000000]/20'
-                                  : 'border-white/12 bg-white/5 hover:bg-[#EDFF8C] hover:text-[#000000]'
+                                    ? 'border-[#D1D1D1] bg-[#F1F1F1]/70 hover:bg-[#EDFF8C] hover:border-[#000000]/20'
+                                    : 'border-white/12 bg-white/5 hover:bg-[#EDFF8C] hover:text-[#000000]'
                               }`}
                             >
                               <span className="truncate text-xs font-bold">
-                                {option.title}
+                                {option.primaryText}
                               </span>
-                              <span className="truncate text-[11px] opacity-65">
-                                {option.artist} · {option.releaseYear}
+                              <span className="truncate text-[10px] opacity-65">
+                                {option.secondaryText}
                               </span>
                             </motion.button>
                           );
@@ -1986,10 +2471,11 @@ export const VinylRushGame: React.FC = () => {
                           <div className="text-xs font-bold text-[#309F92]">
                             {roundFeedback.correct
                               ? `Correct · +${roundFeedback.points} pts · +${roundFeedback.xpGained} XP`
-                              : `Missed Track · +${roundFeedback.xpGained} XP`}
+                              : `Missed ${activeChallengeModeDef.shortLabel} · +${roundFeedback.xpGained} XP`}
                           </div>
                           <div className="truncate text-[11px] opacity-75">
-                            {currentSong.title} — {currentSong.artist}
+                            {currentSong.title} — {currentSong.artist} ({currentSong.releaseYear} ·{' '}
+                            {currentSong.genre})
                           </div>
                         </div>
 
@@ -2035,8 +2521,8 @@ export const VinylRushGame: React.FC = () => {
               Session Paused
             </h2>
             <p className={`text-xs ${isLight ? 'text-[#000000]/60' : 'text-white/60'}`}>
-              Round {session.currentIndex + 1} of {session.playlist.length} ·{' '}
-              {session.config.snippetDuration}s Snippet Cut
+              {activeChallengeModeDef.title} ({activeDifficultyDef.shortLabel}) · Round{' '}
+              {session.currentIndex + 1} of {session.playlist.length}
             </p>
 
             <div
@@ -2094,7 +2580,7 @@ export const VinylRushGame: React.FC = () => {
                 }}
                 className="flex min-h-[40px] w-full items-center justify-center rounded-full text-xs font-semibold opacity-65 hover:opacity-100"
               >
-                Back to Crate Setup
+                Back to Mode &amp; Crate Setup
               </button>
             </div>
           </motion.div>
@@ -2119,7 +2605,7 @@ export const VinylRushGame: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs font-semibold text-[#309F92]">
-                  Level {tierInfo.level} · {tierInfo.name}
+                  {activeChallengeModeDef.title} · Level {tierInfo.level} {tierInfo.name}
                 </div>
                 <h2 id="gameover-modal-title" className="text-2xl font-bold tracking-tight">
                   Session Summary
@@ -2155,8 +2641,8 @@ export const VinylRushGame: React.FC = () => {
                       item.correct && isLight
                         ? 'border-[#000000]/10 bg-[#EDFF8C]/55'
                         : isLight
-                        ? 'border-[#D1D1D1] bg-[#F1F1F1]/70'
-                        : 'border-white/10 bg-white/5'
+                          ? 'border-[#D1D1D1] bg-[#F1F1F1]/70'
+                          : 'border-white/10 bg-white/5'
                     }`}
                   >
                     <div className="min-w-0 flex-1">
@@ -2172,7 +2658,7 @@ export const VinylRushGame: React.FC = () => {
                         </span>
                       </div>
                       <div className="truncate text-[11px] opacity-65">
-                        {item.song.artist} · {item.song.releaseYear}
+                        {item.song.artist} · {item.song.genre} · {item.song.releaseYear}
                       </div>
                     </div>
 
@@ -2205,7 +2691,7 @@ export const VinylRushGame: React.FC = () => {
               })}
             </div>
 
-            {/* Play Again & Change Crate Actions */}
+            {/* Play Again & Change Mode/Crate Actions */}
             <div
               className={`mt-4 grid grid-cols-2 gap-2.5 pt-3 border-t ${
                 isLight ? 'border-[#F1F1F1]' : 'border-white/10'
@@ -2235,7 +2721,7 @@ export const VinylRushGame: React.FC = () => {
                     : 'bg-white/10 text-white hover:bg-white/15'
                 }`}
               >
-                Change Crate
+                Change Mode
               </motion.button>
             </div>
           </motion.div>
@@ -2243,7 +2729,7 @@ export const VinylRushGame: React.FC = () => {
       </div>
 
       {/* =====================================================================
-          GAMIFICATION MODAL: RHYTHM SCORE GAUGE (IMG_5846) & GROOVE QUESTS
+          USER PROFILE, PER-MODE WIN/LOSS RATIOS & GAMIFICATION PASS MODAL
          ===================================================================== */}
       <AnimatePresence>
         {isPassModalOpen && (
@@ -2269,13 +2755,14 @@ export const VinylRushGame: React.FC = () => {
             >
               <div className="mx-auto mb-1 h-1.5 w-10 rounded-full bg-[#D1D1D1] dark:bg-white/20 sm:hidden" />
 
+              {/* Header */}
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-xs font-semibold text-[#309F92]">
                     Level {tierInfo.level} · {tierInfo.name}
                   </span>
                   <h2 id="vinyl-pass-title" className="text-xl font-bold tracking-tight">
-                    Rhythm Score &amp; Pass
+                    Selector Profile &amp; Pass
                   </h2>
                 </div>
                 <motion.button
@@ -2285,109 +2772,407 @@ export const VinylRushGame: React.FC = () => {
                     audioEngine.playUiTick(0.9, 'light');
                     setIsPassModalOpen(false);
                   }}
-                  aria-label="Close Vinyl Pass modal"
+                  aria-label="Close Selector Profile modal"
                   className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${circleBtnClass}`}
                 >
                   <X weight="bold" className="h-4 w-4" />
                 </motion.button>
               </div>
 
-              {/* Radial Tick-Mark Gauge (Exact match to IMG_5846 Lead Score 90 Card!) */}
-              <SegmentedTickArcGauge
-                value={Math.min(99, Math.round(tierInfo.progressRatio * 100) || 90)}
-                gradeLabel={tierInfo.grade}
-                statusLabel="Steady"
-                isLight={isLight}
-              />
-
-              {/* Acid-Lime Highlight Summary Strip (IMG_5847!) */}
-              <div className="flex items-center justify-between rounded-[22px] bg-[#EDFF8C] p-3.5 text-[#000000]">
-                <div>
-                  <div className="text-[11px] font-semibold opacity-70">Total Groove XP</div>
-                  <div className="font-mono text-lg font-bold tabular-nums">
-                    {progression.xp} pt · {tierInfo.xpToNext} to next tier
-                  </div>
-                </div>
-                <div className="flex h-9 items-center gap-1 rounded-full bg-[#000000] px-3 font-mono text-xs font-bold text-[#EDFF8C] tabular-nums">
-                  <Coins weight="fill" className="h-3.5 w-3.5 text-[#309F92]" />
-                  <span>{progression.coins}</span>
-                </div>
-              </div>
-
-              {/* Daily Groove Quests */}
-              <div className="space-y-2">
-                <div className="text-xs font-bold opacity-65">Daily Groove Quests</div>
-                {progression.quests.map((q) => (
-                  <div
-                    key={q.id}
-                    className={`flex items-center justify-between gap-3 rounded-[20px] border p-3 ${
-                      isLight
-                        ? 'border-[#D1D1D1] bg-[#F1F1F1]/65'
-                        : 'border-white/10 bg-white/5'
+              {/* Sub-Navigation Pill Switcher: Profile | Mode Stats | Quests & Badges */}
+              <div
+                className={`grid grid-cols-3 gap-1 rounded-full border p-1 ${
+                  isLight ? 'border-[#D1D1D1] bg-[#F1F1F1]' : 'border-white/12 bg-black/40'
+                }`}
+              >
+                {(
+                  [
+                    { id: 'profile', label: 'Account & PB' },
+                    { id: 'modes', label: 'Mode W/L' },
+                    { id: 'quests', label: 'Quests & Pass' },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      audioEngine.playUiTick(1.1, 'selection');
+                      setPassModalTab(tab.id);
+                    }}
+                    className={`min-h-[34px] rounded-full text-xs font-bold transition-colors ${
+                      passModalTab === tab.id
+                        ? isLight
+                          ? 'bg-[#000000] text-[#FFFFFF]'
+                          : 'bg-[#EDFF8C] text-[#000000]'
+                        : isLight
+                          ? 'text-[#000000]/65 hover:text-[#000000]'
+                          : 'text-white/65 hover:text-white'
                     }`}
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <CheckCircle
-                          weight={q.completed ? 'fill' : 'regular'}
-                          className="h-4 w-4 text-[#309F92] shrink-0"
-                        />
-                        <span className="truncate text-xs font-bold">{q.title}</span>
-                      </div>
-                      <p className="truncate text-[11px] opacity-65 mt-0.5">
-                        {q.description} · {q.progress}/{q.target}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-xs font-bold tabular-nums ${
-                        q.completed
-                          ? 'bg-[#309F92] text-[#FFFFFF]'
-                          : 'bg-[#000000] text-[#EDFF8C]'
-                      }`}
-                    >
-                      {q.completed ? 'Done' : `+${q.rewardXp}pt`}
-                    </span>
-                  </div>
+                    {tab.label}
+                  </button>
                 ))}
               </div>
 
-              {/* Collectible Vinyl Badges */}
-              <div className="space-y-2">
-                <div className="text-xs font-bold opacity-65">
-                  Milestones · {progression.unlockedBadges.length}/{ALL_BADGES.length}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {ALL_BADGES.map((badge) => {
-                    const unlocked = progression.unlockedBadges.includes(badge.id);
-                    return (
-                      <div
-                        key={badge.id}
-                        className={`flex items-start gap-2 rounded-[18px] border p-2.5 ${
-                          unlocked
-                            ? isLight
-                              ? 'border-[#309F92]/40 bg-[#309F92]/10'
-                              : 'border-[#309F92]/40 bg-[#309F92]/15'
-                            : isLight
-                            ? 'border-[#D1D1D1] bg-[#F1F1F1]/40 opacity-55'
-                            : 'border-white/10 bg-white/[0.02] opacity-50'
-                        }`}
-                      >
-                        {unlocked ? (
-                          <Medal weight="fill" className="h-4 w-4 text-[#309F92] shrink-0 mt-0.5" />
-                        ) : (
-                          <LockSimple weight="bold" className="h-4 w-4 opacity-50 shrink-0 mt-0.5" />
-                        )}
+              {/* TAB 1: ACCOUNT IDENTITY, OVERALL SCORES & PERSONAL BESTS */}
+              {passModalTab === 'profile' && (
+                <div className="space-y-3.5">
+                  {/* Account Identity Card + Cloud Sync */}
+                  <div
+                    className={`rounded-[24px] border p-4 space-y-3 ${
+                      isLight
+                        ? 'border-[#D1D1D1] bg-[#F1F1F1]/65'
+                        : 'border-white/12 bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img
+                          src={activeCharacter.avatarImg}
+                          alt={activeCharacter.name}
+                          className="h-12 w-12 rounded-2xl object-cover border border-[#309F92] shrink-0"
+                        />
                         <div className="min-w-0">
-                          <div className="truncate text-xs font-bold">{badge.title}</div>
-                          <div className="line-clamp-2 text-[10px] opacity-75">
-                            {badge.description}
+                          <div className="truncate text-base font-extrabold tracking-tight">
+                            {progression.callsign}
+                          </div>
+                          <div className="truncate text-xs opacity-65">
+                            {progression.tagline}
+                          </div>
+                          <div className="mt-0.5 font-mono text-[10px] font-bold text-[#309F92]">
+                            {authUser
+                              ? 'Cloud Account Synced'
+                              : 'Local Studio Profile · Sign in to sync'}
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          audioEngine.playUiTick(1.1, 'light');
+                          setIsEditingProfile((prev) => !prev);
+                        }}
+                        aria-label="Edit Callsign and Tagline"
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${circleBtnClass}`}
+                      >
+                        <PencilSimple weight="bold" className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {isEditingProfile && (
+                      <div className="space-y-2 pt-2 border-t border-[#D1D1D1]/60 dark:border-white/10">
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase opacity-60 mb-1">
+                            Selector Callsign (Max 40 chars)
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={40}
+                            value={draftCallsign}
+                            onChange={(e) => setDraftCallsign(e.target.value)}
+                            className={`w-full rounded-full border px-3.5 py-2 text-xs font-bold focus:outline-none ${
+                              isLight
+                                ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
+                                : 'border-white/15 bg-black/50 text-white'
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase opacity-60 mb-1">
+                            Studio Tagline (Max 80 chars)
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={80}
+                            value={draftTagline}
+                            onChange={(e) => setDraftTagline(e.target.value)}
+                            className={`w-full rounded-full border px-3.5 py-2 text-xs focus:outline-none ${
+                              isLight
+                                ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
+                                : 'border-white/15 bg-black/50 text-white'
+                            }`}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleSaveProfileIdentity}
+                          className={`w-full rounded-full py-2 text-xs font-bold ${primaryBtnClasses}`}
+                        >
+                          Save Studio Profile
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Firebase Cloud Auth Sign-In / Sign-Out Action */}
+                    <div className="pt-1">
+                      {authUser ? (
+                        <button
+                          type="button"
+                          onClick={handleGoogleSignOut}
+                          className={`flex min-h-[38px] w-full items-center justify-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold ${
+                            isLight
+                              ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
+                              : 'border-white/15 bg-white/10 text-white'
+                          }`}
+                        >
+                          <SignOut weight="bold" className="h-4 w-4" />
+                          <span>Sign Out of Cloud Account</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={isAuthBusy}
+                          onClick={handleGoogleSignIn}
+                          className={`flex min-h-[40px] w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-bold ${primaryBtnClasses}`}
+                        >
+                          <UserCircle weight="bold" className="h-4 w-4" />
+                          <span>
+                            {isAuthBusy
+                              ? 'Connecting Account...'
+                              : 'Create / Sync Cloud Account (Google)'}
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Acid-Lime Overall Score & Personal Best Banner */}
+                  <div className="grid grid-cols-2 gap-2.5 rounded-[22px] bg-[#EDFF8C] p-3.5 text-[#000000]">
+                    <div>
+                      <div className="text-[11px] font-semibold opacity-70">Overall Score</div>
+                      <div className="font-mono text-2xl font-extrabold tabular-nums">
+                        {progression.overallScore}
+                      </div>
+                      <div className="text-[10px] font-semibold opacity-75">
+                        {progression.totalGamesPlayed} Sets Completed
+                      </div>
+                    </div>
+                    <div className="border-l border-[#000000]/15 pl-3">
+                      <div className="text-[11px] font-semibold opacity-70">Personal Best Set</div>
+                      <div className="font-mono text-2xl font-extrabold tabular-nums text-[#309F92]">
+                        {progression.bestSetScore}
+                      </div>
+                      <div className="text-[10px] font-semibold opacity-75">
+                        Best Streak: {progression.highestStreakEver}x
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Career Win/Loss Ratio & Personal Bests Grid */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div
+                      className={`rounded-[18px] border p-3 ${
+                        isLight ? 'border-[#D1D1D1] bg-[#F1F1F1]/60' : 'border-white/10 bg-white/5'
+                      }`}
+                    >
+                      <div className="text-[10px] font-semibold opacity-60">Win / Loss</div>
+                      <div className="mt-0.5 font-mono text-base font-extrabold tabular-nums">
+                        {progression.totalWins ?? progression.totalCorrect}W -{' '}
+                        {progression.totalLosses ?? 0}L
+                      </div>
+                      <div className="font-mono text-[10px] font-bold text-[#309F92]">
+                        {overallWlStats.ratioFormatted}
+                      </div>
+                    </div>
+
+                    <div
+                      className={`rounded-[18px] border p-3 ${
+                        isLight ? 'border-[#D1D1D1] bg-[#F1F1F1]/60' : 'border-white/10 bg-white/5'
+                      }`}
+                    >
+                      <div className="text-[10px] font-semibold opacity-60">Win Rate</div>
+                      <div className="mt-0.5 font-mono text-base font-extrabold tabular-nums text-[#309F92]">
+                        {overallWlStats.winRatePercent}%
+                      </div>
+                      <div className="font-mono text-[10px] opacity-65">
+                        {overallWlStats.totalRounds} Rounds
+                      </div>
+                    </div>
+
+                    <div
+                      className={`rounded-[18px] border p-3 ${
+                        isLight ? 'border-[#D1D1D1] bg-[#F1F1F1]/60' : 'border-white/10 bg-white/5'
+                      }`}
+                    >
+                      <div className="text-[10px] font-semibold opacity-60">Fastest Ear</div>
+                      <div className="mt-0.5 font-mono text-base font-extrabold tabular-nums">
+                        {progression.fastestSnippetGuessed}s
+                      </div>
+                      <div className="font-mono text-[10px] opacity-65">Personal Best</div>
+                    </div>
+                  </div>
+
+                  {/* Radial Tick-Mark Gauge */}
+                  <SegmentedTickArcGauge
+                    value={overallWlStats.totalRounds > 0 ? overallWlStats.winRatePercent : 90}
+                    gradeLabel={tierInfo.grade}
+                    statusLabel={`${progression.xp} XP`}
+                    isLight={isLight}
+                  />
                 </div>
-              </div>
+              )}
+
+              {/* TAB 2: PER-MODE WIN/LOSS RATIOS & PERSONAL BESTS */}
+              {passModalTab === 'modes' && (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-bold opacity-70">
+                    <span>Performance by Game Mode</span>
+                    <ChartBar weight="bold" className="h-4 w-4 text-[#309F92]" />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {GAME_CHALLENGE_MODES.map((m) => {
+                      const stats = progression.modeStats?.[m.id] || {
+                        wins: 0,
+                        losses: 0,
+                        gamesPlayed: 0,
+                        bestScore: 0,
+                        bestStreak: 0,
+                      };
+                      const wl = calculateWinLossRatio(stats.wins, stats.losses);
+
+                      return (
+                        <div
+                          key={m.id}
+                          className={`rounded-[22px] border p-3.5 transition-colors ${
+                            isLight
+                              ? 'border-[#D1D1D1] bg-[#F1F1F1]/65'
+                              : 'border-white/12 bg-white/5'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-mono text-[10px] font-bold text-[#309F92]">
+                                {m.badgeCode}
+                              </span>
+                              <h3 className="text-sm font-extrabold tracking-tight">
+                                {m.title} ({m.shortLabel})
+                              </h3>
+                            </div>
+                            <span className="rounded-full bg-[#EDFF8C] px-2.5 py-0.5 font-mono text-xs font-bold text-[#000000] tabular-nums">
+                              {wl.winRatePercent}% Win
+                            </span>
+                          </div>
+
+                          <div className="mt-2.5 grid grid-cols-4 gap-2 pt-2 border-t border-[#D1D1D1]/60 dark:border-white/10 font-mono">
+                            <div>
+                              <div className="text-[10px] opacity-60">W / L</div>
+                              <div className="text-xs font-bold tabular-nums">
+                                {stats.wins}W-{stats.losses}L
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] opacity-60">Ratio</div>
+                              <div className="text-xs font-bold tabular-nums text-[#309F92]">
+                                {wl.ratioFormatted}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] opacity-60">Best Score</div>
+                              <div className="text-xs font-bold tabular-nums">
+                                {stats.bestScore}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] opacity-60">Best Streak</div>
+                              <div className="text-xs font-bold tabular-nums">
+                                {stats.bestStreak}x
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: DAILY GROOVE QUESTS & COLLECTIBLE BADGES */}
+              {passModalTab === 'quests' && (
+                <div className="space-y-4">
+                  {/* Daily Groove Quests */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-bold opacity-65">Daily Groove Quests</div>
+                    {progression.quests.map((q) => (
+                      <div
+                        key={q.id}
+                        className={`flex items-center justify-between gap-3 rounded-[20px] border p-3 ${
+                          isLight
+                            ? 'border-[#D1D1D1] bg-[#F1F1F1]/65'
+                            : 'border-white/10 bg-white/5'
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <CheckCircle
+                              weight={q.completed ? 'fill' : 'regular'}
+                              className="h-4 w-4 text-[#309F92] shrink-0"
+                            />
+                            <span className="truncate text-xs font-bold">{q.title}</span>
+                          </div>
+                          <p className="truncate text-[11px] opacity-65 mt-0.5">
+                            {q.description} · {q.progress}/{q.target}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-xs font-bold tabular-nums ${
+                            q.completed
+                              ? 'bg-[#309F92] text-[#FFFFFF]'
+                              : 'bg-[#000000] text-[#EDFF8C]'
+                          }`}
+                        >
+                          {q.completed ? 'Done' : `+${q.rewardXp}pt`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Collectible Vinyl Badges */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-bold opacity-65">
+                      Milestones · {progression.unlockedBadges.length}/{ALL_BADGES.length}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {ALL_BADGES.map((badge) => {
+                        const unlocked = progression.unlockedBadges.includes(badge.id);
+                        return (
+                          <div
+                            key={badge.id}
+                            className={`flex items-start gap-2 rounded-[18px] border p-2.5 ${
+                              unlocked
+                                ? isLight
+                                  ? 'border-[#309F92]/40 bg-[#309F92]/10'
+                                  : 'border-[#309F92]/40 bg-[#309F92]/15'
+                                : isLight
+                                  ? 'border-[#D1D1D1] bg-[#F1F1F1]/40 opacity-55'
+                                  : 'border-white/10 bg-white/[0.02] opacity-50'
+                            }`}
+                          >
+                            {unlocked ? (
+                              <Medal
+                                weight="fill"
+                                className="h-4 w-4 text-[#309F92] shrink-0 mt-0.5"
+                              />
+                            ) : (
+                              <LockSimple
+                                weight="bold"
+                                className="h-4 w-4 opacity-50 shrink-0 mt-0.5"
+                              />
+                            )}
+                            <div className="min-w-0">
+                              <div className="truncate text-xs font-bold">{badge.title}</div>
+                              <div className="line-clamp-2 text-[10px] opacity-75">
+                                {badge.description}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

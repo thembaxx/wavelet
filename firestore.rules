@@ -1,0 +1,204 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isBoundedInt(val) {
+      return val is int && val >= 0 && val <= 1000000000;
+    }
+
+    function isValidBadgesList(badges) {
+      return badges is list &&
+        badges.size() <= 20 &&
+        (badges.size() == 0 || (badges[0] is string && badges[0].size() >= 1 && badges[0].size() <= 40));
+    }
+
+    function isValidUserProfile(data, userId) {
+      let allowedKeys = [
+        'uid',
+        'callsign',
+        'tagline',
+        'mascotId',
+        'xp',
+        'coins',
+        'overallScore',
+        'bestSetScore',
+        'totalWins',
+        'totalLosses',
+        'totalGamesPlayed',
+        'highestStreakEver',
+        'fastestSnippetGuessed',
+        'unlockedBadges',
+        'trackWins',
+        'trackLosses',
+        'trackGames',
+        'trackBestScore',
+        'trackBestStreak',
+        'artistWins',
+        'artistLosses',
+        'artistGames',
+        'artistBestScore',
+        'artistBestStreak',
+        'genreWins',
+        'genreLosses',
+        'genreGames',
+        'genreBestScore',
+        'genreBestStreak',
+        'yearWins',
+        'yearLosses',
+        'yearGames',
+        'yearBestScore',
+        'yearBestStreak',
+        'createdAt',
+        'updatedAt'
+      ];
+      return data.keys().hasAll(allowedKeys) &&
+        data.keys().hasOnly(allowedKeys) &&
+        data.uid is string &&
+        isValidId(data.uid) &&
+        data.uid == userId &&
+        data.uid == request.auth.uid &&
+        data.callsign is string &&
+        data.callsign.size() >= 1 &&
+        data.callsign.size() <= 40 &&
+        data.tagline is string &&
+        data.tagline.size() >= 0 &&
+        data.tagline.size() <= 80 &&
+        data.mascotId is string &&
+        data.mascotId.size() >= 1 &&
+        data.mascotId.size() <= 16 &&
+        data.mascotId in ['pebble', 'bobacat', 'sprout'] &&
+        isBoundedInt(data.xp) &&
+        isBoundedInt(data.coins) &&
+        isBoundedInt(data.overallScore) &&
+        isBoundedInt(data.bestSetScore) &&
+        isBoundedInt(data.totalWins) &&
+        isBoundedInt(data.totalLosses) &&
+        isBoundedInt(data.totalGamesPlayed) &&
+        isBoundedInt(data.highestStreakEver) &&
+        isBoundedInt(data.fastestSnippetGuessed) &&
+        isValidBadgesList(data.unlockedBadges) &&
+        isBoundedInt(data.trackWins) &&
+        isBoundedInt(data.trackLosses) &&
+        isBoundedInt(data.trackGames) &&
+        isBoundedInt(data.trackBestScore) &&
+        isBoundedInt(data.trackBestStreak) &&
+        isBoundedInt(data.artistWins) &&
+        isBoundedInt(data.artistLosses) &&
+        isBoundedInt(data.artistGames) &&
+        isBoundedInt(data.artistBestScore) &&
+        isBoundedInt(data.artistBestStreak) &&
+        isBoundedInt(data.genreWins) &&
+        isBoundedInt(data.genreLosses) &&
+        isBoundedInt(data.genreGames) &&
+        isBoundedInt(data.genreBestScore) &&
+        isBoundedInt(data.genreBestStreak) &&
+        isBoundedInt(data.yearWins) &&
+        isBoundedInt(data.yearLosses) &&
+        isBoundedInt(data.yearGames) &&
+        isBoundedInt(data.yearBestScore) &&
+        isBoundedInt(data.yearBestStreak) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // 3. Isolated User Profile Collection
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isVerifiedUser() &&
+        isOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Action 1: Identity & Mascot customization
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'callsign',
+            'tagline',
+            'mascotId',
+            'updatedAt'
+          ]) ||
+          // Action 2: Gameplay progression & per-mode statistics sync
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'callsign',
+            'tagline',
+            'mascotId',
+            'xp',
+            'coins',
+            'overallScore',
+            'bestSetScore',
+            'totalWins',
+            'totalLosses',
+            'totalGamesPlayed',
+            'highestStreakEver',
+            'fastestSnippetGuessed',
+            'unlockedBadges',
+            'trackWins',
+            'trackLosses',
+            'trackGames',
+            'trackBestScore',
+            'trackBestStreak',
+            'artistWins',
+            'artistLosses',
+            'artistGames',
+            'artistBestScore',
+            'artistBestStreak',
+            'genreWins',
+            'genreLosses',
+            'genreGames',
+            'genreBestScore',
+            'genreBestStreak',
+            'yearWins',
+            'yearLosses',
+            'yearGames',
+            'yearBestScore',
+            'yearBestStreak',
+            'updatedAt'
+          ])
+        );
+
+      allow delete: if isVerifiedUser() &&
+        isOwner(userId) &&
+        isValidId(userId);
+    }
+  }
+}

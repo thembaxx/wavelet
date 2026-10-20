@@ -1,0 +1,211 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Player profile storing account callsign, mascot companion, overall gamification progression, and per-mode win/loss and personal best statistics.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Immutable Firebase Auth UID of the profile owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "callsign": {
+          "type": "string",
+          "description": "Player display name / studio callsign.",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "tagline": {
+          "type": "string",
+          "description": "Player studio bio or status tagline.",
+          "minLength": 0,
+          "maxLength": 80
+        },
+        "mascotId": {
+          "type": "string",
+          "description": "Selected 3D companion character identifier.",
+          "enum": ["pebble", "bobacat", "sprout"],
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "xp": {
+          "type": "number",
+          "description": "Total cumulative XP across all game modes."
+        },
+        "coins": {
+          "type": "number",
+          "description": "Available studio coins for in-game power-ups."
+        },
+        "overallScore": {
+          "type": "number",
+          "description": "Cumulative points scored across all sessions."
+        },
+        "bestSetScore": {
+          "type": "number",
+          "description": "Personal best single-set score across any mode."
+        },
+        "totalWins": {
+          "type": "number",
+          "description": "Total correct guesses across all game modes."
+        },
+        "totalLosses": {
+          "type": "number",
+          "description": "Total incorrect guesses across all game modes."
+        },
+        "totalGamesPlayed": {
+          "type": "number",
+          "description": "Total completed sets across all game modes."
+        },
+        "highestStreakEver": {
+          "type": "number",
+          "description": "All-time highest consecutive correct streak."
+        },
+        "fastestSnippetGuessed": {
+          "type": "number",
+          "description": "Shortest audio snippet duration guessed correctly in seconds."
+        },
+        "unlockedBadges": {
+          "type": "array",
+          "description": "Bounded list of unlocked achievement badge IDs (max 20)."
+        },
+        "trackWins": {
+          "type": "number",
+          "description": "Correct guesses in Track ID mode."
+        },
+        "trackLosses": {
+          "type": "number",
+          "description": "Incorrect guesses in Track ID mode."
+        },
+        "trackGames": {
+          "type": "number",
+          "description": "Completed sets in Track ID mode."
+        },
+        "trackBestScore": {
+          "type": "number",
+          "description": "Personal best set score in Track ID mode."
+        },
+        "trackBestStreak": {
+          "type": "number",
+          "description": "Personal best streak in Track ID mode."
+        },
+        "artistWins": {
+          "type": "number",
+          "description": "Correct guesses in Artist mode."
+        },
+        "artistLosses": {
+          "type": "number",
+          "description": "Incorrect guesses in Artist mode."
+        },
+        "artistGames": {
+          "type": "number",
+          "description": "Completed sets in Artist mode."
+        },
+        "artistBestScore": {
+          "type": "number",
+          "description": "Personal best set score in Artist mode."
+        },
+        "artistBestStreak": {
+          "type": "number",
+          "description": "Personal best streak in Artist mode."
+        },
+        "genreWins": {
+          "type": "number",
+          "description": "Correct guesses in Genre mode."
+        },
+        "genreLosses": {
+          "type": "number",
+          "description": "Incorrect guesses in Genre mode."
+        },
+        "genreGames": {
+          "type": "number",
+          "description": "Completed sets in Genre mode."
+        },
+        "genreBestScore": {
+          "type": "number",
+          "description": "Personal best set score in Genre mode."
+        },
+        "genreBestStreak": {
+          "type": "number",
+          "description": "Personal best streak in Genre mode."
+        },
+        "yearWins": {
+          "type": "number",
+          "description": "Correct guesses in Release Year mode."
+        },
+        "yearLosses": {
+          "type": "number",
+          "description": "Incorrect guesses in Release Year mode."
+        },
+        "yearGames": {
+          "type": "number",
+          "description": "Completed sets in Release Year mode."
+        },
+        "yearBestScore": {
+          "type": "number",
+          "description": "Personal best set score in Release Year mode."
+        },
+        "yearBestStreak": {
+          "type": "number",
+          "description": "Personal best streak in Release Year mode."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable creation server timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update server timestamp."
+        }
+      },
+      "required": [
+        "uid",
+        "callsign",
+        "tagline",
+        "mascotId",
+        "xp",
+        "coins",
+        "overallScore",
+        "bestSetScore",
+        "totalWins",
+        "totalLosses",
+        "totalGamesPlayed",
+        "highestStreakEver",
+        "fastestSnippetGuessed",
+        "unlockedBadges",
+        "trackWins",
+        "trackLosses",
+        "trackGames",
+        "trackBestScore",
+        "trackBestStreak",
+        "artistWins",
+        "artistLosses",
+        "artistGames",
+        "artistBestScore",
+        "artistBestStreak",
+        "genreWins",
+        "genreLosses",
+        "genreGames",
+        "genreBestScore",
+        "genreBestStreak",
+        "yearWins",
+        "yearLosses",
+        "yearGames",
+        "yearBestScore",
+        "yearBestStreak",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores isolated player profile, mode-specific win/loss statistics, personal bests, and gamification state for each authenticated user."
+    }
+  }
+}

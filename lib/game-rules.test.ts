@@ -5,6 +5,9 @@ import {
   deriveSongMood,
   buildStreamingLinks,
   buildQuizOptions,
+  buildModeChallengeOptions,
+  getEffectiveDifficulty,
+  calculateWinLossRatio,
   filterAndSelectSongs,
   advanceRoundState,
   calculateVinylTier,
@@ -77,12 +80,19 @@ const SAMPLE_SONGS: SongTrack[] = [
   },
 ];
 
-test('calculateRoundPoints rewards shorter snippets, fever streaks, and 2x boost', () => {
+test('calculateRoundPoints rewards shorter snippets, fever streaks, difficulty tiers, and 2x boost', () => {
   const fast1s = calculateRoundPoints({
     correct: true,
     snippetSeconds: 1,
     streak: 2,
     timeRemainingRatio: 1,
+  });
+  const master1s = calculateRoundPoints({
+    correct: true,
+    snippetSeconds: 1,
+    streak: 2,
+    timeRemainingRatio: 1,
+    difficulty: 'master',
   });
   const boosted1s = calculateRoundPoints({
     correct: true,
@@ -106,6 +116,7 @@ test('calculateRoundPoints rewards shorter snippets, fever streaks, and 2x boost
 
   assert.equal(wrong.points, 0);
   assert.ok(fast1s.points > slow30s.points, '1s snippet with streak should score higher than 30s');
+  assert.ok(master1s.points > fast1s.points, 'Master difficulty should scale points higher');
   assert.equal(fast1s.isFever, true);
   assert.equal(boosted1s.points, fast1s.points * 2);
 });
@@ -120,12 +131,44 @@ test('deriveSongMood maps genres and artists to distinct color/rhythm profiles',
   assert.equal(szaMood.id, 'velvet-rnb');
 });
 
-test('buildQuizOptions returns 4 unique options containing the target song', () => {
+test('buildQuizOptions and buildModeChallengeOptions generate 4 options for Track, Artist, Genre, and Year modes', () => {
   const options = buildQuizOptions(SAMPLE_SONGS[0], SAMPLE_SONGS, 3);
   assert.equal(options.length, 4);
   assert.ok(options.some((o) => o.id === 'track-1'));
-  const uniqueIds = new Set(options.map((o) => o.id));
-  assert.equal(uniqueIds.size, 4);
+
+  const artistOpts = buildModeChallengeOptions({
+    target: SAMPLE_SONGS[0],
+    pool: SAMPLE_SONGS,
+    challengeMode: 'artist',
+    difficulty: 'club',
+    seed: 2,
+  });
+  assert.equal(artistOpts.length, 4);
+  assert.ok(artistOpts.some((o) => o.isCorrect && o.primaryText === 'Daft Punk'));
+
+  const genreOpts = buildModeChallengeOptions({
+    target: SAMPLE_SONGS[1],
+    pool: SAMPLE_SONGS,
+    challengeMode: 'genre',
+    difficulty: 'chill',
+    seed: 2,
+  });
+  assert.equal(genreOpts.length, 4);
+  assert.ok(genreOpts.some((o) => o.isCorrect && o.primaryText === 'Afrobeats'));
+
+  const yearOptsMaster = buildModeChallengeOptions({
+    target: SAMPLE_SONGS[2],
+    pool: SAMPLE_SONGS,
+    challengeMode: 'year',
+    difficulty: 'master',
+    seed: 1,
+  });
+  assert.equal(yearOptsMaster.length, 4);
+  assert.ok(yearOptsMaster.some((o) => o.isCorrect && o.primaryText === '2022'));
+
+  const adaptive = getEffectiveDifficulty('chill', 3);
+  assert.equal(adaptive.effectiveTier, 'club');
+  assert.equal(adaptive.isScaledUp, true);
 });
 
 test('buildStreamingLinks produces valid Apple Music and Spotify URLs', () => {
@@ -155,6 +198,8 @@ test('advanceRoundState increments score, streak, and transitions to gameover on
       snippetDuration: 5,
       songCount: 2,
       playMode: 'party-30s',
+      challengeMode: 'artist',
+      difficulty: 'club',
     },
     playlist: SAMPLE_SONGS.slice(0, 2),
     currentIndex: 0,
@@ -179,7 +224,7 @@ test('advanceRoundState increments score, streak, and transitions to gameover on
   assert.equal(afterRound2.history.length, 2);
 });
 
-test('calculateVinylTier and updateProgressionAfterRound award XP, coins, quests, and badges', () => {
+test('calculateVinylTier and updateProgressionAfterRound award XP, coins, quests, badges, and per-mode win/loss stats', () => {
   const initial = createInitialProgression();
   const tier = calculateVinylTier(initial.xp);
   assert.equal(tier.level, 2);
@@ -192,6 +237,8 @@ test('calculateVinylTier and updateProgressionAfterRound award XP, coins, quests
     newStreak: 3,
     isSetComplete: true,
     setPerfect: true,
+    challengeMode: 'artist',
+    setTotalScore: 1450,
   });
 
   assert.ok(xpGained > 350);
@@ -199,4 +246,10 @@ test('calculateVinylTier and updateProgressionAfterRound award XP, coins, quests
   assert.ok(next.unlockedBadges.includes('speed-prodigy'));
   assert.ok(next.unlockedBadges.includes('fever-streak'));
   assert.ok(next.unlockedBadges.includes('perfect-set'));
+  assert.equal(next.modeStats.artist.wins, 1);
+  assert.equal(next.modeStats.artist.bestScore, 1450);
+  assert.equal(next.bestSetScore, 1450);
+
+  const wl = calculateWinLossRatio(next.totalWins, next.totalLosses);
+  assert.equal(wl.winRatePercent, 80);
 });

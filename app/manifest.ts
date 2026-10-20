@@ -3,16 +3,16 @@ import type { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/',
-    name: 'Vinyl Rush 30s — 3D Isometric Song Quiz',
+    name: '365 Vinyl Rush — 3D Isometric Music Quiz',
     short_name: 'VinylRush',
     description:
-      '3D isometric music-guessing party game with real song snippets, physics turntable, reactive mascot, and Spotify & Apple Music integration.',
+      '3D isometric music-guessing studio with Track, Artist, Genre, and Year modes, physics turntable, reactive mascot, and Spotify & Apple Music integration.',
     start_url: '/',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
-    background_color: '#0D0914',
-    theme_color: '#0D0914',
+    background_color: '#F1F1F1',
+    theme_color: '#F1F1F1',
     icons: [
       {
         src: '/pwa-192x192.png',
