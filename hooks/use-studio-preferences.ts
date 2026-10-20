@@ -66,5 +66,5 @@ export function useStudioPreferences() {
     document.documentElement.dataset.motion = reducedMotion ? 'reduced' : 'full';
   }, [reducedMotion]);
 
-  return { preferences, updatePreferences, reducedMotion, resolvedTheme };
+  return { preferences, updatePreferences, reducedMotion, resolvedTheme, ready };
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -84,6 +85,7 @@ import { AppleMusicCoverCard } from './AppleMusicCoverCard';
 import { MusicAccountModal, type ConnectedMusicProfile } from './MusicAccountModal';
 import { usePWAInstall } from '@/hooks/use-pwa-install';
 import { useStudioPreferences } from '@/hooks/use-studio-preferences';
+import { useOnboarding } from '@/hooks/use-onboarding';
 import { StudioSettings } from './StudioSettings';
 import { GameSetup } from './GameSetup';
 import { ThreeTopographyBackground } from './ThreeTopographyBackground';
@@ -94,6 +96,8 @@ import { DiscoveryDelight } from './DiscoveryDelight';
 import ClickSpark from './react-bits/ClickSpark';
 
 gsap.registerPlugin(useGSAP);
+
+const Onboarding = dynamic(() => import('./onboarding/Onboarding'), { ssr: false });
 
 
 /**
@@ -288,7 +292,8 @@ const RoundStepProcessBar: React.FC<{
 };
 
 export const WaveletGame: React.FC = () => {
-  const { preferences, updatePreferences, reducedMotion, resolvedTheme } = useStudioPreferences();
+  const { preferences, updatePreferences, reducedMotion, resolvedTheme, ready: preferencesReady } = useStudioPreferences();
+  const onboarding = useOnboarding(preferencesReady);
   const themeMode = resolvedTheme;
   const mobileFrameLocked = preferences.compactCanvas;
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -1114,7 +1119,7 @@ export const WaveletGame: React.FC = () => {
     let secretKeys = '';
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
-      if (isSettingsOpen || isAccountModalOpen || isPassModalOpen || isRulesDrawerOpen) return;
+      if (onboarding.open || isSettingsOpen || isAccountModalOpen || isPassModalOpen || isRulesDrawerOpen) return;
       const target = event.target;
       if (target instanceof Element && target.closest('input, textarea, select, button, a, [contenteditable="true"], dialog, [role="dialog"], [cmdk-root]')) return;
       if (session.status === 'title' && event.key.length === 1) {
@@ -1149,7 +1154,7 @@ export const WaveletGame: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [session.status, isSettingsOpen, isAccountModalOpen, isPassModalOpen, isRulesDrawerOpen, startNewGame, toggleThemeMode, updatePreferences, discoverGroove, resumeGame]);
+  }, [session.status, onboarding.open, isSettingsOpen, isAccountModalOpen, isPassModalOpen, isRulesDrawerOpen, startNewGame, toggleThemeMode, updatePreferences, discoverGroove, resumeGame]);
 
   useGSAP(() => {
     if (session.status !== 'title' || reducedMotion) return;
@@ -1204,7 +1209,7 @@ export const WaveletGame: React.FC = () => {
         isLight ? 'text-foreground' : 'text-foreground'
       }`}
     >
-      <ThreeTopographyBackground theme={themeMode} reducedMotion={reducedMotion} enabled={preferences.animatedBackground} />
+      <ThreeTopographyBackground theme={themeMode} reducedMotion={reducedMotion} enabled={preferences.animatedBackground && !onboarding.open} />
       {/* Full-Viewport 3D Isometric Three.js Vinyl & Smooth Mascot Stage */}
       <IsometricVinylStage
         mood={currentMood}
@@ -1214,6 +1219,7 @@ export const WaveletGame: React.FC = () => {
         isPlayingSnippet={isPlayingSnippet}
         gameState={session.status}
         reducedMotion={reducedMotion}
+        obscured={onboarding.open}
         onMascotInteract={() => {
           companionTaps.current += 1;
           if (companionTaps.current % 3 === 0) discoverGroove(`${activeCharacter.name} knows a secret dance.`);
@@ -2427,9 +2433,26 @@ export const WaveletGame: React.FC = () => {
         characterId={characterId} onCharacterChange={selectCompanion}
         onOpenMusic={() => setIsAccountModalOpen(true)} musicConnected={Boolean(connectedProfile)}
         isInstalled={isInstalled} isInstallable={isInstallable} isIOS={isIOS} onInstall={install}
+        onReplayIntro={() => {
+          setIsSettingsOpen(false);
+          if (session.status === 'playing') {
+            audioEngine.stopSnippet(false); setIsPlayingSnippet(false);
+            setSession(previous => ({ ...previous, status: 'paused' }));
+          }
+          onboarding.replay();
+        }}
         onPreviewSound={() => audioEngine.playDiscovery()} offlineReady={offlineReady}
         updateAvailable={updateAvailable} canUpdate={session.status !== 'playing' && session.status !== 'paused'} onUpdate={applyUpdate}
         isFullscreen={isFullscreen} onFullscreen={canFullscreen ? () => { void toggleFullscreen(); } : undefined} appStatus={appStatus} />
+
+      {onboarding.run > 0 && <Onboarding key={onboarding.run} open={onboarding.open} replaying={onboarding.replaying}
+        reducedMotion={reducedMotion} theme={themeMode} appearance={preferences.theme}
+        onAppearance={theme => updatePreferences({ theme })} challenge={challengeMode} onChallenge={handleSelectChallengeMode}
+        onDismiss={completed => { onboarding.dismiss(completed); if (onboarding.replaying) setIsSettingsOpen(true); }}
+        onAfterClose={() => {
+          const selector = onboarding.replaying ? '[aria-label="Replay the Wavelet intro"]' : '[data-start]';
+          document.querySelector<HTMLButtonElement>(selector)?.focus({ preventScroll: true });
+        }} />}
 
       {/* Spotify & Apple Music Account Connect Modal */}
       <MusicAccountModal

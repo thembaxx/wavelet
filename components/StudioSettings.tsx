@@ -2,7 +2,7 @@
 
 import { useId, useRef } from 'react';
 import Image from 'next/image';
-import { ArrowUpRight, Check, Desktop, DownloadSimple, SpeakerHigh, Sparkle, X } from '@phosphor-icons/react';
+import { ArrowCounterClockwise, ArrowUpRight, Check, Desktop, DownloadSimple, SpeakerHigh, Sparkle, X } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -45,6 +45,7 @@ interface StudioSettingsProps {
   isIOS: boolean;
   onInstall: () => Promise<boolean>;
   onPreviewSound: () => void;
+  onReplayIntro: () => void;
   appStatus?: string | null;
   offlineReady?: boolean;
   updateAvailable?: boolean;
@@ -129,6 +130,11 @@ export function StudioSettings(props: StudioSettingsProps) {
           <p className="setting-description" role="status">{props.appStatus || (props.offlineReady ? 'Your studio is saved for offline use. Song clips are available offline after they’ve been played.' : 'Your studio is being saved for offline use. Keep this page open for a moment.')}</p>
           {props.onFullscreen && <button type="button" className="settings-link" onClick={props.onFullscreen}><span className="setting-label">{props.isFullscreen ? 'Leave fullscreen' : 'Open fullscreen'}</span><Desktop size={18} /></button>}
           {props.updateAvailable && <div className="setting-row"><span><span className="setting-label">A fresh Wavelet is ready</span><span className="setting-description">{props.canUpdate ? 'Refresh your studio to get the latest version.' : 'Finish this set to update without losing your round.'}</span></span><Button size="sm" disabled={!props.canUpdate} onClick={props.onUpdate}>Update</Button></div>}
+        </section>
+
+        <section className="settings-section" aria-labelledby="intro-settings-heading">
+          <div className="settings-section-title"><h3 id="intro-settings-heading">A fresh little start</h3><Sparkle size={18} /></div>
+          <button type="button" className="settings-link" aria-label="Replay the Wavelet intro" onClick={props.onReplayIntro}><span><span className="setting-label">Replay the intro</span><span className="setting-description">Three little steps. A few things to play with.</span></span><ArrowCounterClockwise size={20} /></button>
         </section>
 
         <details className="settings-section studio-shortcuts"><summary>Keys to the studio</summary><dl><div><dt>Play / start</dt><dd><kbd>Space</kbd></dd></div><div><dt>Pause / resume</dt><dd><kbd>P</kbd></dd></div><div><dt>Mute all audio</dt><dd><kbd>M</kbd></dd></div><div><dt>Change appearance</dt><dd><kbd>T</kbd></dd></div><div><dt>Hide game controls</dt><dd><kbd>H</kbd></dd></div></dl><p>Some good things are hidden in the groove. Try the logo a few times.</p></details>

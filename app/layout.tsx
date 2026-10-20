@@ -37,10 +37,8 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: BRAND.name,
   },
-  icons: {
-    icon: '/icon.svg',
-    apple: '/apple-touch-icon.png',
-  },
+  // File-based icon.png and apple-icon.png provide sized, fingerprinted PNGs.
+  // Keep icons out of this object: Next 15 otherwise suppresses the file entries.
   openGraph: {
     title: BRAND.title,
     description: BRAND.description,

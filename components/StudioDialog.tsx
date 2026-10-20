@@ -7,12 +7,14 @@ import { useGSAP } from '@gsap/react';
 gsap.registerPlugin(useGSAP);
 
 /** Native modality supplies focus trapping, background inertness, Escape, and focus restoration. */
-export function StudioDialog({ open, onClose, labelledBy, reducedMotion, children }: {
+export function StudioDialog({ open, onClose, labelledBy, reducedMotion, children, className = '', onAfterClose }: {
   open: boolean;
   onClose: () => void;
   labelledBy: string;
   reducedMotion: boolean;
   children: ReactNode;
+  className?: string;
+  onAfterClose?: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const panel = useRef<HTMLDivElement>(null);
@@ -35,7 +37,7 @@ export function StudioDialog({ open, onClose, labelledBy, reducedMotion, childre
   }, { dependencies: [open, reducedMotion], scope: dialog, revertOnUpdate: true });
 
   return (
-    <dialog ref={dialog} className="studio-dialog" aria-labelledby={labelledBy}
+    <dialog ref={dialog} className={`studio-dialog ${className}`} aria-labelledby={labelledBy} onClose={onAfterClose}
       onCancel={event => { event.preventDefault(); onClose(); }}
       onKeyDown={event => {
         event.stopPropagation();

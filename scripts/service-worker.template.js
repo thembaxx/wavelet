@@ -4,7 +4,8 @@ const SHELL = `${VERSION}-shell`;
 // Public data and recordings survive app-shell updates within this cache schema.
 const CATALOG = 'wavelet-native-v4-catalog';
 const MEDIA = 'wavelet-native-v4-media';
-const CORE = ['/', '/offline.html', '/icon.svg', '/brand/wavelet-icon-96.webp', '/apple-touch-icon.png', '/pwa-192x192.png', '/pwa-512x512.png', '/pwa-maskable-512x512.png'];
+const ONBOARDING_ASSETS = [];
+const CORE = ['/', '/offline.html', '/icon.svg', '/icon.png', '/brand/wavelet-icon-96.webp', '/apple-icon.png', '/apple-touch-icon.png', '/apple-touch-icon-precomposed.png', '/pwa-192x192.png', '/pwa-512x512.png', '/pwa-maskable-512x512.png', ...ONBOARDING_ASSETS];
 const OPTIONAL = ['/assets/aistudio/IMG_5611_8f13d014.jpeg', '/assets/aistudio/IMG_5644_58cdf86c.jpeg', '/assets/aistudio/IMG_5583_ad7fd435.jpeg', ...['felt', 'nib', 'clasp', 'unclasp', 'bloom', 'shrug'].map(name => `/sounds/${name}.wav`)];
 
 self.addEventListener('install', event => {
@@ -13,7 +14,7 @@ self.addEventListener('install', event => {
     await cache.addAll(CORE);
     const home = await cache.match('/');
     const html = await home.text();
-    const assets = [...new Set([...html.matchAll(/(?:src|href)="(\/_next\/static\/[^"<>]+)"/g)].map(match => match[1].replace(/&amp;/g, '&')))];
+    const assets = [...new Set([...html.matchAll(/(?:src|href)="(\/_next\/static\/[^"<>]+|\/(?:apple-icon|icon)\.png[^"<>]*)"/g)].map(match => match[1].replace(/&amp;/g, '&')))];
     await Promise.all(assets.map(async path => { const response = await fetch(path); if (!response.ok) throw new Error('App shell unavailable'); await cache.put(path, response); }));
     await Promise.allSettled(OPTIONAL.map(path => cache.add(path)));
   })());

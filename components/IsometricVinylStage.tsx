@@ -20,6 +20,7 @@ interface IsometricVinylStageProps {
   isPlayingSnippet: boolean;
   gameState: 'title' | 'playing' | 'paused' | 'gameover';
   reducedMotion?: boolean;
+  obscured?: boolean;
   onTurntableInteract?: () => void;
   onMascotInteract?: () => void;
 }
@@ -480,6 +481,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
   isPlayingSnippet,
   gameState,
   reducedMotion = false,
+  obscured = false,
   onTurntableInteract,
   onMascotInteract,
 }) => {
@@ -493,6 +495,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     isPlayingSnippet,
     gameState,
     reducedMotion,
+    obscured,
     onTurntableInteract,
     onMascotInteract,
   });
@@ -506,6 +509,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       isPlayingSnippet,
       gameState,
       reducedMotion,
+      obscured,
       onTurntableInteract,
       onMascotInteract,
     };
@@ -517,6 +521,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     isPlayingSnippet,
     gameState,
     reducedMotion,
+    obscured,
     onTurntableInteract,
     onMascotInteract,
   ]);
@@ -1673,7 +1678,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     const animate = (nowMs: number) => {
       animFrameId = requestAnimationFrame(animate);
 
-      if (document.hidden) { prevTimeMs = nowMs; return; }
+      if (document.hidden || propsRef.current.obscured) { prevTimeMs = nowMs; return; }
       const minFrameTime = isHeadless ? 500 : propsRef.current.reducedMotion ? 100 : 0;
       if (lastHeadlessRender > 0 && nowMs - lastHeadlessRender < minFrameTime) {
         return;

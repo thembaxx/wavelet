@@ -15,3 +15,5 @@ Choose **Your music → Artists** for songs exclusively by one artist. Artist id
 The interface uses shadcn/ui, Phosphor icons, Three.js contour animation, and React Bits interactions, shapes, and Sound Lab exports. It follows the system theme and reduced-motion preference, with persistent overrides. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for credits and licenses.
 
 The PWA caches its shell, public catalog responses, studio sounds, and up to 20 played previews. Uncached previews and account services require a connection. Updates can be applied in Settings between sets. Supported browsers also offer fullscreen, native media controls, and home-screen installation.
+
+The skippable three-step welcome introduces the studio through interactive Three.js objects. Replay it from **Settings → Replay the intro**; an active round pauses safely. Both the intro and its 3D bundle work offline after the app reports offline readiness. Apple install icons use Next.js file-based PNG metadata with fingerprinted URLs and traditional fallback filenames.
