@@ -625,7 +625,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     // Multi-layered Architectural Diorama Pedestal
     const platformGeo = new THREE.CylinderGeometry(6.9, 7.25, 0.54, 64);
     const platformMat = new THREE.MeshStandardMaterial({
-      color: propsRef.current.themeMode === 'light' ? 0xffffff : 0x12161d,
+      color: propsRef.current.themeMode === 'light' ? 0xf0f2e5 : 0x163129,
       roughness: 0.42,
       metalness: 0.06,
     });
@@ -1801,21 +1801,22 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       _targetBgColor.set(
         isLight ? currentProps.mood.bgLightHex : currentProps.mood.bgDarkHex
       );
-      _targetStageColor.set(isLight ? 0xffffff : 0x12161d);
+      _targetStageColor.set(isLight ? 0xf0f2e5 : 0x163129);
       _targetPlinthColor.set(isLight ? 0xf6f6f3 : 0x181e27);
       _targetTopPlateColor.set(isLight ? 0xe5e5e2 : 0x222a36);
 
+      const colorMix = currentProps.reducedMotion ? 1 : Math.min(1, dt * 4.5);
       if (scene.fog instanceof THREE.FogExp2) {
-        scene.fog.color.lerp(_targetBgColor, dt * 4.5);
+        scene.fog.color.lerp(_targetBgColor, colorMix);
       }
 
-      platformMat.color.lerp(_targetStageColor, dt * 4.5);
+      platformMat.color.lerp(_targetStageColor, colorMix);
       rugMat.color.lerp(
         _tempColor.set(isLight ? 0xf2f3ef : 0x171c25),
-        dt * 4.5
+        colorMix
       );
-      plinthMat.color.lerp(_targetPlinthColor, dt * 4.5);
-      topPlateMat.color.lerp(_targetTopPlateColor, dt * 4.5);
+      plinthMat.color.lerp(_targetPlinthColor, colorMix);
+      topPlateMat.color.lerp(_targetTopPlateColor, colorMix);
       shadowMat.opacity = THREE.MathUtils.damp(shadowMat.opacity, isLight ? 0.16 : 0.34, 4, dt);
       ttShadowMat.opacity = THREE.MathUtils.damp(ttShadowMat.opacity, isLight ? 0.12 : 0.28, 4, dt);
 
@@ -2077,16 +2078,6 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       className="absolute inset-0 z-0 w-full h-full overflow-hidden select-none touch-none"
       aria-hidden="true"
     >
-      {/* Dynamic Mood & Rhythm Animated Gradient Aura */}
-      <div
-        className="pointer-events-none absolute inset-0 transition-all duration-700"
-        style={{
-          background: isLight
-            ? `radial-gradient(circle at 22% 18%, ${mood.primaryHex}24 0%, transparent 52%), radial-gradient(circle at 82% 28%, ${mood.secondaryHex}44 0%, transparent 48%), radial-gradient(circle at 50% 78%, ${mood.accentHex}20 0%, transparent 58%)`
-            : `radial-gradient(circle at 22% 18%, ${mood.primaryHex}38 0%, transparent 55%), radial-gradient(circle at 82% 28%, ${mood.secondaryHex}28 0%, transparent 50%), radial-gradient(circle at 50% 78%, ${mood.accentHex}30 0%, transparent 60%)`,
-          opacity: isPlayingSnippet ? 1 : 0.74,
-        }}
-      />
       <div
         ref={mountRef}
         data-testid="vinyl-3d-stage"

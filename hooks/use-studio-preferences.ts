@@ -10,11 +10,20 @@ function subscribeToMotion(onChange: () => void) {
   return () => query.removeEventListener('change', onChange);
 }
 
+function subscribeToColorScheme(onChange: () => void) {
+  const query = window.matchMedia('(prefers-color-scheme: dark)');
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+}
+
 export function useStudioPreferences() {
   const [preferences, setPreferences] = useState<StudioPreferences>(DEFAULT_PREFERENCES);
   const [ready, setReady] = useState(false);
   const systemReducedMotion = useSyncExternalStore(subscribeToMotion,
     () => window.matchMedia('(prefers-reduced-motion: reduce)').matches, () => true);
+  const systemDark = useSyncExternalStore(subscribeToColorScheme,
+    () => window.matchMedia('(prefers-color-scheme: dark)').matches, () => false);
+  const resolvedTheme = preferences.theme === 'system' ? systemDark ? 'dark' : 'light' : preferences.theme;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -27,13 +36,24 @@ export function useStudioPreferences() {
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
     audioEngine.setMuted(preferences.muted);
     audioEngine.setVolume(preferences.volume);
     audioEngine.setSoundEffectsEnabled(preferences.soundEffects);
     audioEngine.setHapticsEnabled(preferences.haptics);
-    if (!ready) return;
     try { localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences)); } catch { /* Best effort. */ }
   }, [preferences, ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const color = resolvedTheme === 'dark' ? '#102721' : '#f7f8f2';
+    const root = document.documentElement;
+    root.dataset.theme = resolvedTheme;
+    root.classList.toggle('dark', resolvedTheme === 'dark');
+    root.style.colorScheme = resolvedTheme;
+    document.body.dataset.theme = resolvedTheme;
+    document.querySelectorAll('meta[name="theme-color"]').forEach(meta => { meta.setAttribute('content', color); meta.removeAttribute('media'); });
+  }, [resolvedTheme, ready]);
 
   const updatePreferences = useCallback((patch: Partial<StudioPreferences>) => {
     setPreferences(previous => ({ ...previous, ...patch }));
@@ -46,5 +66,5 @@ export function useStudioPreferences() {
     document.documentElement.dataset.motion = reducedMotion ? 'reduced' : 'full';
   }, [reducedMotion]);
 
-  return { preferences, updatePreferences, reducedMotion };
+  return { preferences, updatePreferences, reducedMotion, resolvedTheme };
 }

@@ -85,11 +85,11 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
       className={`relative overflow-hidden rounded-[24px] border transition-colors duration-300 ${
         isRevealed
           ? isLight
-            ? 'border-[#000000]/12 bg-[#EDFF8C] text-[#000000]'
-            : 'border-[#EDFF8C]/35 bg-[#141A17] text-[#FFFFFF]'
+            ? 'border-[#000000]/12 bg-secondary text-foreground'
+            : 'border-[#EDFF8C]/35 bg-[#141A17] text-foreground'
           : isLight
-          ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000] shadow-[0_8px_24px_rgba(0,0,0,0.04)]'
-          : 'border-white/12 bg-[#12161D] text-[#FFFFFF] shadow-xl'
+          ? 'border-border bg-card text-foreground shadow-[0_8px_24px_rgba(0,0,0,0.04)]'
+          : 'border-white/12 bg-card text-foreground shadow-xl'
       } ${compact ? 'p-3' : 'p-4'}`}
     >
       <div className="relative z-10 flex items-center gap-3">
@@ -138,7 +138,7 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
             <>
               <div
                 className={`flex items-center gap-1.5 text-[11px] font-semibold whitespace-nowrap overflow-hidden ${
-                  isLight ? 'text-[#000000]/65' : 'text-white/65'
+                  isLight ? 'text-muted-foreground' : 'text-muted-foreground'
                 }`}
               >
                 <span className="shrink-0">{song.genre}</span>
@@ -152,7 +152,7 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
               </h3>
               <p
                 className={`truncate text-xs font-medium ${
-                  isLight ? 'text-[#000000]/80' : 'text-white/80'
+                  isLight ? 'text-foreground/80' : 'text-white/80'
                 }`}
               >
                 {song.artist}
@@ -162,7 +162,7 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
             <>
               <div
                 className={`flex items-center gap-1.5 text-[11px] font-semibold whitespace-nowrap overflow-hidden ${
-                  isLight ? 'text-[#12786C]' : 'text-[#EDFF8C]'
+                  isLight ? 'text-primary' : 'text-primary'
                 }`}
               >
                 <Waveform weight="bold" className="h-3.5 w-3.5 shrink-0" />
@@ -175,7 +175,7 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
               </h3>
               <p
                 className={`truncate text-xs ${
-                  isLight ? 'text-[#000000]/60' : 'text-white/60'
+                  isLight ? 'text-muted-foreground' : 'text-muted-foreground'
                 }`}
               >
                 {song.genre} · {snippetDuration}s Snippet Cut
@@ -188,10 +188,10 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
         <div
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold tabular-nums ${
             isRevealed && isLight
-              ? 'bg-[#000000] text-[#EDFF8C]'
+              ? 'bg-primary text-primary-foreground'
               : isLight
-              ? 'bg-[#000000] text-[#FFFFFF]'
-              : 'bg-[#EDFF8C] text-[#000000]'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-secondary text-foreground'
           }`}
           title="Track Tempo (BPM)"
         >
@@ -230,10 +230,10 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
                 className={`w-1 rounded-full transition-all duration-75 ${
                   isPlayed
                     ? isRevealed && isLight
-                      ? 'bg-[#000000]'
-                      : 'bg-[#12786C]'
+                      ? 'bg-foreground'
+                      : 'bg-primary'
                     : isRevealed && isLight
-                    ? 'bg-[#000000]/22'
+                    ? 'bg-foreground/22'
                     : isLight
                     ? 'bg-[#D1D1D1]'
                     : 'bg-white/20'
@@ -249,10 +249,10 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
         <div
           className={`mt-1 flex items-center justify-between font-mono text-[10px] font-medium tabular-nums ${
             isRevealed && isLight
-              ? 'text-[#000000]/70'
+              ? 'text-foreground/70'
               : isLight
-              ? 'text-[#000000]/55'
-              : 'text-white/55'
+              ? 'text-muted-foreground'
+              : 'text-muted-foreground'
           }`}
         >
           <span>{elapsedFormatted}</span>
@@ -270,10 +270,10 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => handleSave('spotify')}
-            className="inline-flex min-h-[34px] flex-1 items-center justify-center gap-1.5 rounded-full bg-[#000000] px-3 py-1.5 text-xs font-bold text-[#FFFFFF] transition-transform whitespace-nowrap"
+            className="inline-flex min-h-[34px] flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform whitespace-nowrap"
           >
             {savedSpotify ? (
-              <CheckCircle weight="fill" className="h-3.5 w-3.5 text-[#EDFF8C]" />
+              <CheckCircle weight="fill" className="h-3.5 w-3.5" />
             ) : (
               <SpotifyLogo weight="fill" className="h-3.5 w-3.5 text-[#1DB954]" />
             )}
@@ -288,12 +288,12 @@ export const AppleMusicCoverCard: React.FC<AppleMusicCoverCardProps> = ({
             onClick={() => handleSave('apple')}
             className={`inline-flex min-h-[34px] flex-1 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-transform whitespace-nowrap ${
               isLight
-                ? 'border-[#000000]/20 bg-[#FFFFFF] text-[#000000]'
-                : 'border-white/20 bg-white/10 text-[#FFFFFF]'
+                ? 'border-[#000000]/20 bg-card text-foreground'
+                : 'border-white/20 bg-white/10 text-foreground'
             }`}
           >
             {savedApple ? (
-              <CheckCircle weight="fill" className="h-3.5 w-3.5 text-[#12786C]" />
+              <CheckCircle weight="fill" className="h-3.5 w-3.5" />
             ) : (
               <AppleLogo weight="fill" className="h-3.5 w-3.5 text-[#FA243C]" />
             )}

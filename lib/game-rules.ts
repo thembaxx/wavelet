@@ -1,3 +1,5 @@
+import { matchesArtist } from './catalog-filters.ts';
+
 export type SnippetDuration = 1 | 3 | 5 | 10 | 15 | 30;
 
 export type FilterMode = 'genre' | 'artist' | 'year' | 'account';
@@ -165,6 +167,7 @@ export interface SongTrack {
   id: string;
   title: string;
   artist: string;
+  artistId?: number;
   album: string;
   releaseYear: number;
   decade: string;
@@ -1047,7 +1050,7 @@ export function filterAndSelectSongs(pool: SongTrack[], config: GameConfig): Son
     if (config.filterMode === 'genre') {
       filtered = pool.filter((s) => s.genre.toLowerCase().includes(val));
     } else if (config.filterMode === 'artist') {
-      filtered = pool.filter((s) => s.artist.toLowerCase().includes(val));
+      filtered = pool.filter((s) => matchesArtist(s, config.filterValue));
     } else if (config.filterMode === 'year') {
       filtered = pool.filter(
         (s) => s.decade.toLowerCase() === val || String(s.releaseYear) === val
@@ -1057,7 +1060,7 @@ export function filterAndSelectSongs(pool: SongTrack[], config: GameConfig): Son
     }
   }
 
-  if (filtered.length < 4) {
+  if (filtered.length < 4 && config.filterMode !== 'artist') {
     const existingIds = new Set(filtered.map((s) => s.id));
     for (const track of pool) {
       if (!existingIds.has(track.id)) {

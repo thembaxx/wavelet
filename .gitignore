@@ -8,3 +8,6 @@ coverage/
 .playwright-cli/
 *.tsbuildinfo
 
+
+# Generated from the service worker template after each production build.
+/public/sw.js

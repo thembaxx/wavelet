@@ -23,6 +23,7 @@ export class WaveletAudioEngine {
   private soundEffectsEnabled = true;
   private hapticsEnabled = true;
   private masterGain: GainNode | null = null;
+  private uiBuffers = new Map<string, AudioBuffer>();
   private isPlayingSnippet = false;
   private snippetStartTime = 0;
   private snippetTargetDuration = 5;
@@ -48,6 +49,16 @@ export class WaveletAudioEngine {
         this.analyser.fftSize = 64;
         this.analyser.smoothingTimeConstant = 0.78;
         this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
+        // Sound Lab exports are decoded after a user gesture, using the same mixer.
+        if (typeof this.ctx.decodeAudioData === 'function') {
+          const context = this.ctx;
+          for (const name of ['felt', 'nib', 'clasp', 'unclasp', 'bloom', 'shrug']) {
+            void fetch(`/sounds/${name}.wav`).then(response => {
+              if (!response.ok) throw new Error('Sound unavailable');
+              return response.arrayBuffer();
+            }).then(data => context.decodeAudioData(data)).then(buffer => this.uiBuffers.set(name, buffer)).catch(() => {});
+          }
+        }
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
@@ -106,6 +117,18 @@ export class WaveletAudioEngine {
   public setSoundEffectsEnabled(enabled: boolean) { this.soundEffectsEnabled = enabled; }
   public setHapticsEnabled(enabled: boolean) { this.hapticsEnabled = enabled; }
 
+  private playStudioSound(name: string, pitch = 1): boolean {
+    const buffer = this.uiBuffers.get(name);
+    if (!buffer || !this.ctx || !this.masterGain) return false;
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+    source.playbackRate.value = Math.max(0.6, Math.min(1.6, pitch));
+    source.connect(this.masterGain);
+    source.onended = () => source.disconnect();
+    source.start();
+    return true;
+  }
+
   public playDiscovery(companion = false) {
     this.triggerHaptic('success');
     if (this.isMuted || !this.soundEffectsEnabled) return;
@@ -138,6 +161,7 @@ export class WaveletAudioEngine {
     if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
+    if (this.playStudioSound(haptic === 'selection' ? 'nib' : 'felt', pitchMultiplier)) return;
 
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
@@ -169,6 +193,7 @@ export class WaveletAudioEngine {
     if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
+    if (this.playStudioSound(opening ? 'unclasp' : 'clasp')) return;
 
     const now = ctx.currentTime;
     const freqs = opening ? [440, 587.33] : [587.33, 440];
@@ -214,6 +239,7 @@ export class WaveletAudioEngine {
     if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
+    if (this.playStudioSound('bloom', 1 + Math.min(streak - 1, 4) * 0.04)) return;
 
     const now = ctx.currentTime;
     const rootShift = Math.min(streak, 5) * 18;
@@ -246,6 +272,7 @@ export class WaveletAudioEngine {
     if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
+    if (this.playStudioSound('shrug')) return;
 
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();

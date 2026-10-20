@@ -1,7 +1,7 @@
 export type MotionPreference = 'system' | 'full' | 'reduced';
 
 export interface StudioPreferences {
-  theme: 'light' | 'dark';
+  theme: 'system' | 'light' | 'dark';
   muted: boolean;
   soundEffects: boolean;
   haptics: boolean;
@@ -9,11 +9,12 @@ export interface StudioPreferences {
   motion: MotionPreference;
   compactCanvas: boolean;
   danceVideo: boolean;
+  animatedBackground: boolean;
 }
 
 export const PREFERENCES_KEY = 'wavelet_studio_preferences_v1';
 export const DEFAULT_PREFERENCES: StudioPreferences = {
-  theme: 'light',
+  theme: 'system',
   muted: false,
   soundEffects: true,
   haptics: true,
@@ -21,6 +22,7 @@ export const DEFAULT_PREFERENCES: StudioPreferences = {
   motion: 'system',
   compactCanvas: false,
   danceVideo: false,
+  animatedBackground: true,
 };
 
 export function parsePreferences(raw: string | null): StudioPreferences {
@@ -29,7 +31,7 @@ export function parsePreferences(raw: string | null): StudioPreferences {
     if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return { ...DEFAULT_PREFERENCES };
     const value = saved as Record<string, unknown>;
     return {
-      theme: value.theme === 'dark' ? 'dark' : 'light',
+      theme: value.theme === 'dark' || value.theme === 'light' ? value.theme : 'system',
       muted: typeof value.muted === 'boolean' ? value.muted : DEFAULT_PREFERENCES.muted,
       soundEffects: typeof value.soundEffects === 'boolean' ? value.soundEffects : DEFAULT_PREFERENCES.soundEffects,
       haptics: typeof value.haptics === 'boolean' ? value.haptics : DEFAULT_PREFERENCES.haptics,
@@ -38,6 +40,7 @@ export function parsePreferences(raw: string | null): StudioPreferences {
       motion: value.motion === 'full' || value.motion === 'reduced' ? value.motion : 'system',
       compactCanvas: typeof value.compactCanvas === 'boolean' ? value.compactCanvas : DEFAULT_PREFERENCES.compactCanvas,
       danceVideo: typeof value.danceVideo === 'boolean' ? value.danceVideo : DEFAULT_PREFERENCES.danceVideo,
+      animatedBackground: typeof value.animatedBackground === 'boolean' ? value.animatedBackground : DEFAULT_PREFERENCES.animatedBackground,
     };
   } catch {
     return { ...DEFAULT_PREFERENCES };

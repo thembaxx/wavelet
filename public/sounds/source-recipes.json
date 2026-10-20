@@ -1,0 +1,488 @@
+[
+  {
+    "id": "felt",
+    "name": "Felt",
+    "recipe": {
+      "duration": 0.14,
+      "seed": 12,
+      "loudness": -19,
+      "lowpass": 3800,
+      "reverb": {
+        "mix": 0.05,
+        "decay": 0.22,
+        "predelay": 0.01,
+        "damp": 3500
+      },
+      "layers": [
+        {
+          "type": "tone",
+          "wave": "triangle",
+          "freq": {
+            "from": 250,
+            "to": 175,
+            "time": 0.04,
+            "curve": 3
+          },
+          "at": 0,
+          "gain": 0,
+          "env": {
+            "attack": 0.003,
+            "decay": 0.07,
+            "curve": 6
+          },
+          "filter": {
+            "type": "lowpass",
+            "freq": 800,
+            "q": 0.6
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "at": 0,
+          "gain": -12,
+          "punch": true,
+          "filter": [
+            {
+              "type": "bandpass",
+              "freq": 620,
+              "q": 0.7
+            },
+            {
+              "type": "lowpass",
+              "freq": 1612,
+              "q": 0.5
+            }
+          ],
+          "env": {
+            "attack": 0.002,
+            "decay": 0.022,
+            "curve": 6
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "nib",
+    "name": "Nib",
+    "recipe": {
+      "duration": 0.08,
+      "seed": 13,
+      "loudness": -21,
+      "lowpass": 8000,
+      "reverb": {
+        "mix": 0.06,
+        "decay": 0.18,
+        "predelay": 0.01,
+        "damp": 5000
+      },
+      "layers": [
+        {
+          "type": "tone",
+          "freq": {
+            "from": 1240,
+            "to": 980,
+            "time": 0.008,
+            "curve": 3
+          },
+          "at": 0,
+          "gain": 0,
+          "env": {
+            "attack": 0.0015,
+            "decay": 0.028,
+            "curve": 6
+          }
+        },
+        {
+          "type": "tone",
+          "freq": {
+            "from": 620,
+            "to": 560,
+            "time": 0.006,
+            "curve": 3
+          },
+          "at": 0,
+          "gain": -15,
+          "env": {
+            "attack": 0.0015,
+            "decay": 0.02,
+            "curve": 6
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "clasp",
+    "name": "Clasp",
+    "recipe": {
+      "duration": 0.12,
+      "seed": 31,
+      "loudness": -19,
+      "lowpass": 7000,
+      "reverb": {
+        "mix": 0.06,
+        "decay": 0.22,
+        "predelay": 0.01,
+        "damp": 5000
+      },
+      "layers": [
+        {
+          "type": "tone",
+          "freq": {
+            "from": 500,
+            "to": 420,
+            "time": 0.012,
+            "curve": 3
+          },
+          "at": 0,
+          "gain": 0,
+          "env": {
+            "attack": 0.0015,
+            "decay": 0.028,
+            "curve": 6
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "at": 0,
+          "gain": -17,
+          "punch": true,
+          "filter": [
+            {
+              "type": "bandpass",
+              "freq": 1100,
+              "q": 0.8
+            },
+            {
+              "type": "lowpass",
+              "freq": 2860,
+              "q": 0.5
+            }
+          ],
+          "env": {
+            "attack": 0.001,
+            "decay": 0.006,
+            "curve": 6
+          }
+        },
+        {
+          "type": "tone",
+          "freq": {
+            "from": 700,
+            "to": 610,
+            "time": 0.012,
+            "curve": 3
+          },
+          "at": 0.045,
+          "gain": 0,
+          "env": {
+            "attack": 0.0015,
+            "decay": 0.035,
+            "curve": 6
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "at": 0.045,
+          "gain": -19,
+          "punch": true,
+          "filter": [
+            {
+              "type": "bandpass",
+              "freq": 1450,
+              "q": 0.8
+            },
+            {
+              "type": "lowpass",
+              "freq": 3770,
+              "q": 0.5
+            }
+          ],
+          "env": {
+            "attack": 0.001,
+            "decay": 0.006,
+            "curve": 6
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "unclasp",
+    "name": "Unclasp",
+    "recipe": {
+      "duration": 0.12,
+      "seed": 32,
+      "loudness": -19,
+      "lowpass": 7000,
+      "reverb": {
+        "mix": 0.06,
+        "decay": 0.22,
+        "predelay": 0.01,
+        "damp": 5000
+      },
+      "layers": [
+        {
+          "type": "tone",
+          "freq": {
+            "from": 680,
+            "to": 600,
+            "time": 0.012,
+            "curve": 3
+          },
+          "at": 0,
+          "gain": 0,
+          "env": {
+            "attack": 0.0015,
+            "decay": 0.026,
+            "curve": 6
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "at": 0,
+          "gain": -18,
+          "punch": true,
+          "filter": [
+            {
+              "type": "bandpass",
+              "freq": 1400,
+              "q": 0.8
+            },
+            {
+              "type": "lowpass",
+              "freq": 3640,
+              "q": 0.5
+            }
+          ],
+          "env": {
+            "attack": 0.001,
+            "decay": 0.006,
+            "curve": 6
+          }
+        },
+        {
+          "type": "tone",
+          "freq": {
+            "from": 470,
+            "to": 390,
+            "time": 0.014,
+            "curve": 3
+          },
+          "at": 0.045,
+          "gain": 0,
+          "env": {
+            "attack": 0.0015,
+            "decay": 0.035,
+            "curve": 6
+          }
+        },
+        {
+          "type": "noise",
+          "color": "pink",
+          "at": 0.045,
+          "gain": -17,
+          "punch": true,
+          "filter": [
+            {
+              "type": "bandpass",
+              "freq": 1000,
+              "q": 0.8
+            },
+            {
+              "type": "lowpass",
+              "freq": 2600,
+              "q": 0.5
+            }
+          ],
+          "env": {
+            "attack": 0.001,
+            "decay": 0.006,
+            "curve": 6
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "bloom",
+    "name": "Bloom",
+    "recipe": {
+      "duration": 0.95,
+      "seed": 41,
+      "loudness": -17,
+      "lowpass": 7500,
+      "reverb": {
+        "mix": 0.16,
+        "decay": 0.8,
+        "predelay": 0.01,
+        "damp": 5500
+      },
+      "layers": [
+        {
+          "type": "tone",
+          "freq": 587.33,
+          "at": 0,
+          "gain": 0,
+          "partials": [
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              2,
+              0.16,
+              0.55
+            ],
+            [
+              3,
+              0.04,
+              0.35
+            ]
+          ],
+          "env": {
+            "attack": 0.004,
+            "decay": 0.5,
+            "curve": 6
+          }
+        },
+        {
+          "type": "tone",
+          "freq": 880,
+          "at": 0.09,
+          "gain": 0,
+          "partials": [
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              2,
+              0.16,
+              0.55
+            ],
+            [
+              3,
+              0.04,
+              0.35
+            ]
+          ],
+          "env": {
+            "attack": 0.004,
+            "decay": 0.75,
+            "curve": 6
+          }
+        },
+        {
+          "type": "tone",
+          "freq": 1760,
+          "at": 0.09,
+          "gain": -22,
+          "partials": [
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              2,
+              0.08,
+              0.55
+            ],
+            [
+              3,
+              0.02,
+              0.35
+            ]
+          ],
+          "env": {
+            "attack": 0.004,
+            "decay": 0.4,
+            "curve": 6
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "shrug",
+    "name": "Shrug",
+    "recipe": {
+      "duration": 0.55,
+      "seed": 43,
+      "loudness": -18,
+      "lowpass": 5500,
+      "reverb": {
+        "mix": 0.12,
+        "decay": 0.5,
+        "predelay": 0.01,
+        "damp": 4500
+      },
+      "layers": [
+        {
+          "type": "tone",
+          "freq": 659.26,
+          "at": 0,
+          "gain": 0,
+          "partials": [
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              2,
+              0.096,
+              0.55
+            ],
+            [
+              3,
+              0.024,
+              0.35
+            ]
+          ],
+          "env": {
+            "attack": 0.006,
+            "decay": 0.22,
+            "curve": 6
+          }
+        },
+        {
+          "type": "tone",
+          "freq": 523.25,
+          "at": 0.12,
+          "gain": 0,
+          "partials": [
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              2,
+              0.096,
+              0.55
+            ],
+            [
+              3,
+              0.024,
+              0.35
+            ]
+          ],
+          "env": {
+            "attack": 0.006,
+            "decay": 0.32,
+            "curve": 6
+          }
+        }
+      ]
+    }
+  }
+]

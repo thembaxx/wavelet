@@ -12,8 +12,13 @@ export default function manifest(): MetadataRoute.Manifest {
     display: 'standalone',
     orientation: 'any',
     categories: ['games', 'music', 'entertainment'],
-    background_color: '#F1F1F1',
-    theme_color: '#F1F1F1',
+    lang: 'en',
+    dir: 'ltr',
+    display_override: ['standalone', 'minimal-ui'],
+    prefer_related_applications: false,
+    background_color: '#f7f8f2',
+    theme_color: '#f7f8f2',
+    shortcuts: [{ name: 'Start a new set', short_name: 'New set', description: 'Open your Wavelet music studio', url: '/', icons: [{ src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' }] }],
     icons: [
       {
         src: '/pwa-192x192.png',

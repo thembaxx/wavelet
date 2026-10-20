@@ -155,7 +155,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                 <h2 id="account-modal-title" className="text-lg font-bold tracking-tight">
                   Music Account Sync
                 </h2>
-                <p className={`text-xs ${isLight ? 'text-[#000000]/60' : 'text-white/60'}`}>
+                <p className={`text-xs ${isLight ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
                   Curate 30-second vinyl rounds from your listening history
                 </p>
               </div>
@@ -170,7 +170,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                 aria-label="Close music account modal"
                 className={`flex h-11 w-11 items-center justify-center rounded-full border transition-colors ${
                   isLight
-                    ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                    ? 'border-border bg-muted text-foreground hover:bg-[#E5E5E5]'
                     : 'border-white/15 bg-white/10 text-white hover:bg-white/20'
                 }`}
               >
@@ -182,13 +182,13 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
               <div
                 className={`mt-4 rounded-[22px] border p-3.5 ${
                   isLight
-                    ? 'border-[#000000]/10 bg-[#EDFF8C] text-[#000000]'
-                    : 'border-[#EDFF8C]/35 bg-[#EDFF8C]/15 text-white'
+                    ? 'border-[#000000]/10 bg-secondary text-foreground'
+                    : 'border-[#EDFF8C]/35 bg-secondary/15 text-white'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <CheckCircle weight="fill" className="h-5 w-5 text-[#12786C] shrink-0" />
+                    <CheckCircle weight="fill" className="h-5 w-5 text-primary shrink-0" />
                     <div className="min-w-0">
                       <div className="truncate text-sm font-bold">{connectedProfile.displayName}</div>
                       <div className="truncate text-xs opacity-75">
@@ -203,7 +203,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                       onDisconnect();
                     }}
                     aria-label="Disconnect music account and purge data"
-                    className="inline-flex min-h-[38px] items-center gap-1 rounded-full bg-[#000000] px-3 py-1 text-xs font-bold text-[#FFFFFF]"
+                    className="inline-flex min-h-[38px] items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground"
                   >
                     <Trash weight="bold" className="h-3.5 w-3.5" />
                     <span>Revoke</span>
@@ -217,7 +217,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                 <label
                   htmlFor="taste-artists-input"
                   className={`block text-xs font-semibold ${
-                    isLight ? 'text-[#000000]/75' : 'text-white/75'
+                    isLight ? 'text-foreground/75' : 'text-white/75'
                   }`}
                 >
                   Favorite Artists, Genres, or Listening Seed
@@ -230,8 +230,8 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                   placeholder="e.g. Daft Punk, SZA, Tyla, Outkast"
                   className={`mt-1.5 w-full rounded-2xl border px-3.5 py-2.5 text-sm focus:outline-none ${
                     isLight
-                      ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000] placeholder-[#000000]/40 focus:border-[#12786C] focus:bg-[#FFFFFF]'
-                      : 'border-white/15 bg-black/40 text-white placeholder-white/40 focus:border-[#12786C]'
+                      ? 'border-border bg-muted text-foreground placeholder-[#000000]/40 focus:border-primary focus:bg-card'
+                      : 'border-white/15 bg-black/40 text-white placeholder-white/40 focus:border-primary'
                   }`}
                 />
               </div>
@@ -239,7 +239,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
               <div>
                 <span
                   className={`block text-xs font-semibold ${
-                    isLight ? 'text-[#000000]/75' : 'text-white/75'
+                    isLight ? 'text-foreground/75' : 'text-white/75'
                   }`}
                 >
                   Release Decade
@@ -257,10 +257,10 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                       className={`min-h-[40px] rounded-full text-xs font-bold transition-colors ${
                         selectedEra === era
                           ? isLight
-                            ? 'bg-[#000000] text-[#FFFFFF]'
-                            : 'bg-[#EDFF8C] text-[#000000]'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-secondary text-foreground'
                           : isLight
-                          ? 'bg-[#F1F1F1] text-[#000000]/75 hover:bg-[#E5E5E5]'
+                          ? 'bg-muted text-foreground/75 hover:bg-[#E5E5E5]'
                           : 'bg-white/10 text-white/80 hover:bg-white/15'
                       }`}
                     >
@@ -276,7 +276,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                   whileTap={{ scale: 0.97 }}
                   disabled={isSyncing}
                   onClick={handleSpotifyOAuthPopup}
-                  className="flex min-h-[46px] items-center justify-center gap-2 rounded-full bg-[#000000] px-4 py-2.5 text-sm font-bold text-[#FFFFFF] transition-colors whitespace-nowrap"
+                  className="flex min-h-[46px] items-center justify-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-colors whitespace-nowrap"
                 >
                   <SpotifyLogo weight="fill" className="h-5 w-5 text-[#1DB954] shrink-0" />
                   <span>{isSyncing ? 'Syncing...' : 'Sync Spotify'}</span>
@@ -289,7 +289,7 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
                   onClick={() => handleGeneratePersonalCrate('apple-music')}
                   className={`flex min-h-[46px] items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-sm font-bold transition-colors whitespace-nowrap ${
                     isLight
-                      ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                      ? 'border-border bg-muted text-foreground hover:bg-[#E5E5E5]'
                       : 'border-white/15 bg-white/10 text-white hover:bg-white/20'
                   }`}
                 >
@@ -303,8 +303,8 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
               <div
                 className={`mt-3 rounded-2xl px-3.5 py-2 text-xs font-semibold ${
                   isLight
-                    ? 'bg-[#EDFF8C] text-[#000000]'
-                    : 'bg-[#12786C]/25 text-[#EDFF8C]'
+                    ? 'bg-secondary text-foreground'
+                    : 'bg-primary/25 text-primary'
                 }`}
               >
                 {statusMessage}
@@ -314,11 +314,11 @@ export const MusicAccountModal: React.FC<MusicAccountModalProps> = ({
             <div
               className={`mt-4 rounded-2xl border p-3.5 text-xs space-y-1.5 ${
                 isLight
-                  ? 'border-[#D1D1D1] bg-[#F1F1F1]/70 text-[#000000]/75'
+                  ? 'border-border bg-muted/70 text-foreground/75'
                   : 'border-white/10 bg-black/30 text-white/70'
               }`}
             >
-              <div className="flex items-center gap-2 font-bold text-[#12786C]">
+              <div className="flex items-center gap-2 font-bold text-primary">
                 <ShieldCheck weight="fill" className="h-4 w-4 shrink-0" />
                 <span>Ephemeral In-Memory Privacy</span>
               </div>

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CURATED_REAL_SONGS } from '@/lib/music-catalog';
 import { type SongTrack } from '@/lib/game-rules';
+import { artistOnlyTracks, normalizeArtist } from '@/lib/catalog-filters';
 
 interface ItunesResult {
+  artistId?: number;
   trackId: number;
   trackName: string;
   artistName: string;
@@ -25,19 +27,23 @@ function getDecadeFromYear(year: number): string {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const term = searchParams.get('term') || 'top hits pop dance r&b';
-  const limit = Math.min(Number(searchParams.get('limit') || 30), 50);
+  const requestedLimit = Number(searchParams.get('limit') || 30);
+  const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(Math.floor(requestedLimit), 50)) : 30;
+  const artist = searchParams.get('artist')?.trim().slice(0, 100) || '';
+  const artistId = searchParams.get('artistId') || '';
+  const isArtistCrate = Boolean(artist);
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4500);
-
-    const url = `https://itunes.apple.com/search?media=music&entity=song&limit=${limit}&term=${encodeURIComponent(term)}`;
+    const query = new URLSearchParams({ media: 'music', entity: 'song', limit: String(isArtistCrate ? 200 : limit), term: artist || term });
+    if (isArtistCrate) query.set('attribute', 'artistTerm');
+    const url = isArtistCrate && /^\d{1,14}$/.test(artistId)
+      ? `https://itunes.apple.com/lookup?id=${artistId}&entity=song&limit=200`
+      : `https://itunes.apple.com/search?${query}`;
     const response = await fetch(url, {
-      signal: controller.signal,
+      signal: AbortSignal.timeout(4500),
       headers: { Accept: 'application/json' },
       next: { revalidate: 3600 },
     });
-    clearTimeout(timeout);
 
     if (!response.ok) {
       throw new Error(`iTunes API status ${response.status}`);
@@ -51,7 +57,7 @@ export async function GET(req: NextRequest) {
 
     for (const item of rawResults) {
       if (!item.trackName || !item.artistName || !item.previewUrl) continue;
-      const dedupeKey = `${item.trackName.toLowerCase()}::${item.artistName.toLowerCase()}`;
+      const dedupeKey = `${normalizeArtist(item.trackName)}::${normalizeArtist(item.artistName)}`;
       if (seenTitles.has(dedupeKey)) continue;
       seenTitles.add(dedupeKey);
 
@@ -67,6 +73,7 @@ export async function GET(req: NextRequest) {
         id: `itunes-${item.trackId}`,
         title: item.trackName,
         artist: item.artistName,
+        artistId: item.artistId,
         album: item.collectionName || item.trackName,
         releaseYear: validYear,
         decade: getDecadeFromYear(validYear),
@@ -79,6 +86,9 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    if (isArtistCrate) {
+      return NextResponse.json({ tracks: artistOnlyTracks(tracks, artist, artistId).slice(0, limit), source: 'artist-catalog', artist });
+    }
     if (tracks.length >= 4) {
       return NextResponse.json({ tracks, source: 'itunes-live' });
     }
@@ -87,7 +97,8 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    tracks: CURATED_REAL_SONGS,
-    source: 'curated-fallback',
+    tracks: isArtistCrate ? artistOnlyTracks(CURATED_REAL_SONGS, artist, artistId).slice(0, limit) : CURATED_REAL_SONGS,
+    source: isArtistCrate ? 'artist-curated-fallback' : 'curated-fallback',
+    ...(isArtistCrate ? { artist } : {}),
   });
 }

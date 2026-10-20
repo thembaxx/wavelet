@@ -2,6 +2,7 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  experimental: { optimizePackageImports: ['@phosphor-icons/react'] },
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -32,6 +33,9 @@ const nextConfig: NextConfig = {
     ],
   },
   output: 'standalone',
+  async headers() {
+    return [{ source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }, { key: 'Service-Worker-Allowed', value: '/' }] }];
+  },
   transpilePackages: ['motion'],
   webpack: (config, {dev}) => {
     // HMR is disabled in AI Studio via DISABLE_HMR env var.

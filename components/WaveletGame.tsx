@@ -37,6 +37,7 @@ import {
   SignOut,
   PencilSimple,
   ChartBar,
+  WifiSlash,
 } from '@phosphor-icons/react';
 import {
   type SnippetDuration,
@@ -84,31 +85,16 @@ import { MusicAccountModal, type ConnectedMusicProfile } from './MusicAccountMod
 import { usePWAInstall } from '@/hooks/use-pwa-install';
 import { useStudioPreferences } from '@/hooks/use-studio-preferences';
 import { StudioSettings } from './StudioSettings';
+import { GameSetup } from './GameSetup';
+import { ThreeTopographyBackground } from './ThreeTopographyBackground';
+import { artistOnlyTracks, type ArtistChoice } from '@/lib/catalog-filters';
 import { StudioDialog } from './StudioDialog';
 import { WaveletBrand } from './WaveletBrand';
 import { DiscoveryDelight } from './DiscoveryDelight';
+import ClickSpark from './react-bits/ClickSpark';
 
 gsap.registerPlugin(useGSAP);
 
-const SNIPPET_OPTIONS: SnippetDuration[] = [1, 3, 5, 10, 15, 30];
-const SONG_COUNT_OPTIONS = [5, 10, 15];
-
-const QUICK_VIBE_CRATES: Array<{
-  id: string;
-  label: string;
-  mode: FilterMode;
-  value: string;
-}> = [
-  { id: 'all', label: 'All Hits', mode: 'genre', value: 'All' },
-  { id: 'pop', label: 'Pop', mode: 'genre', value: 'Pop' },
-  { id: 'rnb', label: 'R&B / Soul', mode: 'genre', value: 'R&B/Soul' },
-  { id: 'hiphop', label: 'Hip-Hop', mode: 'genre', value: 'Hip-Hop/Rap' },
-  { id: 'afro', label: 'Afrobeats', mode: 'genre', value: 'Afrobeats' },
-  { id: 'electro', label: 'Electronic', mode: 'genre', value: 'Electronic' },
-  { id: '2020s', label: '2020s', mode: 'year', value: '2020s' },
-  { id: '2000s', label: '2000s', mode: 'year', value: '2000s' },
-  { id: '1990s', label: '1990s', mode: 'year', value: '1990s' },
-];
 
 /**
  * Radial Segmented Tick-Mark Gauge (Inspired directly by IMG_5846 "Lead Score 90 · Grade A" card)
@@ -127,15 +113,15 @@ const SegmentedTickArcGauge: React.FC<{
     <div
       className={`relative overflow-hidden rounded-[24px] border p-4 ${
         isLight
-          ? 'border-[#D1D1D1] bg-[#F1F1F1]/70 text-[#000000]'
-          : 'border-white/12 bg-black/35 text-[#FFFFFF]'
+          ? 'border-border bg-muted/70 text-foreground'
+          : 'border-white/12 bg-black/35 text-foreground'
       }`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div
             className={`flex h-7 w-7 items-center justify-center rounded-[9px] border ${
-              isLight ? 'border-[#D1D1D1] bg-[#FFFFFF]' : 'border-white/15 bg-white/5'
+              isLight ? 'border-border bg-card' : 'border-white/15 bg-white/5'
             }`}
           >
             <div className="grid grid-cols-3 gap-0.5">
@@ -143,7 +129,7 @@ const SegmentedTickArcGauge: React.FC<{
                 <span
                   key={i}
                   className={`h-1 w-1 rounded-full ${
-                    i === 4 ? 'bg-[#12786C]' : isLight ? 'bg-[#000000]' : 'bg-white'
+                    i === 4 ? 'bg-primary' : isLight ? 'bg-foreground' : 'bg-white'
                   }`}
                 />
               ))}
@@ -153,13 +139,13 @@ const SegmentedTickArcGauge: React.FC<{
         </div>
 
         <div className="flex items-center gap-1.5">
-          <span className="rounded-full bg-[#12786C] px-2.5 py-0.5 text-[11px] font-bold text-[#FFFFFF]">
+          <span className="rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-bold text-primary-foreground">
             {gradeLabel}
           </span>
           <span
             className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
               isLight
-                ? 'bg-[#FFFFFF] text-[#000000] border border-[#D1D1D1]'
+                ? 'bg-card text-foreground border border-border'
                 : 'bg-white/10 text-white'
             }`}
           >
@@ -180,10 +166,10 @@ const SegmentedTickArcGauge: React.FC<{
             const rInner = 76;
             const rOuter = i % 4 === 0 ? 96 : 90;
 
-            const x1 = cx + Math.cos(angleRad) * rInner;
-            const y1 = cy + Math.sin(angleRad) * rInner;
-            const x2 = cx + Math.cos(angleRad) * rOuter;
-            const y2 = cy + Math.sin(angleRad) * rOuter;
+            const x1 = Number((cx + Math.cos(angleRad) * rInner).toFixed(4));
+            const y1 = Number((cy + Math.sin(angleRad) * rInner).toFixed(4));
+            const x2 = Number((cx + Math.cos(angleRad) * rOuter).toFixed(4));
+            const y2 = Number((cy + Math.sin(angleRad) * rOuter).toFixed(4));
 
             const isLit = i < activeTickCount;
             const strokeColor = isLit
@@ -217,7 +203,7 @@ const SegmentedTickArcGauge: React.FC<{
           </div>
           <div
             className={`text-[11px] font-medium ${
-              isLight ? 'text-[#000000]/55' : 'text-white/55'
+              isLight ? 'text-muted-foreground' : 'text-muted-foreground'
             }`}
           >
             Accuracy Index
@@ -242,8 +228,8 @@ const RoundStepProcessBar: React.FC<{
     <div
       className={`flex items-center gap-1 rounded-full border p-1 ${
         isLight
-          ? 'border-[#D1D1D1] bg-[#FFFFFF]/90'
-          : 'border-white/12 bg-[#12161D]/90'
+          ? 'border-border bg-card/90'
+          : 'border-white/12 bg-card/90'
       }`}
       aria-label={`Round ${currentIndex + 1} of ${totalRounds}`}
     >
@@ -257,31 +243,31 @@ const RoundStepProcessBar: React.FC<{
             key={idx}
             className={`relative flex h-7 flex-1 items-center justify-center rounded-full text-[11px] font-mono font-bold tabular-nums transition-all ${
               isCurrent
-                ? 'bg-gradient-to-r from-[#12786C] to-[#EDFF8C] text-[#000000] shadow-xs'
+                ? 'bg-gradient-to-r from-[#12786C] to-[#EDFF8C] text-foreground shadow-xs'
                 : isCompleted
                   ? pastItem?.correct
                     ? isLight
-                      ? 'bg-[#EDFF8C]/75 text-[#000000]'
-                      : 'bg-[#12786C]/40 text-[#EDFF8C]'
+                      ? 'bg-secondary/75 text-foreground'
+                      : 'bg-primary/40 text-primary'
                     : isLight
-                      ? 'bg-[#F1F1F1] text-[#000000]/45'
-                      : 'bg-white/10 text-white/40'
+                      ? 'bg-muted text-muted-foreground'
+                      : 'bg-white/10 text-muted-foreground'
                   : isLight
-                    ? 'bg-[#F1F1F1]/80 text-[#000000]/40'
+                    ? 'bg-muted/80 text-muted-foreground'
                     : 'bg-white/5 text-white/35'
             }`}
           >
             <div
               className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${
                 isCurrent
-                  ? 'bg-[#000000] text-[#FFFFFF]'
+                  ? 'bg-primary text-primary-foreground'
                   : isCompleted
                     ? pastItem?.correct
-                      ? 'bg-[#12786C] text-[#FFFFFF]'
-                      : 'bg-[#000000]/75 text-[#FFFFFF]'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-primary/75 text-primary-foreground'
                     : isLight
-                      ? 'bg-[#FFFFFF]/75 text-[#000000]/45'
-                      : 'bg-white/10 text-white/40'
+                      ? 'bg-card/75 text-muted-foreground'
+                      : 'bg-white/10 text-muted-foreground'
               }`}
             >
               {isCompleted ? (
@@ -302,8 +288,8 @@ const RoundStepProcessBar: React.FC<{
 };
 
 export const WaveletGame: React.FC = () => {
-  const { preferences, updatePreferences, reducedMotion } = useStudioPreferences();
-  const themeMode = preferences.theme;
+  const { preferences, updatePreferences, reducedMotion, resolvedTheme } = useStudioPreferences();
+  const themeMode = resolvedTheme;
   const mobileFrameLocked = preferences.compactCanvas;
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [discovery, setDiscovery] = useState<{ id: number; label: string } | null>(null);
@@ -354,6 +340,11 @@ export const WaveletGame: React.FC = () => {
   const [filterMode, setFilterMode] = useState<FilterMode>('genre');
   const [filterValue, setFilterValue] = useState<string>('All');
   const [customSearchTerm, setCustomSearchTerm] = useState<string>('');
+  const [selectedArtist, setSelectedArtist] = useState<ArtistChoice | null>(null);
+  const [crateError, setCrateError] = useState<string | null>(null);
+  const [isStartingGame, setIsStartingGame] = useState(false);
+  const crateRequest = useRef(0);
+  const crateController = useRef<AbortController | null>(null);
   const [snippetDuration, setSnippetDuration] = useState<SnippetDuration>(5);
   const [songCount, setSongCount] = useState<number>(5);
   const [playMode, setPlayMode] = useState<PlayMode>('quiz-4choice');
@@ -408,7 +399,7 @@ export const WaveletGame: React.FC = () => {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
   const [connectedProfile, setConnectedProfile] = useState<ConnectedMusicProfile | null>(null);
 
-  const { isInstallable, isInstalled, isIOS, isOnline, install } = usePWAInstall();
+  const { isInstallable, isInstalled, isIOS, isOnline, install, offlineReady, updateAvailable, applyUpdate, isFullscreen, canFullscreen, toggleFullscreen, appStatus } = usePWAInstall();
 
   const isLight = themeMode === 'light';
 
@@ -559,23 +550,7 @@ export const WaveletGame: React.FC = () => {
     }
   }, [progression, progressionLoaded]);
 
-  // Sync document.body.dataset.state & dynamic theme-color meta tag for seamless browser chrome
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const activeBgHex = isLight ? currentMood.bgLightHex : currentMood.bgDarkHex;
-    document.body.dataset.state = session.status;
-    document.body.dataset.theme = themeMode;
-    document.documentElement.style.backgroundColor = activeBgHex;
-    document.body.style.backgroundColor = activeBgHex;
-
-    let metaTheme = document.querySelector('meta[name="theme-color"]');
-    if (!metaTheme) {
-      metaTheme = document.createElement('meta');
-      metaTheme.setAttribute('name', 'theme-color');
-      document.head.appendChild(metaTheme);
-    }
-    metaTheme.setAttribute('content', activeBgHex);
-  }, [session.status, isLight, themeMode, currentMood.bgLightHex, currentMood.bgDarkHex]);
+  useEffect(() => { document.body.dataset.state = session.status; }, [session.status]);
 
   // Detect desktop/tablet viewport for mobile-only disclaimer
   useEffect(() => {
@@ -588,53 +563,70 @@ export const WaveletGame: React.FC = () => {
     return () => window.removeEventListener('resize', checkViewport);
   }, []);
 
-  // Fetch real songs from Apple Music / iTunes API when filter changes
   const fetchLiveCrate = useCallback(
-    async (mode: FilterMode, value: string, customQuery?: string): Promise<SongTrack[]> => {
-      if (mode === 'account' && connectedProfile && connectedProfile.customTracks.length >= 4) {
-        setSongPool(connectedProfile.customTracks);
-        return connectedProfile.customTracks;
-      }
-
-      let term = 'top hits pop dance r&b';
-      if (customQuery && customQuery.trim().length > 1) {
-        term = customQuery.trim();
-      } else if (mode === 'genre') {
-        const preset = GENRE_PRESETS.find((g) => g.id === value);
-        term = preset ? preset.query : `${value} hits`;
-      } else if (mode === 'artist') {
-        term = value === 'All' ? 'Daft Punk The Weeknd SZA' : value;
-      } else if (mode === 'year') {
-        term = `${value} music hits`;
-      }
-
+    async (mode: FilterMode, value: string, customQuery?: string, artist?: ArtistChoice): Promise<SongTrack[]> => {
+      const request = ++crateRequest.current;
+      crateController.current?.abort();
+      const controller = new AbortController();
+      crateController.current = controller;
       setIsLoadingSongs(true);
+      setCrateError(null);
+      if (mode === 'artist') setSongPool([]);
+      let tracks: SongTrack[] = [];
       try {
-        const res = await fetch(`/api/songs?term=${encodeURIComponent(term)}&limit=30`);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data.tracks) && data.tracks.length >= 4) {
-            setSongPool(data.tracks);
-            return data.tracks;
-          }
+        if (mode === 'account' && connectedProfile?.customTracks.length) tracks = connectedProfile.customTracks;
+        else {
+          const preset = GENRE_PRESETS.find(genre => genre.id === value);
+          const term = customQuery?.trim() || (mode === 'genre' ? preset?.query || `${value} hits` : mode === 'year' ? `${value} music hits` : value);
+          const query = new URLSearchParams({ term, limit: '50' });
+          if (mode === 'artist') { query.set('artist', value); if (artist) query.set('artistId', artist.id); }
+          const response = await fetch(`/api/songs?${query}`, { signal: controller.signal });
+          if (!response.ok) throw new Error('Catalog unavailable');
+          const data = await response.json();
+          tracks = Array.isArray(data.tracks) ? data.tracks : [];
         }
       } catch {
-        // Fallback to curated songs seamlessly
+        if (controller.signal.aborted) return [];
+        tracks = mode === 'artist' ? artistOnlyTracks(CURATED_REAL_SONGS, value, artist?.id) : CURATED_REAL_SONGS;
       } finally {
-        setIsLoadingSongs(false);
+        if (request === crateRequest.current) setIsLoadingSongs(false);
       }
-      return CURATED_REAL_SONGS;
-    },
-    [connectedProfile]
+      if (mode === 'artist') tracks = artistOnlyTracks(tracks, value, artist?.id);
+      if (request === crateRequest.current) {
+        setSongPool(tracks);
+        if (!tracks.length) setCrateError(`No playable songs found for ${value}. Try another artist.`);
+      }
+      return tracks;
+    }, [connectedProfile],
   );
 
-  // Initial live song fetch on mount
+  const initialCrateLoaded = useRef(false);
+  const [crateRestored, setCrateRestored] = useState(false);
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void fetchLiveCrate('genre', 'All');
+    if (initialCrateLoaded.current) return;
+    const timer = setTimeout(() => {
+      initialCrateLoaded.current = true;
+      let mode: FilterMode = 'genre', value = 'All', search = '';
+      let artist: ArtistChoice | undefined;
+      try {
+        const saved = JSON.parse(localStorage.getItem('wavelet_last_crate_v1') || 'null');
+        if (saved && ['genre', 'year', 'artist'].includes(saved.mode) && typeof saved.value === 'string' && saved.value.trim().length > 0 && saved.value.length <= 100) {
+          mode = saved.mode; value = saved.value;
+          search = typeof saved.search === 'string' ? saved.search.slice(0, 100) : '';
+          if (mode === 'artist') artist = { id: typeof saved.artist?.id === 'string' ? saved.artist.id.slice(0, 100) : `curated:${value}`, name: value };
+        }
+      } catch { /* Start with the public mix if storage is unavailable. */ }
+      setFilterMode(mode); setFilterValue(value); setCustomSearchTerm(search); setSelectedArtist(artist || null);
+      setCrateRestored(true);
+      void fetchLiveCrate(mode, value, search || undefined, artist);
     }, 0);
-    return () => window.clearTimeout(timer);
+    return () => clearTimeout(timer);
   }, [fetchLiveCrate]);
+  useEffect(() => {
+    if (!crateRestored || filterMode === 'account') return;
+    try { localStorage.setItem('wavelet_last_crate_v1', JSON.stringify({ mode: filterMode, value: filterValue, artist: selectedArtist, search: customSearchTerm })); } catch { /* Best effort. */ }
+  }, [crateRestored, filterMode, filterValue, selectedArtist, customSearchTerm]);
+  useEffect(() => () => crateController.current?.abort(), []);
 
   // Trigger playing the current song snippet
   const triggerSnippetPlay = useCallback(
@@ -679,6 +671,46 @@ export const WaveletGame: React.FC = () => {
     return () => clearInterval(interval);
   }, [isPlayingSnippet, snippetDuration]);
 
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden && session.status === 'playing') {
+        audioEngine.stopSnippet(false);
+        setIsPlayingSnippet(false);
+        setSession(previous => ({ ...previous, status: 'paused' }));
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [session.status]);
+
+  const resumeGame = useCallback(() => {
+    audioEngine.playUiTick();
+    setSession(previous => ({ ...previous, status: 'playing' }));
+    if (!session.isRevealed) triggerSnippetPlay(currentSong, snippetDuration, session.config.challengeMode);
+  }, [session.isRevealed, session.config.challengeMode, currentSong, snippetDuration, triggerSnippetPlay]);
+
+  // Native headset / lock-screen controls keep answers hidden until revealed.
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    const media = navigator.mediaSession;
+    if (session.status === 'title' || session.status === 'gameover') {
+      media.metadata = null; media.playbackState = 'none';
+      media.setActionHandler('play', null); media.setActionHandler('pause', null);
+      return;
+    }
+    if ('MediaMetadata' in window) {
+      media.metadata = new MediaMetadata({
+        title: session.isRevealed ? currentSong.title : 'Trust your ears. Find your groove.',
+        artist: session.isRevealed ? currentSong.artist : 'Wavelet · Music guessing game',
+        artwork: [{ src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' }],
+      });
+    }
+    media.playbackState = session.status === 'paused' || !isPlayingSnippet ? 'paused' : 'playing';
+    media.setActionHandler('pause', () => { audioEngine.stopSnippet(false); setIsPlayingSnippet(false); setSession(previous => ({ ...previous, status: 'paused' })); });
+    media.setActionHandler('play', resumeGame);
+    return () => { media.setActionHandler('play', null); media.setActionHandler('pause', null); };
+  }, [session.status, session.isRevealed, currentSong.title, currentSong.artist, isPlayingSnippet, resumeGame]);
+
   const resetRoundPowerUps = useCallback(() => {
     setArtistHintText(null);
     setEliminatedOptionIds([]);
@@ -711,18 +743,25 @@ export const WaveletGame: React.FC = () => {
   // Start a new game session
   const startNewGame = useCallback(
     async (overridePool?: SongTrack[]) => {
+      if ((isLoadingSongs && !overridePool) || isStartingGame) return;
+      setIsStartingGame(true);
       if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
       audioEngine.playUiTick(1.3, 'medium');
 
       let activePool = overridePool || songPool;
+      let request = crateRequest.current;
       if (customSearchTerm.trim().length > 1 && !overridePool) {
-        activePool = await fetchLiveCrate(filterMode, filterValue, customSearchTerm);
+        const pending = fetchLiveCrate(filterMode, filterValue, customSearchTerm);
+        request = crateRequest.current;
+        activePool = await pending;
       }
+      if (request !== crateRequest.current) { setIsStartingGame(false); return; }
 
-      const selectedPlaylist = activePool.slice(0, Math.max(1, songCount));
-      const firstSong = selectedPlaylist[0] || CURATED_REAL_SONGS[0];
+      const selectedPlaylist = (filterMode === 'artist' ? artistOnlyTracks(activePool, filterValue, selectedArtist?.id) : activePool).slice(0, Math.max(1, songCount));
+      if (!selectedPlaylist.length) { setCrateError('No songs in this crate yet. Choose another artist or mix.'); setIsStartingGame(false); return; }
+      const firstSong = selectedPlaylist[0];
 
       setRoundFeedback(null);
       resetRoundPowerUps();
@@ -734,7 +773,7 @@ export const WaveletGame: React.FC = () => {
           filterMode,
           filterValue: customSearchTerm.trim() || filterValue,
           snippetDuration,
-          songCount,
+          songCount: selectedPlaylist.length,
           playMode,
           challengeMode,
           difficulty,
@@ -750,9 +789,11 @@ export const WaveletGame: React.FC = () => {
       });
 
       triggerSnippetPlay(firstSong, snippetDuration, challengeMode);
+      setIsStartingGame(false);
     },
     [
       songPool,
+      selectedArtist, isLoadingSongs, isStartingGame,
       customSearchTerm,
       fetchLiveCrate,
       filterMode,
@@ -1073,9 +1114,9 @@ export const WaveletGame: React.FC = () => {
     let secretKeys = '';
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
-      if (isSettingsOpen || isAccountModalOpen || isPassModalOpen) return;
+      if (isSettingsOpen || isAccountModalOpen || isPassModalOpen || isRulesDrawerOpen) return;
       const target = event.target;
-      if (target instanceof Element && target.closest('input, textarea, select, button, a, [contenteditable="true"], dialog')) return;
+      if (target instanceof Element && target.closest('input, textarea, select, button, a, [contenteditable="true"], dialog, [role="dialog"], [cmdk-root]')) return;
       if (session.status === 'title' && event.key.length === 1) {
         secretKeys = (secretKeys + event.key.toLowerCase()).slice(-6);
         if (secretKeys === 'groove') discoverGroove('Secret selector. Welcome to the B-side.');
@@ -1091,7 +1132,7 @@ export const WaveletGame: React.FC = () => {
           setSession(previous => ({ ...previous, status: 'paused' }));
         } else if (session.status === 'paused') {
           event.preventDefault();
-          setSession(previous => ({ ...previous, status: 'playing' }));
+          resumeGame();
         }
       } else if (event.code === 'KeyM') {
         event.preventDefault();
@@ -1108,7 +1149,7 @@ export const WaveletGame: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [session.status, isSettingsOpen, isAccountModalOpen, isPassModalOpen, startNewGame, toggleThemeMode, updatePreferences, discoverGroove]);
+  }, [session.status, isSettingsOpen, isAccountModalOpen, isPassModalOpen, isRulesDrawerOpen, startNewGame, toggleThemeMode, updatePreferences, discoverGroove, resumeGame]);
 
   useGSAP(() => {
     if (session.status !== 'title' || reducedMotion) return;
@@ -1121,6 +1162,7 @@ export const WaveletGame: React.FC = () => {
     setFilterMode(mode);
     setFilterValue(val);
     setCustomSearchTerm('');
+    setSelectedArtist(null);
     await fetchLiveCrate(mode, val);
   };
 
@@ -1141,34 +1183,28 @@ export const WaveletGame: React.FC = () => {
   ]);
 
   const isFeverActive = session.streak >= 2;
-  const activeBgHex = isLight ? currentMood.bgLightHex : currentMood.bgDarkHex;
 
   // Circular Icon Button style matching IMG_5846 & IMG_5847
   const circleBtnClass = isLight
-    ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000] hover:bg-[#F1F1F1]'
-    : 'border-white/15 bg-[#12161D] text-[#FFFFFF] hover:bg-white/10';
+    ? 'border-border bg-card text-foreground hover:bg-muted'
+    : 'border-white/15 bg-card text-foreground hover:bg-white/10';
 
-  // Primary Action Button style matching IMG_5845 & IMG_5847 (#000000 in Light Mode, #EDFF8C in Dark Mode)
-  const primaryBtnClasses = isLight
-    ? 'bg-[#000000] text-[#FFFFFF] hover:bg-[#1A1A1A] shadow-[0_10px_24px_rgba(0,0,0,0.14)]'
-    : 'bg-[#EDFF8C] text-[#000000] hover:bg-[#F4FFAD] shadow-[0_10px_24px_rgba(237,255,140,0.2)]';
+  const primaryBtnClasses = 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_10px_24px_rgba(16,39,33,0.12)]';
 
   return (
     <MotionConfig reducedMotion={reducedMotion ? 'always' : 'never'} transition={{ type: 'spring', stiffness: 360, damping: 32 }}>
+    <ClickSpark sparkColor={['#16735d', '#b8d97f']} sparkCount={6} sparkRadius={22} duration={350} disabled={reducedMotion} shape="dot" triggerSelector="[data-spark]" className="wavelet-click-sparks">
     <main
       data-theme={themeMode}
       data-state={session.status}
+      data-offline={!isOnline}
       data-dock-collapsed={isDockCollapsed}
       data-reduced-motion={reducedMotion}
       className={`wavelet-app relative h-dvh w-full max-w-full overflow-x-hidden overflow-y-auto select-none transition-colors duration-500 ${
-        isLight ? 'text-[#000000]' : 'text-[#FFFFFF]'
+        isLight ? 'text-foreground' : 'text-foreground'
       }`}
-      style={{
-        background: isLight
-          ? `radial-gradient(circle at 22% 12%, #EDFF8C45 0%, transparent 45%), radial-gradient(circle at 82% 18%, ${currentMood.primaryHex}18 0%, ${activeBgHex} 72%)`
-          : `radial-gradient(circle at 50% 18%, ${currentMood.primaryHex}22 0%, ${activeBgHex} 74%)`,
-      }}
     >
+      <ThreeTopographyBackground theme={themeMode} reducedMotion={reducedMotion} enabled={preferences.animatedBackground} />
       {/* Full-Viewport 3D Isometric Three.js Vinyl & Smooth Mascot Stage */}
       <IsometricVinylStage
         mood={currentMood}
@@ -1205,7 +1241,7 @@ export const WaveletGame: React.FC = () => {
             initial={{ opacity: 0, y: -12, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="pointer-events-none fixed top-16 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#000000] px-4 py-2 text-xs font-bold text-[#EDFF8C] shadow-xl"
+            className="pointer-events-none fixed top-16 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xl"
           >
             <Trophy weight="fill" className="h-4 w-4 shrink-0" />
             <span role="status">{lastXpToast}</span>
@@ -1213,19 +1249,14 @@ export const WaveletGame: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Offline PWA Connectivity Toast */}
-      {!isOnline && (
-        <div className="fixed top-3 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[#000000] px-4 py-1.5 text-xs font-bold text-[#EDFF8C] shadow-lg">
-          Offline Mode · Playing Cached Curated Crate
-        </div>
-      )}
+      {!isOnline && <div role="status" className="connectivity-banner"><WifiSlash size={15} /> Offline · Cached clips & practice grooves</div>}
 
       {/* Responsive Mobile-First Shell Container */}
       <div
         className={`wavelet-shell pointer-events-none relative z-20 mx-auto flex min-h-full w-full flex-col justify-between transition-all duration-300 ${
           isDesktopViewport && mobileFrameLocked
             ? isLight
-              ? 'max-w-[430px] border-x border-[#D1D1D1]/80 shadow-[0_0_60px_rgba(0,0,0,0.06)]'
+              ? 'max-w-[430px] border-x border-border/80 shadow-[0_0_60px_rgba(0,0,0,0.06)]'
               : 'max-w-[430px] border-x border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.75)]'
             : 'max-w-5xl'
         } pt-3.5 pb-3.5 px-3.5`}
@@ -1254,367 +1285,16 @@ export const WaveletGame: React.FC = () => {
             {/* Unobstructed 3D Center Stage */}
             <div className="pointer-events-none flex-1" />
 
-            {/* Bottom Minimal Card Dock (Distinct Game Modes + Difficulty Scaling + Crate Selector) */}
-            <motion.section
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-              aria-label="Game Configuration Dock"
-              data-testid="game-configuration"
-              className={`studio-game-dock pointer-events-auto rounded-[28px] border p-3.5 transition-all duration-300 space-y-2.5 ${
-                isLight
-                  ? 'border-[#D1D1D1] bg-[#FFFFFF]/96 text-[#000000] shadow-[0_16px_40px_rgba(0,0,0,0.06)]'
-                  : 'border-white/12 bg-[#12161D]/96 text-[#FFFFFF] shadow-2xl'
-              }`}
-            >
-              {/* Row 0: 4 Distinct Game Modes (Track, Artist, Genre, Year) + Difficulty Scaling */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span
-                    className={`text-[11px] font-bold tracking-tight ${
-                      isLight ? 'text-[#000000]/70' : 'text-white/70'
-                    }`}
-                  >
-                    Find your challenge
-                  </span>
-
-                  {/* Difficulty Tier Selector Pill (Chill 1.0x / Club 1.35x / Master 1.85x) */}
-                  <div
-                    className={`inline-flex items-center gap-0.5 rounded-full border p-0.5 ${
-                      isLight ? 'border-[#D1D1D1] bg-[#F1F1F1]' : 'border-white/15 bg-black/40'
-                    }`}
-                    role="group"
-                    aria-label="Difficulty Scaling"
-                  >
-                    {DIFFICULTY_TIERS.map((tier) => {
-                      const active = difficulty === tier.id;
-                      return (
-                        <button
-                          key={tier.id}
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() => handleSelectDifficulty(tier.id)}
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold transition-colors ${
-                            active
-                              ? 'bg-[#12786C] text-[#FFFFFF]'
-                              : isLight
-                                ? 'text-[#000000]/65 hover:text-[#000000]'
-                                : 'text-white/65 hover:text-white'
-                          }`}
-                        >
-                          {tier.shortLabel}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-4 gap-1.5" role="group" aria-label="Guessing Game Modes">
-                  {GAME_CHALLENGE_MODES.map((m) => {
-                    const isSelected = challengeMode === m.id;
-                    return (
-                      <motion.button
-                        key={m.id}
-                        type="button"
-                        whileTap={{ scale: 0.96 }}
-                        aria-pressed={isSelected}
-                        aria-label={`Guess the ${m.id}`}
-                        data-testid={`mode-${m.id}-btn`}
-                        onClick={() => handleSelectChallengeMode(m.id)}
-                        className={`flex flex-col justify-between rounded-[18px] border p-2 text-left transition-all min-w-0 ${
-                          isSelected
-                            ? isLight
-                              ? 'border-[#000000] bg-[#EDFF8C] text-[#000000] shadow-xs'
-                              : 'border-[#EDFF8C] bg-[#EDFF8C] text-[#000000]'
-                            : isLight
-                              ? 'border-[#D1D1D1] bg-[#F1F1F1]/75 text-[#000000] hover:bg-[#F1F1F1]'
-                              : 'border-white/10 bg-white/5 text-white hover:bg-white/10'
-                        }`}
-                      >
-                        <span className="text-[13px] font-extrabold tracking-tight">{m.id.charAt(0).toUpperCase() + m.id.slice(1)}</span>
-                        <span className="mt-1 text-[10px] opacity-65">{{ track: 'Name it', artist: 'Who sings?', genre: 'The vibe', year: 'Go back' }[m.id]}</span>
-                      </motion.button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Row 1: Horizontal Crate Selector Tabs + Progressive Disclosure "Tune Rules" Pill */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar flex-1 min-w-0">
-                  {QUICK_VIBE_CRATES.map((crate) => {
-                    const isSelected =
-                      filterMode === crate.mode &&
-                      filterValue === crate.value &&
-                      !customSearchTerm;
-                    return (
-                      <motion.button
-                        key={crate.id}
-                        type="button"
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleSelectFilterValue(crate.mode, crate.value)}
-                        className={`min-h-[34px] shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors whitespace-nowrap ${
-                          isSelected
-                            ? isLight
-                              ? 'bg-[#000000] text-[#FFFFFF]'
-                              : 'bg-[#EDFF8C] text-[#000000]'
-                            : isLight
-                              ? 'bg-[#F1F1F1] text-[#000000]/75 hover:bg-[#E5E5E5]'
-                              : 'bg-white/8 text-white/80 hover:bg-white/15'
-                        }`}
-                      >
-                        {crate.label}
-                      </motion.button>
-                    );
-                  })}
-
-                  <motion.button
-                    type="button"
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      audioEngine.playUiTick(1.1, 'light');
-                      if (!connectedProfile) {
-                        setIsAccountModalOpen(true);
-                      } else {
-                        handleSelectFilterValue('account', 'Synced');
-                      }
-                    }}
-                    className={`min-h-[34px] shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-colors whitespace-nowrap ${
-                      filterMode === 'account'
-                        ? 'bg-[#12786C] text-[#FFFFFF]'
-                        : isLight
-                          ? 'bg-[#F1F1F1] text-[#000000]/75 hover:bg-[#E5E5E5]'
-                          : 'bg-white/8 text-white/80 hover:bg-white/15'
-                    }`}
-                  >
-                    My Crate
-                  </motion.button>
-                </div>
-
-                {/* Tune Rules Button */}
-                <motion.button
-                  type="button"
-                  whileTap={{ scale: 0.94 }}
-                  data-testid="tune-rules-btn"
-                  onClick={() => {
-                    audioEngine.playTabSwitch(!isRulesDrawerOpen);
-                    setIsRulesDrawerOpen((prev) => !prev);
-                  }}
-                  aria-expanded={isRulesDrawerOpen}
-                  className={`inline-flex min-h-[34px] shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-colors whitespace-nowrap ${
-                    isRulesDrawerOpen
-                      ? 'border-[#12786C] bg-[#12786C] text-[#FFFFFF]'
-                      : isLight
-                        ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
-                        : 'border-white/15 bg-white/10 text-white hover:bg-white/15'
-                  }`}
-                >
-                  <SlidersHorizontal weight="bold" className="h-3.5 w-3.5" />
-                  <span>{isRulesDrawerOpen ? 'Done' : `${snippetDuration}s · ${songCount}`}</span>
-                </motion.button>
-              </div>
-
-              {/* Progressive Disclosure Studio Customizer Drawer */}
-              <AnimatePresence>
-                {isRulesDrawerOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                    className="studio-rules-scroll overflow-hidden"
-                  >
-                    <div
-                      className={`rounded-[22px] border p-3 space-y-3 ${
-                        isLight
-                          ? 'border-[#D1D1D1] bg-[#F1F1F1]/75'
-                          : 'border-white/10 bg-black/40'
-                      }`}
-                    >
-                      {/* Snippet Duration Selector (1s, 3s, 5s, 10s, 15s, 30s) */}
-                      <div>
-                        <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span
-                            className={`font-semibold ${
-                              isLight ? 'text-[#000000]/65' : 'text-white/65'
-                            }`}
-                          >
-                            Snippet Play Time
-                          </span>
-                          <span className="font-mono font-bold tabular-nums text-[#12786C]">
-                            Up to +{potentialPoints} pts
-                          </span>
-                        </div>
-                        <div
-                          className={`grid grid-cols-6 gap-1 rounded-full p-1 ${
-                            isLight ? 'bg-[#FFFFFF] border border-[#D1D1D1]' : 'bg-black/50'
-                          }`}
-                        >
-                          {SNIPPET_OPTIONS.map((sec) => (
-                            <button
-                              key={sec}
-                              type="button"
-                              onClick={() => {
-                                audioEngine.playUiTick(1 + (30 - sec) * 0.01, 'selection');
-                                setSnippetDuration(sec);
-                              }}
-                              className={`min-h-[32px] rounded-full text-xs font-mono font-bold tabular-nums transition-colors ${
-                                snippetDuration === sec
-                                  ? isLight
-                                    ? 'bg-[#000000] text-[#FFFFFF]'
-                                    : 'bg-[#EDFF8C] text-[#000000]'
-                                  : isLight
-                                    ? 'text-[#000000]/70 hover:text-[#000000]'
-                                    : 'text-white/70 hover:text-white'
-                              }`}
-                            >
-                              {sec}s
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Song Count & Judge Mode */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <span
-                            className={`block text-[11px] font-semibold mb-1 ${
-                              isLight ? 'text-[#000000]/65' : 'text-white/65'
-                            }`}
-                          >
-                            Songs (Rounds)
-                          </span>
-                          <div
-                            className={`grid grid-cols-3 gap-1 rounded-full p-1 ${
-                              isLight ? 'bg-[#FFFFFF] border border-[#D1D1D1]' : 'bg-black/50'
-                            }`}
-                          >
-                            {SONG_COUNT_OPTIONS.map((count) => (
-                              <button
-                                key={count}
-                                type="button"
-                                onClick={() => {
-                                  audioEngine.playUiTick(1.05, 'selection');
-                                  setSongCount(count);
-                                }}
-                                className={`min-h-[32px] rounded-full text-xs font-mono font-bold tabular-nums transition-colors ${
-                                  songCount === count
-                                    ? 'bg-[#12786C] text-[#FFFFFF]'
-                                    : isLight
-                                      ? 'text-[#000000]/70 hover:text-[#000000]'
-                                      : 'text-white/70 hover:text-white'
-                                }`}
-                              >
-                                {count}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <span
-                            className={`block text-[11px] font-semibold mb-1 ${
-                              isLight ? 'text-[#000000]/65' : 'text-white/65'
-                            }`}
-                          >
-                            Answer Format
-                          </span>
-                          <div
-                            className={`grid grid-cols-2 gap-1 rounded-full p-1 ${
-                              isLight ? 'bg-[#FFFFFF] border border-[#D1D1D1]' : 'bg-black/50'
-                            }`}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                audioEngine.playUiTick(1.05, 'selection');
-                                setPlayMode('quiz-4choice');
-                              }}
-                              className={`min-h-[32px] rounded-full text-[11px] font-bold transition-colors whitespace-nowrap px-2 ${
-                                playMode === 'quiz-4choice'
-                                  ? isLight
-                                    ? 'bg-[#000000] text-[#FFFFFF]'
-                                    : 'bg-[#EDFF8C] text-[#000000]'
-                                  : isLight
-                                    ? 'text-[#000000]/70'
-                                    : 'text-white/70'
-                              }`}
-                            >
-                              4-Choice
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                audioEngine.playUiTick(1.05, 'selection');
-                                setPlayMode('party-30s');
-                              }}
-                              className={`min-h-[32px] rounded-full text-[11px] font-bold transition-colors whitespace-nowrap px-2 ${
-                                playMode === 'party-30s'
-                                  ? isLight
-                                    ? 'bg-[#000000] text-[#FFFFFF]'
-                                    : 'bg-[#EDFF8C] text-[#000000]'
-                                  : isLight
-                                    ? 'text-[#000000]/70'
-                                    : 'text-white/70'
-                              }`}
-                            >
-                              30s Judge
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Custom Artist / Era / Genre Search Input */}
-                      <div className="relative flex items-center">
-                        <MagnifyingGlass
-                          weight="bold"
-                          className={`pointer-events-none absolute left-3.5 h-4 w-4 ${
-                            isLight ? 'text-[#000000]/45' : 'text-white/45'
-                          }`}
-                        />
-                        <input
-                          type="text"
-                          value={customSearchTerm}
-                          onChange={(e) => setCustomSearchTerm(e.target.value)}
-                          placeholder="Search artist, genre, or year (e.g. Daft Punk, SZA, 1998)..."
-                          aria-label="Custom artist, genre, or year search"
-                          className={`w-full rounded-full border pl-9 pr-3.5 py-2 text-xs focus:outline-none ${
-                            isLight
-                              ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000] placeholder-[#000000]/40 focus:border-[#12786C]'
-                              : 'border-white/15 bg-black/50 text-white placeholder-white/40 focus:border-[#12786C]'
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Primary CTA Button (with data-start="true") */}
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.98 }}
-                data-start="true"
-                onClick={() => startNewGame()}
-                className={`flex min-h-[50px] w-full items-center justify-between rounded-full px-5 py-2.5 text-sm font-bold tracking-tight transition-colors whitespace-nowrap ${primaryBtnClasses}`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Play weight="fill" className="h-4 w-4 shrink-0" />
-                  <span className="truncate">
-                    Let’s play
-                  </span>
-                </div>
-                <span
-                  className={`ml-2 shrink-0 rounded-full px-2.5 py-0.5 font-mono text-xs font-bold tabular-nums ${
-                    isLight
-                      ? 'bg-[#EDFF8C] text-[#000000]'
-                      : 'bg-[#000000] text-[#EDFF8C]'
-                  }`}
-                >
-                  {songCount} songs · {snippetDuration}s
-                </span>
-              </motion.button>
-            </motion.section>
+            <GameSetup challenge={challengeMode} onChallenge={handleSelectChallengeMode}
+              difficulty={difficulty} onDifficulty={handleSelectDifficulty}
+              duration={snippetDuration} onDuration={setSnippetDuration} count={songCount} onCount={setSongCount}
+              playMode={playMode} onPlayMode={setPlayMode} rulesOpen={isRulesDrawerOpen} onRulesOpen={setIsRulesDrawerOpen}
+              reducedMotion={reducedMotion} loading={isLoadingSongs || isStartingGame} availableTracks={songPool.length} error={crateError}
+              onStart={() => { void startNewGame(); }} mode={filterMode} value={filterValue} artist={selectedArtist} customSearch={customSearchTerm}
+              onSelect={(mode, value) => { void handleSelectFilterValue(mode, value); }}
+              onArtist={artist => { audioEngine.playUiTick(1.1); setSelectedArtist(artist); setFilterMode('artist'); setFilterValue(artist.name); setCustomSearchTerm(''); void fetchLiveCrate('artist', artist.name, undefined, artist); }}
+              onSearch={term => { setCustomSearchTerm(term); setSelectedArtist(null); setFilterMode('genre'); setFilterValue('All'); void fetchLiveCrate('genre', 'All', term); }}
+              onAccount={() => { if (connectedProfile?.customTracks.length) { setSelectedArtist(null); setCustomSearchTerm(''); setFilterMode('account'); setFilterValue(connectedProfile.displayName); void fetchLiveCrate('account', connectedProfile.displayName); } else setIsAccountModalOpen(true); }} />
           </>
         )}
 
@@ -1632,8 +1312,8 @@ export const WaveletGame: React.FC = () => {
               <div
                 className={`flex items-center justify-between gap-2 rounded-[24px] border px-3.5 py-2.5 shadow-sm transition-colors ${
                   isLight
-                    ? 'border-[#D1D1D1] bg-[#FFFFFF]/95 text-[#000000]'
-                    : 'border-white/12 bg-[#12161D]/95 text-[#FFFFFF]'
+                    ? 'border-border bg-card/95 text-foreground'
+                    : 'border-white/12 bg-card/95 text-foreground'
                 }`}
               >
                 {/* Score, Streak, Mode & Round Readouts (Tabular Numerals) */}
@@ -1641,7 +1321,7 @@ export const WaveletGame: React.FC = () => {
                   <div>
                     <div
                       className={`text-[10px] font-semibold ${
-                        isLight ? 'text-[#000000]/55' : 'text-white/55'
+                        isLight ? 'text-muted-foreground' : 'text-muted-foreground'
                       }`}
                     >
                       Score
@@ -1657,7 +1337,7 @@ export const WaveletGame: React.FC = () => {
                   <div>
                     <div
                       className={`flex items-center gap-1 text-[10px] font-semibold ${
-                        isLight ? 'text-[#000000]/55' : 'text-white/55'
+                        isLight ? 'text-muted-foreground' : 'text-muted-foreground'
                       }`}
                     >
                       <span>Streak</span>
@@ -1665,7 +1345,7 @@ export const WaveletGame: React.FC = () => {
                         <Fire weight="fill" className="h-3.5 w-3.5 text-[#E07A47]" />
                       )}
                     </div>
-                    <div className="text-lg font-bold font-mono tabular-nums text-[#12786C]">
+                    <div className="text-lg font-bold font-mono tabular-nums text-primary">
                       {roundFeedback?.answered
                         ? roundFeedback.correct
                           ? session.streak + 1
@@ -1678,7 +1358,7 @@ export const WaveletGame: React.FC = () => {
                   <div className="min-w-0">
                     <div
                       className={`text-[10px] font-semibold truncate ${
-                        isLight ? 'text-[#000000]/55' : 'text-white/55'
+                        isLight ? 'text-muted-foreground' : 'text-muted-foreground'
                       }`}
                     >
                       {activeChallengeModeDef.shortLabel} · {activeDifficultyDef.shortLabel}
@@ -1701,9 +1381,9 @@ export const WaveletGame: React.FC = () => {
                       setIsPassModalOpen(true);
                     }}
                     aria-label="Open User Profile and Vinyl Pass"
-                    className="inline-flex h-9 items-center gap-1 rounded-full bg-[#EDFF8C] px-2.5 text-xs font-bold text-[#000000]"
+                    className="inline-flex h-9 items-center gap-1 rounded-full bg-secondary px-2.5 text-xs font-bold text-foreground"
                   >
-                    <Coins weight="fill" className="h-3.5 w-3.5 text-[#12786C]" />
+                    <Coins weight="fill" className="h-3.5 w-3.5 text-primary" />
                     <span className="font-mono tabular-nums">{progression.coins}</span>
                   </motion.button>
 
@@ -1750,8 +1430,8 @@ export const WaveletGame: React.FC = () => {
                 }}
                 className={`mb-1.5 inline-flex min-h-[28px] items-center gap-1.5 rounded-full border px-3.5 py-1 text-[11px] font-bold transition-colors ${
                   isLight
-                    ? 'border-[#D1D1D1] bg-[#FFFFFF]/92 text-[#000000]/75 hover:text-[#000000]'
-                    : 'border-white/15 bg-[#12161D]/90 text-white/80 hover:text-white'
+                    ? 'border-border bg-card/92 text-foreground/75 hover:text-foreground'
+                    : 'border-white/15 bg-card/90 text-white/80 hover:text-white'
                 }`}
               >
                 {isDockCollapsed ? (
@@ -1775,10 +1455,10 @@ export const WaveletGame: React.FC = () => {
                     exit={{ opacity: 0, y: 16 }}
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                     aria-label="Active Song Quiz Controls"
-                    className={`w-full overflow-hidden rounded-[28px] border p-3.5 space-y-2.5 transition-colors ${
+                    className={`w-full overflow-hidden squircle border p-3.5 space-y-2.5 transition-colors ${
                       isLight
-                        ? 'border-[#D1D1D1] bg-[#FFFFFF]/96 text-[#000000] shadow-[0_16px_40px_rgba(0,0,0,0.08)]'
-                        : 'border-white/12 bg-[#12161D]/96 text-[#FFFFFF] shadow-2xl'
+                        ? 'border-border bg-card/96 text-foreground shadow-[0_16px_40px_rgba(0,0,0,0.08)]'
+                        : 'border-white/12 bg-card/96 text-foreground shadow-2xl'
                     }`}
                   >
                     {/* Waveform & Cover Card (IMG_5813 + IMG_5847!) */}
@@ -1834,11 +1514,11 @@ export const WaveletGame: React.FC = () => {
                             }
                             className={`flex min-h-[36px] min-w-0 items-center justify-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
                               isLight
-                                ? 'bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                                ? 'bg-muted text-foreground hover:bg-[#E5E5E5]'
                                 : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                           >
-                            <Play weight="fill" className="h-3.5 w-3.5 shrink-0 text-[#12786C]" />
+                            <Play weight="fill" className="h-3.5 w-3.5 shrink-0 text-primary" />
                             <span className="truncate">
                               {isPlayingSnippet ? `${snippetDuration}s` : 'Replay'}
                             </span>
@@ -1860,8 +1540,8 @@ export const WaveletGame: React.FC = () => {
                             }}
                             className={`flex min-h-[36px] min-w-0 items-center justify-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
                               snippetDuration >= 30
-                                ? 'opacity-45 cursor-not-allowed bg-[#F1F1F1] text-[#000000]'
-                                : 'bg-[#EDFF8C] text-[#000000]'
+                                ? 'opacity-45 cursor-not-allowed bg-muted text-foreground'
+                                : 'bg-secondary text-foreground'
                             }`}
                           >
                             <Timer weight="bold" className="h-3.5 w-3.5 shrink-0" />
@@ -1881,7 +1561,7 @@ export const WaveletGame: React.FC = () => {
                             }}
                             className={`flex min-h-[36px] min-w-0 items-center justify-center rounded-full border px-2.5 py-1 text-xs font-bold transition-colors ${
                               isLight
-                                ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]/80 hover:bg-[#F1F1F1]'
+                                ? 'border-border bg-card text-foreground/80 hover:bg-muted'
                                 : 'border-white/15 bg-white/5 text-white/85 hover:bg-white/10'
                             }`}
                           >
@@ -1894,7 +1574,7 @@ export const WaveletGame: React.FC = () => {
                         {/* Row 2: Studio Power-Up Boosters (3 equal columns inside a pill container) */}
                         <div
                           className={`grid grid-cols-3 gap-1.5 rounded-full p-1 ${
-                            isLight ? 'bg-[#F1F1F1]' : 'bg-white/8'
+                            isLight ? 'bg-muted' : 'bg-white/8'
                           }`}
                         >
                           <motion.button
@@ -1904,13 +1584,13 @@ export const WaveletGame: React.FC = () => {
                             onClick={handleUseArtistHint}
                             className={`flex min-h-[32px] min-w-0 items-center justify-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold transition-colors ${
                               artistHintText
-                                ? 'bg-[#12786C] text-[#FFFFFF]'
+                                ? 'bg-primary text-primary-foreground'
                                 : isLight
-                                  ? 'bg-[#FFFFFF] text-[#000000] shadow-2xs hover:bg-[#EDFF8C]'
+                                  ? 'bg-card text-foreground shadow-2xs hover:bg-secondary'
                                   : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                           >
-                            <Lightbulb weight="fill" className="h-3.5 w-3.5 shrink-0 text-[#12786C]" />
+                            <Lightbulb weight="fill" className="h-3.5 w-3.5 shrink-0" />
                             <span className="truncate">{artistHintText ? 'Clue On' : 'Clue'}</span>
                           </motion.button>
 
@@ -1921,9 +1601,9 @@ export const WaveletGame: React.FC = () => {
                             onClick={handleUseFiftyFifty}
                             className={`flex min-h-[32px] min-w-0 items-center justify-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold transition-colors ${
                               eliminatedOptionIds.length > 0
-                                ? 'bg-[#12786C] text-[#FFFFFF]'
+                                ? 'bg-primary text-primary-foreground'
                                 : isLight
-                                  ? 'bg-[#FFFFFF] text-[#000000] shadow-2xs hover:bg-[#EDFF8C]'
+                                  ? 'bg-card text-foreground shadow-2xs hover:bg-secondary'
                                   : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                           >
@@ -1938,13 +1618,13 @@ export const WaveletGame: React.FC = () => {
                             onClick={handleUseDoubleBoost}
                             className={`flex min-h-[32px] min-w-0 items-center justify-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold transition-colors ${
                               doubleBoostActive
-                                ? 'bg-[#EDFF8C] text-[#000000]'
+                                ? 'bg-secondary text-foreground'
                                 : isLight
-                                  ? 'bg-[#FFFFFF] text-[#000000] shadow-2xs hover:bg-[#EDFF8C]'
+                                  ? 'bg-card text-foreground shadow-2xs hover:bg-secondary'
                                   : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                           >
-                            <Lightning weight="fill" className="h-3.5 w-3.5 shrink-0 text-[#12786C]" />
+                            <Lightning weight="fill" className="h-3.5 w-3.5 shrink-0 text-primary" />
                             <span className="truncate">{doubleBoostActive ? '2x On' : '2x Boost'}</span>
                           </motion.button>
                         </div>
@@ -1954,7 +1634,7 @@ export const WaveletGame: React.FC = () => {
                     {/* Active Mode Prompt Header */}
                     {!roundFeedback?.answered && (
                       <div className="flex items-center justify-between px-1 text-[11px]">
-                        <span className="font-bold text-[#12786C] truncate">
+                        <span className="font-bold text-primary truncate">
                           {activeChallengeModeDef.badgeCode} · {activeChallengeModeDef.promptLabel}
                         </span>
                         <span className="font-mono font-bold tabular-nums opacity-65 shrink-0 ml-2">
@@ -1988,7 +1668,7 @@ export const WaveletGame: React.FC = () => {
                               type="button"
                               whileTap={{ scale: 0.97 }}
                               onClick={() => handleJudgeAnswer(true)}
-                              className="flex min-h-[46px] items-center justify-center gap-1.5 rounded-full bg-[#000000] px-4 py-2 text-xs font-bold text-[#EDFF8C] shadow-md whitespace-nowrap"
+                              className="flex min-h-[46px] items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-md whitespace-nowrap"
                             >
                               <Check weight="bold" className="h-4 w-4 shrink-0" />
                               <span>Right (+{potentialPoints})</span>
@@ -2000,7 +1680,7 @@ export const WaveletGame: React.FC = () => {
                               onClick={() => handleJudgeAnswer(false)}
                               className={`flex min-h-[46px] items-center justify-center gap-1.5 rounded-full border px-4 py-2 text-xs font-bold whitespace-nowrap ${
                                 isLight
-                                  ? 'border-[#D1D1D1] bg-[#F1F1F1] text-[#000000]'
+                                  ? 'border-border bg-muted text-foreground'
                                   : 'border-white/15 bg-white/10 text-white'
                               }`}
                             >
@@ -2026,10 +1706,10 @@ export const WaveletGame: React.FC = () => {
                               onClick={() => handleJudgeAnswer(option.isCorrect, option.id)}
                               className={`flex min-h-[48px] min-w-0 flex-col justify-center rounded-[18px] border px-3 py-1.5 text-left transition-colors ${
                                 isEliminated
-                                  ? 'opacity-30 line-through cursor-not-allowed border-[#D1D1D1]'
+                                  ? 'opacity-30 line-through cursor-not-allowed border-border'
                                   : isLight
-                                    ? 'border-[#D1D1D1] bg-[#F1F1F1]/70 hover:bg-[#EDFF8C] hover:border-[#000000]/20'
-                                    : 'border-white/12 bg-white/5 hover:bg-[#EDFF8C] hover:text-[#000000]'
+                                    ? 'border-border bg-muted/70 hover:bg-secondary hover:border-[#000000]/20'
+                                    : 'border-white/12 bg-white/5 hover:bg-secondary hover:text-foreground'
                               }`}
                             >
                               <span className="truncate text-xs font-bold">
@@ -2051,12 +1731,12 @@ export const WaveletGame: React.FC = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className={`flex items-center justify-between gap-2.5 rounded-[20px] border p-2.5 ${
                           isLight
-                            ? 'border-[#D1D1D1] bg-[#F1F1F1]'
+                            ? 'border-border bg-muted'
                             : 'border-white/15 bg-black/50'
                         }`}
                       >
                         <div className="min-w-0 pl-1">
-                          <div className="text-xs font-bold text-[#12786C]">
+                          <div className="text-xs font-bold text-primary">
                             {roundFeedback.correct
                               ? `Correct · +${roundFeedback.points} pts · +${roundFeedback.xpGained} XP`
                               : `Missed ${activeChallengeModeDef.shortLabel} · +${roundFeedback.xpGained} XP`}
@@ -2099,23 +1779,23 @@ export const WaveletGame: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="pause-modal-title"
-            className={`pointer-events-auto my-auto mx-auto w-full max-w-sm rounded-[28px] border p-6 text-center shadow-2xl space-y-4 ${
+            className={`pointer-events-auto my-auto mx-auto w-full max-w-sm squircle border p-6 text-center shadow-2xl space-y-4 ${
               isLight
-                ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
-                : 'border-white/15 bg-[#12161D] text-[#FFFFFF]'
+                ? 'border-border bg-card text-foreground'
+                : 'border-white/15 bg-card text-foreground'
             }`}
           >
             <h2 id="pause-modal-title" className="text-2xl font-bold tracking-tight">
               Session Paused
             </h2>
-            <p className={`text-xs ${isLight ? 'text-[#000000]/60' : 'text-white/60'}`}>
+            <p className={`text-xs ${isLight ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
               {activeChallengeModeDef.title} ({activeDifficultyDef.shortLabel}) · Round{' '}
               {session.currentIndex + 1} of {session.playlist.length}
             </p>
 
             <div
               className={`grid grid-cols-2 gap-3 rounded-[22px] p-3.5 ${
-                isLight ? 'bg-[#F1F1F1]' : 'bg-black/40'
+                isLight ? 'bg-muted' : 'bg-black/40'
               }`}
             >
               <div>
@@ -2126,7 +1806,7 @@ export const WaveletGame: React.FC = () => {
               </div>
               <div>
                 <div className="text-[11px] font-semibold opacity-60">Streak</div>
-                <div className="text-2xl font-bold font-mono tabular-nums text-[#12786C]">
+                <div className="text-2xl font-bold font-mono tabular-nums text-primary">
                   {session.streak}x
                 </div>
               </div>
@@ -2136,10 +1816,7 @@ export const WaveletGame: React.FC = () => {
               <motion.button
                 type="button"
                 whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  audioEngine.playUiTick(1.1, 'medium');
-                  setSession((prev) => ({ ...prev, status: 'playing' }));
-                }}
+                onClick={resumeGame}
                 className={`flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold ${primaryBtnClasses}`}
               >
                 <Play weight="fill" className="h-4 w-4" />
@@ -2152,7 +1829,7 @@ export const WaveletGame: React.FC = () => {
                 onClick={() => startNewGame()}
                 className={`flex min-h-[46px] w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition-colors ${
                   isLight
-                    ? 'bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                    ? 'bg-muted text-foreground hover:bg-[#E5E5E5]'
                     : 'bg-white/10 text-white hover:bg-white/15'
                 }`}
               >
@@ -2184,22 +1861,22 @@ export const WaveletGame: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="gameover-modal-title"
-            className={`pointer-events-auto my-auto mx-auto flex max-h-[88vh] w-full max-w-md flex-col rounded-[28px] border p-5 shadow-2xl ${
+            className={`pointer-events-auto my-auto mx-auto flex max-h-[88vh] w-full max-w-md flex-col squircle border p-5 shadow-2xl ${
               isLight
-                ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
-                : 'border-white/15 bg-[#12161D] text-[#FFFFFF]'
+                ? 'border-border bg-card text-foreground'
+                : 'border-white/15 bg-card text-foreground'
             }`}
           >
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs font-semibold text-[#12786C]">
+                <div className="text-xs font-semibold text-primary">
                   {activeChallengeModeDef.title} · Level {tierInfo.level} {tierInfo.name}
                 </div>
                 <h2 id="gameover-modal-title" className="text-2xl font-bold tracking-tight">
                   Session Summary
                 </h2>
               </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#EDFF8C] font-mono text-xs font-bold text-[#000000]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary font-mono text-xs font-bold text-foreground">
                 {session.bestStreak}x
               </div>
             </div>
@@ -2227,15 +1904,15 @@ export const WaveletGame: React.FC = () => {
                     key={`${item.song.id}-${idx}`}
                     className={`flex items-center justify-between gap-2.5 rounded-[20px] border p-3 ${
                       item.correct && isLight
-                        ? 'border-[#000000]/10 bg-[#EDFF8C]/55'
+                        ? 'border-[#000000]/10 bg-secondary/55'
                         : isLight
-                          ? 'border-[#D1D1D1] bg-[#F1F1F1]/70'
+                          ? 'border-border bg-muted/70'
                           : 'border-white/10 bg-white/5'
                     }`}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-xs font-bold text-[#12786C]">
+                        <span className="font-mono text-xs font-bold text-primary">
                           {item.correct ? `+${item.pointsEarned}` : '0'}
                         </span>
                         <span aria-hidden="true" className="opacity-40">
@@ -2256,7 +1933,7 @@ export const WaveletGame: React.FC = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Add ${item.song.title} to Spotify`}
-                        className="flex h-9 w-9 items-center justify-center rounded-full bg-[#000000] text-[#1DB954]"
+                        className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-[#1DB954]"
                       >
                         <SpotifyLogo weight="fill" className="h-4 w-4" />
                       </a>
@@ -2267,7 +1944,7 @@ export const WaveletGame: React.FC = () => {
                         aria-label={`Open ${item.song.title} in Apple Music`}
                         className={`flex h-9 w-9 items-center justify-center rounded-full border ${
                           isLight
-                            ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#FA243C]'
+                            ? 'border-border bg-card text-[#FA243C]'
                             : 'border-white/15 bg-white/10 text-[#FA243C]'
                         }`}
                       >
@@ -2305,7 +1982,7 @@ export const WaveletGame: React.FC = () => {
                 }}
                 className={`flex min-h-[48px] items-center justify-center rounded-full px-4 py-2.5 text-sm font-bold ${
                   isLight
-                    ? 'bg-[#F1F1F1] text-[#000000] hover:bg-[#E5E5E5]'
+                    ? 'bg-muted text-foreground hover:bg-[#E5E5E5]'
                     : 'bg-white/10 text-white hover:bg-white/15'
                 }`}
               >
@@ -2326,7 +2003,7 @@ export const WaveletGame: React.FC = () => {
               {/* Header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-semibold text-[#12786C]">
+                  <span className="text-xs font-semibold text-primary">
                     Level {tierInfo.level} · {tierInfo.name}
                   </span>
                   <h2 id="vinyl-pass-title" className="text-xl font-bold tracking-tight">
@@ -2351,7 +2028,7 @@ export const WaveletGame: React.FC = () => {
               {/* Sub-Navigation Pill Switcher: Profile | Mode Stats | Quests & Badges */}
               <div
                 className={`grid grid-cols-3 gap-1 rounded-full border p-1 ${
-                  isLight ? 'border-[#D1D1D1] bg-[#F1F1F1]' : 'border-white/12 bg-black/40'
+                  isLight ? 'border-border bg-muted' : 'border-white/12 bg-black/40'
                 }`}
               >
                 {(
@@ -2371,11 +2048,11 @@ export const WaveletGame: React.FC = () => {
                     className={`min-h-[34px] rounded-full text-xs font-bold transition-colors ${
                       passModalTab === tab.id
                         ? isLight
-                          ? 'bg-[#000000] text-[#FFFFFF]'
-                          : 'bg-[#EDFF8C] text-[#000000]'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-secondary text-foreground'
                         : isLight
-                          ? 'text-[#000000]/65 hover:text-[#000000]'
-                          : 'text-white/65 hover:text-white'
+                          ? 'text-muted-foreground hover:text-foreground'
+                          : 'text-muted-foreground hover:text-white'
                     }`}
                   >
                     {tab.label}
@@ -2390,7 +2067,7 @@ export const WaveletGame: React.FC = () => {
                   <div
                     className={`rounded-[24px] border p-4 space-y-3 ${
                       isLight
-                        ? 'border-[#D1D1D1] bg-[#F1F1F1]/65'
+                        ? 'border-border bg-muted/65'
                         : 'border-white/12 bg-white/5'
                     }`}
                   >
@@ -2399,7 +2076,7 @@ export const WaveletGame: React.FC = () => {
                         <img
                           src={activeCharacter.avatarImg}
                           alt={activeCharacter.name}
-                          className="h-12 w-12 rounded-2xl object-cover border border-[#12786C] shrink-0"
+                          className="h-12 w-12 rounded-2xl object-cover border border-primary shrink-0"
                         />
                         <div className="min-w-0">
                           <div className="truncate text-base font-extrabold tracking-tight">
@@ -2408,7 +2085,7 @@ export const WaveletGame: React.FC = () => {
                           <div className="truncate text-xs opacity-65">
                             {progression.tagline}
                           </div>
-                          <div className="mt-0.5 font-mono text-[10px] font-bold text-[#12786C]">
+                          <div className="mt-0.5 font-mono text-[10px] font-bold text-primary">
                             {authUser
                               ? 'Cloud Account Synced'
                               : 'Local Studio Profile · Sign in to sync'}
@@ -2430,7 +2107,7 @@ export const WaveletGame: React.FC = () => {
                     </div>
 
                     {isEditingProfile && (
-                      <div className="space-y-2 pt-2 border-t border-[#D1D1D1]/60 dark:border-white/10">
+                      <div className="space-y-2 pt-2 border-t border-border/60 dark:border-white/10">
                         <div>
                           <label className="block text-[10px] font-bold uppercase opacity-60 mb-1">
                             Selector Callsign (Max 40 chars)
@@ -2442,7 +2119,7 @@ export const WaveletGame: React.FC = () => {
                             onChange={(e) => setDraftCallsign(e.target.value)}
                             className={`w-full rounded-full border px-3.5 py-2 text-xs font-bold focus:outline-none ${
                               isLight
-                                ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
+                                ? 'border-border bg-card text-foreground'
                                 : 'border-white/15 bg-black/50 text-white'
                             }`}
                           />
@@ -2458,7 +2135,7 @@ export const WaveletGame: React.FC = () => {
                             onChange={(e) => setDraftTagline(e.target.value)}
                             className={`w-full rounded-full border px-3.5 py-2 text-xs focus:outline-none ${
                               isLight
-                                ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
+                                ? 'border-border bg-card text-foreground'
                                 : 'border-white/15 bg-black/50 text-white'
                             }`}
                           />
@@ -2481,7 +2158,7 @@ export const WaveletGame: React.FC = () => {
                           onClick={handleGoogleSignOut}
                           className={`flex min-h-[38px] w-full items-center justify-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold ${
                             isLight
-                              ? 'border-[#D1D1D1] bg-[#FFFFFF] text-[#000000]'
+                              ? 'border-border bg-card text-foreground'
                               : 'border-white/15 bg-white/10 text-white'
                           }`}
                         >
@@ -2507,7 +2184,7 @@ export const WaveletGame: React.FC = () => {
                   </div>
 
                   {/* Acid-Lime Overall Score & Personal Best Banner */}
-                  <div className="grid grid-cols-2 gap-2.5 rounded-[22px] bg-[#EDFF8C] p-3.5 text-[#000000]">
+                  <div className="grid grid-cols-2 gap-2.5 rounded-[22px] bg-secondary p-3.5 text-foreground">
                     <div>
                       <div className="text-[11px] font-semibold opacity-70">Overall Score</div>
                       <div className="font-mono text-2xl font-extrabold tabular-nums">
@@ -2519,7 +2196,7 @@ export const WaveletGame: React.FC = () => {
                     </div>
                     <div className="border-l border-[#000000]/15 pl-3">
                       <div className="text-[11px] font-semibold opacity-70">Personal Best Set</div>
-                      <div className="font-mono text-2xl font-extrabold tabular-nums text-[#12786C]">
+                      <div className="font-mono text-2xl font-extrabold tabular-nums text-primary">
                         {progression.bestSetScore}
                       </div>
                       <div className="text-[10px] font-semibold opacity-75">
@@ -2532,7 +2209,7 @@ export const WaveletGame: React.FC = () => {
                   <div className="grid grid-cols-3 gap-2">
                     <div
                       className={`rounded-[18px] border p-3 ${
-                        isLight ? 'border-[#D1D1D1] bg-[#F1F1F1]/60' : 'border-white/10 bg-white/5'
+                        isLight ? 'border-border bg-muted/60' : 'border-white/10 bg-white/5'
                       }`}
                     >
                       <div className="text-[10px] font-semibold opacity-60">Win / Loss</div>
@@ -2540,18 +2217,18 @@ export const WaveletGame: React.FC = () => {
                         {progression.totalWins ?? progression.totalCorrect}W -{' '}
                         {progression.totalLosses ?? 0}L
                       </div>
-                      <div className="font-mono text-[10px] font-bold text-[#12786C]">
+                      <div className="font-mono text-[10px] font-bold text-primary">
                         {overallWlStats.ratioFormatted}
                       </div>
                     </div>
 
                     <div
                       className={`rounded-[18px] border p-3 ${
-                        isLight ? 'border-[#D1D1D1] bg-[#F1F1F1]/60' : 'border-white/10 bg-white/5'
+                        isLight ? 'border-border bg-muted/60' : 'border-white/10 bg-white/5'
                       }`}
                     >
                       <div className="text-[10px] font-semibold opacity-60">Win Rate</div>
-                      <div className="mt-0.5 font-mono text-base font-extrabold tabular-nums text-[#12786C]">
+                      <div className="mt-0.5 font-mono text-base font-extrabold tabular-nums text-primary">
                         {overallWlStats.winRatePercent}%
                       </div>
                       <div className="font-mono text-[10px] opacity-65">
@@ -2561,7 +2238,7 @@ export const WaveletGame: React.FC = () => {
 
                     <div
                       className={`rounded-[18px] border p-3 ${
-                        isLight ? 'border-[#D1D1D1] bg-[#F1F1F1]/60' : 'border-white/10 bg-white/5'
+                        isLight ? 'border-border bg-muted/60' : 'border-white/10 bg-white/5'
                       }`}
                     >
                       <div className="text-[10px] font-semibold opacity-60">Fastest Ear</div>
@@ -2587,7 +2264,7 @@ export const WaveletGame: React.FC = () => {
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between text-xs font-bold opacity-70">
                     <span>Performance by Game Mode</span>
-                    <ChartBar weight="bold" className="h-4 w-4 text-[#12786C]" />
+                    <ChartBar weight="bold" className="h-4 w-4 text-primary" />
                   </div>
 
                   <div className="grid grid-cols-1 gap-2.5">
@@ -2606,25 +2283,25 @@ export const WaveletGame: React.FC = () => {
                           key={m.id}
                           className={`rounded-[22px] border p-3.5 transition-colors ${
                             isLight
-                              ? 'border-[#D1D1D1] bg-[#F1F1F1]/65'
+                              ? 'border-border bg-muted/65'
                               : 'border-white/12 bg-white/5'
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <div>
-                              <span className="font-mono text-[10px] font-bold text-[#12786C]">
+                              <span className="font-mono text-[10px] font-bold text-primary">
                                 {m.badgeCode}
                               </span>
                               <h3 className="text-sm font-extrabold tracking-tight">
                                 {m.title} ({m.shortLabel})
                               </h3>
                             </div>
-                            <span className="rounded-full bg-[#EDFF8C] px-2.5 py-0.5 font-mono text-xs font-bold text-[#000000] tabular-nums">
+                            <span className="rounded-full bg-secondary px-2.5 py-0.5 font-mono text-xs font-bold text-foreground tabular-nums">
                               {wl.winRatePercent}% Win
                             </span>
                           </div>
 
-                          <div className="mt-2.5 grid grid-cols-4 gap-2 pt-2 border-t border-[#D1D1D1]/60 dark:border-white/10 font-mono">
+                          <div className="mt-2.5 grid grid-cols-4 gap-2 pt-2 border-t border-border/60 dark:border-white/10 font-mono">
                             <div>
                               <div className="text-[10px] opacity-60">W / L</div>
                               <div className="text-xs font-bold tabular-nums">
@@ -2633,7 +2310,7 @@ export const WaveletGame: React.FC = () => {
                             </div>
                             <div>
                               <div className="text-[10px] opacity-60">Ratio</div>
-                              <div className="text-xs font-bold tabular-nums text-[#12786C]">
+                              <div className="text-xs font-bold tabular-nums text-primary">
                                 {wl.ratioFormatted}
                               </div>
                             </div>
@@ -2668,7 +2345,7 @@ export const WaveletGame: React.FC = () => {
                         key={q.id}
                         className={`flex items-center justify-between gap-3 rounded-[20px] border p-3 ${
                           isLight
-                            ? 'border-[#D1D1D1] bg-[#F1F1F1]/65'
+                            ? 'border-border bg-muted/65'
                             : 'border-white/10 bg-white/5'
                         }`}
                       >
@@ -2676,7 +2353,7 @@ export const WaveletGame: React.FC = () => {
                           <div className="flex items-center gap-1.5">
                             <CheckCircle
                               weight={q.completed ? 'fill' : 'regular'}
-                              className="h-4 w-4 text-[#12786C] shrink-0"
+                              className="h-4 w-4 text-primary shrink-0"
                             />
                             <span className="truncate text-xs font-bold">{q.title}</span>
                           </div>
@@ -2687,8 +2364,8 @@ export const WaveletGame: React.FC = () => {
                         <span
                           className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-xs font-bold tabular-nums ${
                             q.completed
-                              ? 'bg-[#12786C] text-[#FFFFFF]'
-                              : 'bg-[#000000] text-[#EDFF8C]'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-foreground text-primary'
                           }`}
                         >
                           {q.completed ? 'Done' : `+${q.rewardXp}pt`}
@@ -2711,17 +2388,17 @@ export const WaveletGame: React.FC = () => {
                             className={`flex items-start gap-2 rounded-[18px] border p-2.5 ${
                               unlocked
                                 ? isLight
-                                  ? 'border-[#12786C]/40 bg-[#12786C]/10'
-                                  : 'border-[#12786C]/40 bg-[#12786C]/15'
+                                  ? 'border-primary/40 bg-primary/10'
+                                  : 'border-primary/40 bg-primary/15'
                                 : isLight
-                                  ? 'border-[#D1D1D1] bg-[#F1F1F1]/40 opacity-55'
+                                  ? 'border-border bg-muted/40 opacity-55'
                                   : 'border-white/10 bg-white/[0.02] opacity-50'
                             }`}
                           >
                             {unlocked ? (
                               <Medal
                                 weight="fill"
-                                className="h-4 w-4 text-[#12786C] shrink-0 mt-0.5"
+                                className="h-4 w-4 text-primary shrink-0 mt-0.5"
                               />
                             ) : (
                               <LockSimple
@@ -2750,7 +2427,9 @@ export const WaveletGame: React.FC = () => {
         characterId={characterId} onCharacterChange={selectCompanion}
         onOpenMusic={() => setIsAccountModalOpen(true)} musicConnected={Boolean(connectedProfile)}
         isInstalled={isInstalled} isInstallable={isInstallable} isIOS={isIOS} onInstall={install}
-        onPreviewSound={() => audioEngine.playDiscovery()} />
+        onPreviewSound={() => audioEngine.playDiscovery()} offlineReady={offlineReady}
+        updateAvailable={updateAvailable} canUpdate={session.status !== 'playing' && session.status !== 'paused'} onUpdate={applyUpdate}
+        isFullscreen={isFullscreen} onFullscreen={canFullscreen ? () => { void toggleFullscreen(); } : undefined} appStatus={appStatus} />
 
       {/* Spotify & Apple Music Account Connect Modal */}
       <MusicAccountModal
@@ -2760,20 +2439,28 @@ export const WaveletGame: React.FC = () => {
         onClose={() => setIsAccountModalOpen(false)}
         connectedProfile={connectedProfile}
         onConnectSuccess={(profile) => {
+          crateController.current?.abort();
+          crateRequest.current += 1;
+          setIsLoadingSongs(false);
+          setCrateError(profile.customTracks.length ? null : 'This music crate has no playable songs yet. Choose another mix.');
           setConnectedProfile(profile);
+          setSelectedArtist(null);
+          setCustomSearchTerm('');
           setFilterMode('account');
           setFilterValue(profile.displayName);
-          if (profile.customTracks.length >= 4) {
-            setSongPool(profile.customTracks);
-          }
+          setSongPool(profile.customTracks);
         }}
         onDisconnect={() => {
           setConnectedProfile(null);
+          setSelectedArtist(null);
+          setCustomSearchTerm('');
           setFilterMode('genre');
           setFilterValue('All');
+          void fetchLiveCrate('genre', 'All');
         }}
       />
     </main>
+    </ClickSpark>
     </MotionConfig>
   );
 };

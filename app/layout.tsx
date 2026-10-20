@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import { BRAND, getSiteUrl } from '@/lib/brand';
+import { THEME_INIT_SCRIPT } from '@/lib/theme';
 import './globals.css';
 
 const satoshi = localFont({
@@ -11,7 +12,11 @@ const satoshi = localFont({
 });
 
 export const viewport: Viewport = {
-  themeColor: '#F1F1F1',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f7f8f2' },
+    { media: '(prefers-color-scheme: dark)', color: '#102721' },
+  ],
+  colorScheme: 'light dark',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -55,12 +60,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${satoshi.variable} bg-[#F1F1F1] text-[#000000] antialiased`}
+      suppressHydrationWarning
+      className={`${satoshi.variable} antialiased`}
     >
+      <head><script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} /></head>
       <body
         suppressHydrationWarning
         data-state="title"
-        className="bg-[#F1F1F1] font-sans text-[#000000] overflow-hidden"
+        className="font-sans overflow-hidden"
       >
         {children}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
