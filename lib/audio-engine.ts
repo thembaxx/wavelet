@@ -1,5 +1,5 @@
 import type { SongMoodProfile } from './game-rules';
-import { getOriginalGroove, type OriginalGroove } from './cleared-catalog';
+import { getOriginalGroove, type OriginalGroove } from './cleared-catalog.ts';
 
 export interface AudioSpectrumFrame {
   bass: number;
