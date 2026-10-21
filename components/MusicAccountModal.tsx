@@ -2,7 +2,7 @@
 
 import { StudioDialog } from './StudioDialog';
 import type { SongTrack } from '@/lib/game-rules';
-import type { ThemeMode } from '@/lib/theme';
+import type { ThemeMode } from '@/lib/game-rules';
 
 export interface ConnectedMusicProfile {
   provider: 'spotify' | 'apple-music';
