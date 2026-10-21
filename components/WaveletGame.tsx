@@ -70,6 +70,7 @@ import {
   GENRE_PRESETS,
 } from '@/lib/music-catalog';
 import { audioEngine } from '@/lib/audio-engine';
+import { canPlayLicensedTrack } from '@/lib/music-rights';
 import {
   signInWithGooglePopup,
   signOutUser,
@@ -352,6 +353,7 @@ export const WaveletGame: React.FC = () => {
   const [isStartingGame, setIsStartingGame] = useState(false);
   const crateRequest = useRef(0);
   const crateController = useRef<AbortController | null>(null);
+  const authorizedCountry = useRef<string | null>(null);
   const [snippetDuration, setSnippetDuration] = useState<SnippetDuration>(5);
   const [songCount, setSongCount] = useState<number>(5);
   const [playMode, setPlayMode] = useState<PlayMode>('quiz-4choice');
@@ -581,30 +583,32 @@ export const WaveletGame: React.FC = () => {
       if (mode === 'artist') setSongPool([]);
       let tracks: SongTrack[] = [];
       try {
-        if (mode === 'account' && connectedProfile?.customTracks.length) tracks = connectedProfile.customTracks;
+        if (mode === 'account' && connectedProfile?.customTracks.length) tracks = connectedProfile.customTracks.filter(track => canPlayLicensedTrack(track, 'solo', snippetDuration, authorizedCountry.current));
         else {
           const preset = GENRE_PRESETS.find(genre => genre.id === value);
           const term = customQuery?.trim() || (mode === 'genre' ? preset?.query || `${value} hits` : mode === 'year' ? `${value} music hits` : value);
-          const query = new URLSearchParams({ term, limit: '50' });
+          const query = new URLSearchParams({ term, limit: '50', usage: 'solo', duration: String(snippetDuration) });
           if (mode === 'artist') { query.set('artist', value); if (artist) query.set('artistId', artist.id); }
           const response = await fetch(`/api/songs?${query}`, { signal: controller.signal });
           if (!response.ok) throw new Error('Catalog unavailable');
           const data = await response.json();
+          authorizedCountry.current = typeof data.country === 'string' ? data.country : null;
           tracks = Array.isArray(data.tracks) ? data.tracks : [];
         }
       } catch {
         if (controller.signal.aborted) return [];
-        tracks = mode === 'artist' ? artistOnlyTracks(CURATED_REAL_SONGS, value, artist?.id) : CURATED_REAL_SONGS;
+        tracks = []; // Fail closed: metadata-only songs cannot be used as playable fallbacks.
       } finally {
         if (request === crateRequest.current) setIsLoadingSongs(false);
       }
+      tracks = tracks.filter(track => canPlayLicensedTrack(track, 'solo', snippetDuration, authorizedCountry.current));
       if (mode === 'artist') tracks = artistOnlyTracks(tracks, value, artist?.id);
       if (request === crateRequest.current) {
         setSongPool(tracks);
-        if (!tracks.length) setCrateError(`No playable songs found for ${value}. Try another artist.`);
+        if (!tracks.length) setCrateError('No rights-cleared music clips are available for this crate and duration yet. Wavelet needs a licensed catalogue to play commercial songs.');
       }
       return tracks;
-    }, [connectedProfile],
+    }, [connectedProfile, snippetDuration],
   );
 
   const initialCrateLoaded = useRef(false);
@@ -638,6 +642,12 @@ export const WaveletGame: React.FC = () => {
   // Trigger playing the current song snippet
   const triggerSnippetPlay = useCallback(
     (song: SongTrack, durationSec: number, modeOverride?: GuessChallengeMode) => {
+      if (!canPlayLicensedTrack(song, 'solo', durationSec, authorizedCountry.current)) {
+        audioEngine.stopSnippet(false);
+        setIsPlayingSnippet(false);
+        setCrateError('This clip is no longer cleared for playback. Choose an authorised crate.');
+        return;
+      }
       const mood = deriveSongMood(song);
       const activeMode = modeOverride || challengeMode;
       const modeDef =
@@ -766,8 +776,10 @@ export const WaveletGame: React.FC = () => {
       }
       if (request !== crateRequest.current) { setIsStartingGame(false); return; }
 
-      const selectedPlaylist = (filterMode === 'artist' ? artistOnlyTracks(activePool, filterValue, selectedArtist?.id) : activePool).slice(0, Math.max(1, songCount));
-      if (!selectedPlaylist.length) { setCrateError('No songs in this crate yet. Choose another artist or mix.'); setIsStartingGame(false); return; }
+      const selectedPlaylist = (filterMode === 'artist' ? artistOnlyTracks(activePool, filterValue, selectedArtist?.id) : activePool)
+        .filter(track => canPlayLicensedTrack(track, 'solo', snippetDuration, authorizedCountry.current))
+        .slice(0, Math.max(1, songCount));
+      if (!selectedPlaylist.length) { setCrateError('No licensed music clips are available for this selection. Wavelet must obtain game-use rights before playing commercial tracks.'); setIsStartingGame(false); return; }
       const firstSong = selectedPlaylist[0];
 
       setRoundFeedback(null);
@@ -823,7 +835,7 @@ export const WaveletGame: React.FC = () => {
     if (params.get('autostart') === '1') {
       autostartFiredRef.current = true;
       const timer = window.setTimeout(() => {
-        void startNewGame(CURATED_REAL_SONGS);
+        void startNewGame();
       }, 0);
       return () => window.clearTimeout(timer);
     }

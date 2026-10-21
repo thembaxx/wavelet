@@ -1,0 +1,31 @@
+{
+  "tracks": [
+    {
+      "id": "demo-rights-cleared-001",
+      "title": "YOUR LICENSED TRACK TITLE",
+      "artist": "YOUR ARTIST",
+      "album": "YOUR ALBUM",
+      "releaseYear": 2026,
+      "decade": "2020s",
+      "genre": "Pop",
+      "previewUrl": "https://YOUR-AUTHORIZED-CDN.example/clip.mp3",
+      "artworkUrl": "https://YOUR-AUTHORIZED-CDN.example/artwork.jpg",
+      "source": "licensed",
+      "rights": {
+        "licenseId": "YOUR-SIGNED-AGREEMENT-ID",
+        "provider": "direct",
+        "allowedUses": [
+          "solo",
+          "multiplayer"
+        ],
+        "territories": [
+          "*"
+        ],
+        "validFrom": "2026-01-01T00:00:00Z",
+        "expiresAt": "2027-01-01T00:00:00Z",
+        "maxClipSeconds": 30,
+        "usageReportingRequired": false
+      }
+    }
+  ]
+}

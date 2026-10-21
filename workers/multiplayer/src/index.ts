@@ -1,7 +1,37 @@
 import { routePartykitRequest, Server, type Connection } from "partyserver";
 
 type Challenge = "track" | "artist" | "genre" | "year";
-type Track = { id: string; title: string; artist: string; genre: string; releaseYear: number; previewUrl: string };
+type Track = { id: string; title: string; artist: string; genre: string; releaseYear: number; previewUrl: string;
+  rights?: { licenseId: string; allowedUses: string[]; territories: string[]; expiresAt: string;
+    playbackExpiresAt?: string; maxClipSeconds: number; usageReportingRequired?: boolean } };
+/** Defence in depth: a signed URL is not itself a license. */
+function roomClipIsAuthorized(value: unknown, requiredValidityMs: number, now = Date.now()): value is Track {
+  if (!value || typeof value !== "object") return false;
+  const track = value as Track;
+  if (typeof track.id !== "string" || typeof track.title !== "string" ||
+      typeof track.artist !== "string" || typeof track.genre !== "string" ||
+      !Number.isInteger(track.releaseYear) || typeof track.previewUrl !== "string") return false;
+  try {
+    const url = new URL(track.previewUrl);
+    const host = url.hostname.toLowerCase();
+    if (url.protocol !== "https:" || /^https:\/\/[^/?#]*@/.test(url.href) || url.port ||
+      host.endsWith(".mzstatic.com") || host.endsWith(".itunes.apple.com") ||
+      host.endsWith(".spotify.com") || host.endsWith(".youtube.com") ||
+      host.endsWith(".googlevideo.com")) return false;
+  } catch { return false; }
+  const rights = track.rights;
+  if (!rights || typeof rights.licenseId !== "string" || !rights.licenseId.trim() ||
+      !Array.isArray(rights.allowedUses) || !rights.allowedUses.includes("multiplayer") ||
+      !Array.isArray(rights.territories) || !rights.territories.includes("*") ||
+      rights.usageReportingRequired === true || !Number.isInteger(rights.maxClipSeconds) ||
+      rights.maxClipSeconds < 5) return false;
+  if (!Number.isFinite(Date.parse(rights.expiresAt)) ||
+      Date.parse(rights.expiresAt) <= now + requiredValidityMs) return false;
+  if (rights.playbackExpiresAt &&
+      (!Number.isFinite(Date.parse(rights.playbackExpiresAt)) ||
+       Date.parse(rights.playbackExpiresAt) <= now + requiredValidityMs)) return false;
+  return true;
+}
 type Choice = { id: string; label: string };
 type Player = { id: string; secret: string; name: string; ready: boolean; connected: boolean; score: number; answer: string | null };
 type Round = { options: Choice[]; correctId: string; deadline: number; previewUrl: string; track: Track };
@@ -60,6 +90,11 @@ export class WaveletRoom extends Server<Env> {
 
   async onStart() {
     this.room = (await this.ctx.storage.get<Room>("room")) ?? freshRoom();
+    // Purge pre-migration sessions that may still contain unlicensed preview URLs.
+    if (this.room.tracks.some(track => !roomClipIsAuthorized(track, ROUND_MS + REVEAL_MS))) {
+      this.room = freshRoom();
+      await this.ctx.storage.put("room", this.room);
+    }
     // Socket state survives Durable Object hibernation; reconcile on reconnect.
     this.reconcilePresence();
   }
@@ -146,17 +181,18 @@ export class WaveletRoom extends Server<Env> {
       try {
         const endpoint = new URL("/api/songs", this.env.CATALOG_ORIGIN);
         endpoint.searchParams.set("limit", "50");
+        endpoint.searchParams.set("usage", "multiplayer");
+        endpoint.searchParams.set("duration", "5");
         const response = await fetch(endpoint.toString(), { signal: AbortSignal.timeout(8000) });
         if (!response.ok) throw new Error("Catalog unavailable");
         const data = await response.json() as { tracks?: Track[] };
         const pool = (data.tracks ?? []).filter(t =>
           !!t && typeof t.id === "string" && typeof t.title === "string" &&
           typeof t.artist === "string" && typeof t.genre === "string" &&
-          Number.isInteger(t.releaseYear) && typeof t.previewUrl === "string" &&
-          /^https:\/\//.test(t.previewUrl)
+          roomClipIsAuthorized(t, this.room.count * (ROUND_MS + REVEAL_MS))
         ).slice(0, 50);
         if (new Set(pool.map(t => answerKey(t, this.room.challenge))).size < 4)
-          throw new Error("Not enough playable choices for this challenge");
+          throw new Error("Not enough rights-cleared songs for this challenge. Licensed multiplayer music is required.");
         this.room.pool = pool;
         this.room.tracks = shuffled(pool).slice(0, this.room.count);
         this.room.index = 0;
@@ -188,6 +224,9 @@ export class WaveletRoom extends Server<Env> {
   }
   private beginRound() {
     const track = this.room.tracks[this.room.index];
+    if (track && !roomClipIsAuthorized(track, ROUND_MS + REVEAL_MS)) {
+      this.room.phase = "finished"; this.room.round = null; return;
+    }
     if (!track) { this.room.phase = "finished"; this.room.round = null; return; }
     const targetKey = answerKey(track, this.room.challenge);
     const seen = new Set([targetKey]);

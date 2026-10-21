@@ -1,104 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CURATED_REAL_SONGS } from '@/lib/music-catalog';
-import { type SongTrack } from '@/lib/game-rules';
-import { artistOnlyTracks, normalizeArtist } from '@/lib/catalog-filters';
+import { getLicensedCatalog } from '@/lib/licensed-catalog';
+import { artistOnlyTracks } from '@/lib/catalog-filters';
 
-interface ItunesResult {
-  artistId?: number;
-  trackId: number;
-  trackName: string;
-  artistName: string;
-  collectionName?: string;
-  releaseDate?: string;
-  primaryGenreName?: string;
-  previewUrl?: string;
-  artworkUrl100?: string;
-  trackViewUrl?: string;
-}
-
-function getDecadeFromYear(year: number): string {
-  if (year >= 2020) return '2020s';
-  if (year >= 2010) return '2010s';
-  if (year >= 2000) return '2000s';
-  if (year >= 1990) return '1990s';
-  return '1980s';
-}
-
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const term = searchParams.get('term') || 'top hits pop dance r&b';
-  const requestedLimit = Number(searchParams.get('limit') || 30);
-  const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(Math.floor(requestedLimit), 50)) : 30;
-  const artist = searchParams.get('artist')?.trim().slice(0, 100) || '';
-  const artistId = searchParams.get('artistId') || '';
-  const isArtistCrate = Boolean(artist);
-
-  try {
-    const query = new URLSearchParams({ media: 'music', entity: 'song', limit: String(isArtistCrate ? 200 : limit), term: artist || term });
-    if (isArtistCrate) query.set('attribute', 'artistTerm');
-    const url = isArtistCrate && /^\d{1,14}$/.test(artistId)
-      ? `https://itunes.apple.com/lookup?id=${artistId}&entity=song&limit=200`
-      : `https://itunes.apple.com/search?${query}`;
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(4500),
-      headers: { Accept: 'application/json' },
-      next: { revalidate: 3600 },
-    });
-
-    if (!response.ok) {
-      throw new Error(`iTunes API status ${response.status}`);
-    }
-
-    const data = (await response.json()) as { results?: ItunesResult[] };
-    const rawResults = data.results || [];
-
-    const seenTitles = new Set<string>();
-    const tracks: SongTrack[] = [];
-
-    for (const item of rawResults) {
-      if (!item.trackName || !item.artistName || !item.previewUrl) continue;
-      const dedupeKey = `${normalizeArtist(item.trackName)}::${normalizeArtist(item.artistName)}`;
-      if (seenTitles.has(dedupeKey)) continue;
-      seenTitles.add(dedupeKey);
-
-      const year = item.releaseDate ? new Date(item.releaseDate).getFullYear() : 2020;
-      const validYear = Number.isNaN(year) ? 2020 : year;
-      const hiResArt = item.artworkUrl100
-        ? item.artworkUrl100.replace('100x100bb', '600x600bb')
-        : '';
-
-      const query = encodeURIComponent(`${item.trackName} ${item.artistName}`);
-
-      tracks.push({
-        id: `itunes-${item.trackId}`,
-        title: item.trackName,
-        artist: item.artistName,
-        artistId: item.artistId,
-        album: item.collectionName || item.trackName,
-        releaseYear: validYear,
-        decade: getDecadeFromYear(validYear),
-        genre: item.primaryGenreName || 'Pop',
-        previewUrl: item.previewUrl,
-        artworkUrl: hiResArt,
-        appleMusicUrl: item.trackViewUrl || `https://music.apple.com/us/search?term=${query}`,
-        spotifyUrl: `https://open.spotify.com/search/${query}`,
-        source: 'itunes',
-      });
-    }
-
-    if (isArtistCrate) {
-      return NextResponse.json({ tracks: artistOnlyTracks(tracks, artist, artistId).slice(0, limit), source: 'artist-catalog', artist });
-    }
-    if (tracks.length >= 4) {
-      return NextResponse.json({ tracks, source: 'itunes-live' });
-    }
-  } catch {
-    // Fallback to curated real song catalog if offline or rate-limited
+/** Only authorized clips are permitted in gameplay. iTunes previews stay metadata-only. */
+export async function GET(request: NextRequest) {
+  const params = request.nextUrl.searchParams;
+  const use = params.get('usage') === 'multiplayer' ? 'multiplayer' : 'solo';
+  const requestedDuration = Number(params.get('duration') ?? 5);
+  const durationSeconds = Number.isFinite(requestedDuration) && requestedDuration > 0 && requestedDuration <= 30
+    ? requestedDuration : 5;
+  const count = Number(params.get('limit') ?? 50);
+  const limit = Number.isFinite(count) ? Math.max(1, Math.min(50, Math.floor(count))) : 50;
+  const artist = (params.get('artist') || '').trim().slice(0, 100);
+  const artistId = params.get('artistId') || '';
+  const term = (params.get('term') || '').trim().toLowerCase().slice(0, 100);
+  // In multiplayer a single Worker cannot assert every participant's location.
+  const country = use === 'solo' ? request.headers.get('x-vercel-ip-country') : null;
+  const validity = use === 'multiplayer' ? 10 * (20 + 4.5) * 1000 : 0;
+  let tracks = await getLicensedCatalog({ use, durationSeconds, country, minimumValidityMs: validity });
+  if (artist) tracks = artistOnlyTracks(tracks, artist, artistId);
+  else if (term && term !== 'all' && !term.includes(' hits') && !term.includes(' music')) {
+    const matching = tracks.filter(track => [track.title, track.artist, track.album, track.genre, track.decade, String(track.releaseYear)].some(value => value.toLowerCase().includes(term)));
+    if (matching.length) tracks = matching;
   }
-
-  return NextResponse.json({
-    tracks: isArtistCrate ? artistOnlyTracks(CURATED_REAL_SONGS, artist, artistId).slice(0, limit) : CURATED_REAL_SONGS,
-    source: isArtistCrate ? 'artist-curated-fallback' : 'curated-fallback',
-    ...(isArtistCrate ? { artist } : {}),
-  });
+  return NextResponse.json(
+    { tracks: tracks.slice(0, limit), source: 'licensed-catalog', country, licensingRequired: tracks.length === 0 },
+    { headers: { 'Cache-Control': 'private, no-store, max-age=0', 'X-Content-Type-Options': 'nosniff' } },
+  );
 }
