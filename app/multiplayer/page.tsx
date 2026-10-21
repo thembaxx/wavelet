@@ -188,7 +188,7 @@ export default function MultiplayerPage() {
             <motion.section layout className={panel}>
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EDFF8C]/15 text-[#EDFF8C]"><Lightning size={24} weight="fill" /></div>
               <h2 className="text-2xl font-bold">Host a room</h2>
-              <p className="mt-2 min-h-14 text-sm leading-relaxed text-white/60">Set the challenge, invite your crew and drop the needle when everyone's ready.</p>
+              <p className="mt-2 min-h-14 text-sm leading-relaxed text-white/60">Set the challenge, invite your crew and drop the needle when everyone is ready.</p>
               <label htmlFor="multiplayer-name" className="mt-5 block text-xs font-bold uppercase tracking-wider text-white/60">Your name</label>
               <input id="multiplayer-name" maxLength={24} value={name} onChange={e => setName(e.target.value)} className="mt-2 mb-4 h-12 w-full rounded-xl border border-white/20 bg-white/10 px-4 text-base text-white outline-none focus:border-[#EDFF8C]" />
               <button className={action + ' w-full'} disabled={!HOST} onClick={() => enterRoom(generateRoom())}>Create room <ArrowRight size={17} /></button>
