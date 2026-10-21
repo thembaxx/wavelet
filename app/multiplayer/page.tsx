@@ -54,9 +54,12 @@ export default function MultiplayerPage() {
   }, []);
 
   useEffect(() => {
-    const currentCode = new URLSearchParams(window.location.search).get('room')?.toUpperCase() ?? '';
-    if (validRoom(currentCode)) setCode(currentCode);
-    try { const storedName = localStorage.getItem('wavelet-multiplayer-name'); if (storedName) setName(storedName); } catch { /* Private mode */ }
+    const timer = window.setTimeout(() => {
+      const currentCode = new URLSearchParams(window.location.search).get('room')?.toUpperCase() ?? '';
+      if (validRoom(currentCode)) setCode(currentCode);
+      try { const storedName = localStorage.getItem('wavelet-multiplayer-name'); if (storedName) setName(storedName); } catch { /* Private mode */ }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -112,7 +115,10 @@ export default function MultiplayerPage() {
     const timer = setInterval(() => setNow(Date.now()), 200);
     return () => clearInterval(timer);
   }, []);
-  useEffect(() => { stopAudio(); }, [snapshot?.index, snapshot?.phase, stopAudio]);
+  useEffect(() => {
+    const timer = window.setTimeout(stopAudio, 0);
+    return () => window.clearTimeout(timer);
+  }, [snapshot?.index, snapshot?.phase, stopAudio]);
   useEffect(() => () => {
     if (stopTimer.current) clearTimeout(stopTimer.current);
     playerAudio.current?.pause();
@@ -234,7 +240,7 @@ export default function MultiplayerPage() {
                   <p className="mb-3 text-sm text-white/60">Songs per match</p>
                   <div className="mb-6 flex gap-2">{[5, 10].map(count => <button key={count} disabled={!host} onClick={() => send({ type: 'configure', challenge: snapshot.challenge, count })} className={`min-h-11 flex-1 rounded-xl border text-sm font-bold ${count === snapshot.count ? 'border-[#EDFF8C] bg-[#EDFF8C]/15 text-[#EDFF8C]' : 'border-white/15 bg-white/5 text-white/70'}`}>{count} songs</button>)}</div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <button className={secondary} disabled={!online} onClick={() => send({ type: 'ready', ready: !me?.ready })}>{me?.ready ? <CheckCircle size={19} weight="fill" /> : <MusicNotes size={19} />}{me?.ready ? 'Ready ✓' : "I'm ready"}</button>
+                    <button className={secondary} disabled={!online} onClick={() => send({ type: 'ready', ready: !me?.ready })}>{me?.ready ? <CheckCircle size={19} weight="fill" /> : <MusicNotes size={19} />}{me?.ready ? 'Ready ✓' : "I’m ready"}</button>
                     {host && <button className={action + ' flex-1'} disabled={!online || snapshot.players.filter(p => p.connected).length < 2 || snapshot.players.some(p => p.connected && !p.ready)} onClick={() => send({ type: 'start' })}><Play size={18} weight="fill" /> Start match</button>}
                     {!host && <span className="text-xs text-white/50">Host starts when everyone is ready.</span>}
                   </div>
