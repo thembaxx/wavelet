@@ -71,6 +71,41 @@ jobs:
           fail(`Cloudflare API token verification failed (${errors.join('; ')}). Replace the Actions secret with a raw, active Cloudflare API token from the correct account. No Worker was deployed.`);
           NODE
 
+      - name: Verify Worker API access before building
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          node --input-type=module <<'NODE'
+          const account = '4558b6cb691038495ac4966102bdb898';
+          const worker = 'wavelet-multiplayer';
+          const root = 'https://api.cloudflare.com/client/v4/accounts/' + account + '/workers/scripts';
+          const headers = { Authorization: 'Bearer ' + process.env.CLOUDFLARE_API_TOKEN };
+          function fail(message) { console.error('::error::' + message); process.exit(1); }
+          async function check(url) {
+            try {
+              const response = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
+              const body = await response.json().catch(() => ({}));
+              return { response, body };
+            } catch { fail('Could not reach Cloudflare Workers API for permission preflight.'); }
+          }
+          const scripts = await check(root);
+          if (!scripts.response.ok || scripts.body.success !== true) {
+            const codes = (scripts.body.errors ?? []).map(e => e.code).join(',') || scripts.response.status;
+            fail('Token is active but cannot list Workers scripts on the configured account (code ' + codes + '). Grant Workers product Admin for initial Worker creation and check token resource scope.');
+          }
+          const exists = Array.isArray(scripts.body.result) && scripts.body.result.some(entry => entry.id === worker);
+          if (exists) {
+            const secrets = await check(root + '/' + worker + '/secrets');
+            if (!secrets.response.ok || secrets.body.success !== true) {
+              const codes = (secrets.body.errors ?? []).map(e => e.code).join(',') || secrets.response.status;
+              fail('Worker exists but token cannot access secrets metadata (code ' + codes + '). Grant Workers Editor or Workers Scripts Read access on this account.');
+            }
+          } else {
+            console.log('Target Worker was not found. Creating it requires Workers product Admin on this account.');
+          }
+          console.log('Cloudflare Workers API read permissions verified.');
+          NODE
+
       - name: Install and typecheck Worker
         working-directory: workers/multiplayer
         run: |
