@@ -93,6 +93,7 @@ import { artistOnlyTracks, type ArtistChoice } from '@/lib/catalog-filters';
 import { StudioDialog } from './StudioDialog';
 import { WaveletBrand } from './WaveletBrand';
 import { DiscoveryDelight } from './DiscoveryDelight';
+import { CompanionPortrait } from './CompanionPortrait';
 import ClickSpark from './react-bits/ClickSpark';
 
 gsap.registerPlugin(useGSAP);
@@ -1196,6 +1197,16 @@ export const WaveletGame: React.FC = () => {
 
   const primaryBtnClasses = 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_10px_24px_rgba(16,39,33,0.12)]';
 
+  const interactWithCompanion = () => {
+    companionTaps.current += 1;
+    if (companionTaps.current % 3 === 0) discoverGroove(`${activeCharacter.name} knows a secret dance.`);
+    setMascotState('hyped');
+    setMascotSpeech(
+      `${progression.callsign} · Overall ${progression.overallScore} pts · ${overallWlStats.winRatePercent}% Win Rate`
+    );
+    setTimeout(() => setMascotState(isPlayingSnippet ? 'listening' : 'idle'), 1800);
+  };
+
   return (
     <MotionConfig reducedMotion={reducedMotion ? 'always' : 'never'} transition={{ type: 'spring', stiffness: 360, damping: 32 }}>
     <ClickSpark sparkColor={['#16735d', '#b8d97f']} sparkCount={6} sparkRadius={22} duration={350} disabled={reducedMotion} shape="dot" triggerSelector="[data-spark]" className="wavelet-click-sparks">
@@ -1220,15 +1231,7 @@ export const WaveletGame: React.FC = () => {
         gameState={session.status}
         reducedMotion={reducedMotion}
         obscured={onboarding.open}
-        onMascotInteract={() => {
-          companionTaps.current += 1;
-          if (companionTaps.current % 3 === 0) discoverGroove(`${activeCharacter.name} knows a secret dance.`);
-          setMascotState('hyped');
-          setMascotSpeech(
-            `${progression.callsign} · Overall ${progression.overallScore} pts · ${overallWlStats.winRatePercent}% Win Rate`
-          );
-          setTimeout(() => setMascotState(isPlayingSnippet ? 'listening' : 'idle'), 1800);
-        }}
+        onMascotInteract={interactWithCompanion}
         onTurntableInteract={() => {
           setMascotSpeech(
             `Turntable scratch · ${currentMood.label} · ${currentMood.bpm} BPM`
@@ -2079,11 +2082,9 @@ export const WaveletGame: React.FC = () => {
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <img
-                          src={activeCharacter.avatarImg}
-                          alt={activeCharacter.name}
-                          className="h-12 w-12 rounded-2xl object-cover border border-primary shrink-0"
-                        />
+                        <button type="button" onClick={interactWithCompanion} aria-label={`Pet ${activeCharacter.name}`} className="shrink-0 rounded-2xl border border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                          <CompanionPortrait character={activeCharacter} size={48} reducedMotion={reducedMotion} className="rounded-2xl" alt="" />
+                        </button>
                         <div className="min-w-0">
                           <div className="truncate text-base font-extrabold tracking-tight">
                             {progression.callsign}
