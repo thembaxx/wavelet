@@ -1,7 +1,6 @@
 'use client';
 
 import { useId, useRef } from 'react';
-import Image from 'next/image';
 import { ArrowCounterClockwise, ArrowUpRight, Check, Desktop, DownloadSimple, SpeakerHigh, Sparkle, X } from '@phosphor-icons/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -11,6 +10,7 @@ import { type StudioPreferences } from '@/lib/studio-preferences';
 import { audioEngine } from '@/lib/audio-engine';
 import { StudioDialog } from './StudioDialog';
 import { WaveletMark } from './WaveletBrand';
+import { CompanionPortrait } from './CompanionPortrait';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { AnimatedTabs } from './easyui/AnimatedTabs';
@@ -115,7 +115,7 @@ export function StudioSettings(props: StudioSettingsProps) {
           <div className="settings-section-title"><h3 id="companion-settings-heading">Your listening buddy</h3><Sparkle size={18} /></div>
           <div className="companion-picker" role="group" aria-label="Choose a companion">
             {MASCOT_CHARACTERS.map(character => <button key={character.id} type="button" aria-pressed={props.characterId === character.id} onClick={() => props.onCharacterChange(character.id)}>
-              <span className="companion-portrait"><Image src={character.avatarImg} alt="" width={50} height={50} />{props.characterId === character.id && <span className="companion-check"><Check size={12} weight="bold" /></span>}</span>
+              <span className="relative inline-block"><CompanionPortrait character={character} reducedMotion={reducedMotion} />{props.characterId === character.id && <span className="companion-check"><Check size={12} weight="bold" /></span>}</span>
               <span>{character.name}</span>
             </button>)}
           </div>
