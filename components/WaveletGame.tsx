@@ -93,6 +93,7 @@ import { artistOnlyTracks, type ArtistChoice } from '@/lib/catalog-filters';
 import { StudioDialog } from './StudioDialog';
 import { WaveletBrand } from './WaveletBrand';
 import { DiscoveryDelight } from './DiscoveryDelight';
+import { RoundAnswerFeedback } from './RoundAnswerFeedback';
 import { CompanionPortrait } from './CompanionPortrait';
 import ClickSpark from './react-bits/ClickSpark';
 
@@ -1701,75 +1702,77 @@ export const WaveletGame: React.FC = () => {
                       </div>
                     )}
 
-                    {/* MODE B: 4-CHOICE INTERACTIVE QUIZ (Adapts to Track, Artist, Genre, or Year!) */}
-                    {playMode === 'quiz-4choice' && !roundFeedback?.answered && (
-                      <div className="grid grid-cols-2 gap-1.5">
+                    {/* Keep choices visible after answering so players can see their pick and the correct answer. */}
+                    {playMode === 'quiz-4choice' && (
+                      <div className="grid grid-cols-2 gap-1.5" aria-label="Answer choices">
                         {challengeOptions.map((option) => {
                           const isEliminated = eliminatedOptionIds.includes(option.id);
+                          const answered = Boolean(roundFeedback?.answered);
+                          const isCorrectAnswer = answered && option.isCorrect;
+                          const isWrongPick = answered && roundFeedback?.selectedOptionId === option.id && !option.isCorrect;
                           return (
                             <motion.button
                               key={option.id}
                               type="button"
-                              whileTap={{ scale: 0.97 }}
+                              whileTap={!answered && !reducedMotion ? { scale: 0.97 } : undefined}
+                              animate={isCorrectAnswer && !reducedMotion ? { scale: [1, 1.035, 1] } : { scale: 1 }}
+                              transition={{ duration: 0.36 }}
                               disabled={isEliminated}
-                              onClick={() => handleJudgeAnswer(option.isCorrect, option.id)}
-                              className={`flex min-h-[48px] min-w-0 flex-col justify-center rounded-[18px] border px-3 py-1.5 text-left transition-colors ${
-                                isEliminated
-                                  ? 'opacity-30 line-through cursor-not-allowed border-border'
-                                  : isLight
-                                    ? 'border-border bg-muted/70 hover:bg-secondary hover:border-[#000000]/20'
-                                    : 'border-white/12 bg-white/5 hover:bg-secondary hover:text-foreground'
-                              }`}
+                              aria-disabled={answered || isEliminated}
+                              aria-label={
+                                option.primaryText +
+                                (isCorrectAnswer ? ', correct answer' : isWrongPick ? ', your incorrect choice' : '')
+                              }
+                              onClick={() => {
+                                if (!answered && !isEliminated) handleJudgeAnswer(option.isCorrect, option.id);
+                              }}
+                              className={'relative flex min-h-[52px] min-w-0 flex-col justify-center rounded-[18px] border-2 px-3 py-2 text-left transition-colors ' +
+                                (isCorrectAnswer
+                                  ? 'border-[#179366] bg-[#dff8e9] text-[#164e38] shadow-[0_0_0_2px_rgba(23,147,102,0.1)]'
+                                  : isWrongPick
+                                    ? 'border-[#ca5c4c] bg-[#fff0e9] text-[#863d31] shadow-[0_0_0_2px_rgba(202,92,76,0.1)]'
+                                    : isEliminated
+                                      ? 'cursor-not-allowed border-border opacity-30 line-through'
+                                      : answered
+                                        ? 'cursor-default border-border/70 bg-muted/30 opacity-65'
+                                        : isLight
+                                          ? 'border-border bg-muted/70 hover:border-[#17775c] hover:bg-secondary'
+                                          : 'border-white/12 bg-white/5 hover:border-primary hover:bg-secondary hover:text-foreground')}
                             >
-                              <span className="truncate text-xs font-bold">
-                                {option.primaryText}
+                              <span className="flex w-full min-w-0 items-center justify-between gap-1">
+                                <span className="truncate text-xs font-bold">{option.primaryText}</span>
+                                {isCorrectAnswer && <Check weight="bold" className="h-4 w-4 shrink-0" aria-hidden="true" />}
+                                {isWrongPick && <X weight="bold" className="h-4 w-4 shrink-0" aria-hidden="true" />}
                               </span>
-                              <span className="truncate text-[10px] opacity-65">
-                                {option.secondaryText}
-                              </span>
+                              <span className="truncate text-[10px] opacity-75">{option.secondaryText}</span>
+                              {(isCorrectAnswer || isWrongPick) && (
+                                <span className="mt-1 text-[10px] font-extrabold uppercase tracking-wide">
+                                  {isCorrectAnswer ? 'Correct answer' : 'Your pick'}
+                                </span>
+                              )}
                             </motion.button>
                           );
                         })}
                       </div>
                     )}
 
-                    {/* Post-Guess Outcome Banner & Next Song Button */}
+                    {/* High-contrast animated outcome with an explicit answer and a full-width next action. */}
                     {roundFeedback?.answered && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`flex items-center justify-between gap-2.5 rounded-[20px] border p-2.5 ${
-                          isLight
-                            ? 'border-border bg-muted'
-                            : 'border-white/15 bg-black/50'
-                        }`}
-                      >
-                        <div className="min-w-0 pl-1">
-                          <div className="text-xs font-bold text-primary">
-                            {roundFeedback.correct
-                              ? `Correct · +${roundFeedback.points} pts · +${roundFeedback.xpGained} XP`
-                              : `Missed ${activeChallengeModeDef.shortLabel} · +${roundFeedback.xpGained} XP`}
-                          </div>
-                          <div className="truncate text-[11px] opacity-75">
-                            {currentSong.title} — {currentSong.artist} ({currentSong.releaseYear} ·{' '}
-                            {currentSong.genre})
-                          </div>
-                        </div>
-
-                        <motion.button
-                          type="button"
-                          whileTap={{ scale: 0.96 }}
-                          onClick={handleNextRound}
-                          className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold whitespace-nowrap shrink-0 ${primaryBtnClasses}`}
-                        >
-                          <span>
-                            {session.currentIndex + 1 >= session.playlist.length
-                              ? 'Finish Set'
-                              : 'Next Song'}
-                          </span>
-                          <ArrowRight weight="bold" className="h-4 w-4" />
-                        </motion.button>
-                      </motion.div>
+                      <RoundAnswerFeedback
+                        correct={roundFeedback.correct}
+                        points={roundFeedback.points}
+                        xpGained={roundFeedback.xpGained}
+                        coinsGained={roundFeedback.coinsGained}
+                        correctAnswer={challengeOptions.find(option => option.isCorrect)?.primaryText || currentSong.title}
+                        songLabel={currentSong.title + ' — ' + currentSong.artist + ' (' + currentSong.releaseYear + ')'}
+                        selectedAnswer={challengeOptions.find(option => option.id === roundFeedback.selectedOptionId)?.primaryText}
+                        challengeLabel={activeChallengeModeDef.shortLabel}
+                        roundIndex={session.currentIndex}
+                        isFinalRound={session.currentIndex + 1 >= session.playlist.length}
+                        isLight={isLight}
+                        reducedMotion={reducedMotion}
+                        onNext={handleNextRound}
+                      />
                     )}
                   </motion.section>
                 )}
