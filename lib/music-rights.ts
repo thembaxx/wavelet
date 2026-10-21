@@ -75,7 +75,7 @@ export function canPlayLicensedTrack(
 ): track is LicensedTrack {
   if (!isLicensedTrack(track) || !USES.has(use)) return false;
   const r = track.rights;
-  if (!r.allowedUses.includes(use) || durationSeconds < 1 || durationSeconds > r.maxClipSeconds) return false;
+  if (r.usageReportingRequired === true || !r.allowedUses.includes(use) || durationSeconds < 1 || durationSeconds > r.maxClipSeconds) return false;
   if (!r.territories.includes('*') && !(country && r.territories.includes(country.toUpperCase()))) return false;
   if (r.validFrom && dateMs(r.validFrom) > now) return false;
   const requiredUntil = now + Math.ceil(durationSeconds * 1000) + minimumValidityMs;

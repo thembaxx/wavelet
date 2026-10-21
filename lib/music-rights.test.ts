@@ -19,6 +19,7 @@ test('rejects a promotional preview without explicit rights', () => {
 });
 test('requires allowed game use, known licensed country, and sufficient clip length', () => {
   assert.equal(canPlayLicensedTrack(valid, 'solo', 5, 'ZA', now), true);
+  assert.equal(canPlayLicensedTrack({ ...valid, rights: { ...valid.rights, usageReportingRequired: true } }, 'solo', 5, 'ZA', now), false);
   assert.equal(canPlayLicensedTrack(valid, 'multiplayer', 5, null, now), false);
   assert.equal(canPlayLicensedTrack(valid, 'solo', 15, 'ZA', now), false);
   assert.equal(canPlayLicensedTrack(valid, 'solo', 5, 'US', now), false);
