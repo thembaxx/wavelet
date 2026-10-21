@@ -1588,6 +1588,20 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     let mascotSpinBoost = 0;
     let prevBassVal = 0;
     let prevMascotState: MascotMoodState = propsRef.current.mascotState;
+    // Attention and small, irregular gestures are much more lifelike than perfectly timed loops.
+    let attentionTarget = 0;
+    let attentionX = 0;
+    let attentionY = 0;
+    let lookTargetX = 0;
+    let lookTargetY = 0;
+    let lookX = 0;
+    let lookY = 0;
+    let petUntilMs = 0;
+    let petCount = 0;
+    let nextBlinkMs = performance.now() + 1400 + Math.random() * 2200;
+    let blinkUntilMs = 0;
+    let nextEarTwitchMs = performance.now() + 1800 + Math.random() * 3200;
+    let earTwitchUntilMs = 0;
 
     const handlePointerDown = (e: PointerEvent) => {
       isDragging = true;
@@ -1608,12 +1622,18 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
           hitObj === brimMesh ||
           hitObj === domeMesh
         ) {
+          petCount += 1;
           if (!propsRef.current.reducedMotion) {
-            mascotBounceSpring.impulse(5.8);
+            const now = performance.now();
+            petUntilMs = now + 1000;
+            blinkUntilMs = now + 125;
+            attentionTarget = 1;
+            mascotBounceSpring.impulse(petCount % 3 === 0 ? 5.8 : 3.1);
             mascotSquashSpring.impulse(3.2);
             hatFollowSpring.impulse(7.4);
             beanieFollowSpring.impulse(9.2);
-            mascotSpinBoost = Math.PI * 2;
+            // A rare full spin is more delightful than spinning after every gentle pat.
+            mascotSpinBoost = petCount % 3 === 0 ? Math.PI * 2 : 0.24;
           }
           audioEngine.playUiTick(1.38, 'medium');
           propsRef.current.onMascotInteract?.();
@@ -1634,6 +1654,24 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     };
 
     const handlePointerMove = (e: PointerEvent) => {
+      if (!propsRef.current.reducedMotion && e.pointerType !== 'touch') {
+        const rect = renderer.domElement.getBoundingClientRect();
+        const inside = e.target === renderer.domElement && rect.width > 0 && rect.height > 0;
+        if (inside) {
+          pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+          raycaster.setFromCamera(pointer, camera);
+        }
+        const overCompanion = inside && raycaster.intersectObjects(
+          [headSphereMesh, bellyMesh, brimMesh, domeMesh], false
+        ).length > 0;
+        attentionTarget = overCompanion ? 1 : 0;
+        if (overCompanion) {
+          lookTargetX = THREE.MathUtils.clamp(pointer.x, -0.85, 0.85);
+          lookTargetY = THREE.MathUtils.clamp(pointer.y, -0.7, 0.7);
+        }
+        renderer.domElement.style.cursor = overCompanion ? 'pointer' : 'auto';
+      }
       if (!isDragging || propsRef.current.reducedMotion) return;
       const dx = e.clientX - prevPointerX;
       const dy = e.clientY - prevPointerY;
@@ -1692,6 +1730,23 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       const elapsed = currentProps.reducedMotion ? 0 : (nowMs - startTimeMs) / 1000;
       const spectrum = currentProps.reducedMotion ? stillSpectrum : audioEngine.sampleSpectrum(elapsed);
       const isLight = currentProps.themeMode === 'light';
+
+      if (!currentProps.reducedMotion && !isHeadless) {
+        if (nowMs >= nextBlinkMs) {
+          blinkUntilMs = nowMs + 105;
+          nextBlinkMs = nowMs + 2300 + Math.random() * 3600;
+        }
+        if (nowMs >= nextEarTwitchMs) {
+          earTwitchUntilMs = nowMs + 240;
+          nextEarTwitchMs = nowMs + 2400 + Math.random() * 4900;
+        }
+      }
+      const petting = !currentProps.reducedMotion && nowMs < petUntilMs;
+      const attention = currentProps.reducedMotion ? 0 : (petting ? 1 : attentionTarget);
+      attentionX = THREE.MathUtils.damp(attentionX, attention, 5.5, dt);
+      attentionY = THREE.MathUtils.damp(attentionY, attention, 5.5, dt);
+      lookX = THREE.MathUtils.damp(lookX, attention * lookTargetX, 5.5, dt);
+      lookY = THREE.MathUtils.damp(lookY, attention * lookTargetY, 5.5, dt);
 
       // Trigger celebratory spring jump when mascotState transitions to celebrating or hyped
       if (!currentProps.reducedMotion && currentProps.mascotState !== prevMascotState) {
@@ -1778,13 +1833,13 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       peanutSuitMat.color.lerp(_targetSuitColor, dt * 6);
 
       // Update Face Canvas Texture only when quantized expression parameters change (Zero redundant GPU texture uploads!)
-      const isBlinking = !isHeadless && Math.sin(elapsed * 1.95) > 0.955;
+      const isBlinking = !isHeadless && !currentProps.reducedMotion && nowMs < blinkUntilMs;
       const singOpenAmount = currentProps.isPlayingSnippet
         ? Math.round(Math.abs(Math.sin(elapsed * 9.5)) * (0.35 + spectrum.energy * 0.65) * 6) / 6
         : 0;
-      const eyeLookX = currentProps.isPlayingSnippet
-        ? Math.round(Math.sin(elapsed * 1.8) * 3) / 3
-        : 0;
+      const eyeLookX = currentProps.reducedMotion ? 0 : Math.round(
+        THREE.MathUtils.clamp((currentProps.isPlayingSnippet ? Math.sin(elapsed * 1.8) * 0.35 : 0) + lookX * 0.75, -1, 1) * 3
+      ) / 3;
       const nextFaceSig = `${currentProps.mascotState}:${currentProps.characterId}:${singOpenAmount}:${isBlinking ? 1 : 0}:${eyeLookX}`;
       if (nextFaceSig !== lastFaceSignature) {
         lastFaceSignature = nextFaceSig;
@@ -1942,11 +1997,16 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       mascotRig.rotation.y =
         Math.sin(elapsed * beatFreq * 0.5) * 0.24 * danceIntensity + mascotSpinBoost;
 
-      // Expressive Head Bob & Gaze Tilt
+      // Breathing shifts the little chest while the face tracks a nearby visitor.
+      const inhale = currentProps.reducedMotion ? 0 : Math.sin(elapsed * 1.85) * 0.014;
+      torsoGroup.scale.set(1 - inhale * 0.45, 1 + inhale, 1 - inhale * 0.45);
+      const petWiggle = petting ? Math.sin(elapsed * 27) * 0.055 : 0;
       headGroup.rotation.z =
-        Math.sin(elapsed * beatFreq + 0.4) * (0.095 + spectrum.mid * 0.11) * danceIntensity;
+        Math.sin(elapsed * beatFreq + 0.4) * (0.095 + spectrum.mid * 0.11) * danceIntensity +
+        lookX * 0.08 + petWiggle;
+      headGroup.rotation.y = lookX * 0.22 * attentionX;
       headGroup.rotation.x =
-        -0.18 +
+        -0.18 - lookY * 0.16 * attentionY +
         (currentProps.isPlayingSnippet
           ? Math.sin(elapsed * beatFreq * 2) * 0.085
           : Math.sin(elapsed * 1.6) * 0.035);
@@ -1964,14 +2024,17 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       }
       catBeanieGroup.rotation.z = Math.sin(elapsed * beatFreq - 0.9) * 0.065 * danceIntensity;
 
-      // Cat Ear & Bunny Ear Secondary Twitches
-      leftCatEar.rotation.z = 0.24 + Math.sin(elapsed * beatFreq * 2) * 0.07 * danceIntensity;
-      rightCatEar.rotation.z = -0.24 - Math.sin(elapsed * beatFreq * 2) * 0.07 * danceIntensity;
-      leftBunnyEar.rotation.z = -0.24 - Math.abs(Math.sin(elapsed * beatFreq)) * 0.18 * danceIntensity;
-      rightBunnyEar.rotation.z = 0.24 + Math.abs(Math.sin(elapsed * beatFreq)) * 0.18 * danceIntensity;
+      // Rare ear flicks and a happy tail swish on touch/attention.
+      const earTwitch = !currentProps.reducedMotion && nowMs < earTwitchUntilMs
+        ? Math.sin((earTwitchUntilMs - nowMs) / 240 * Math.PI) * 0.17 : 0;
+      leftCatEar.rotation.z = 0.24 + Math.sin(elapsed * beatFreq * 2) * 0.07 * danceIntensity + earTwitch;
+      rightCatEar.rotation.z = -0.24 - Math.sin(elapsed * beatFreq * 2) * 0.07 * danceIntensity - earTwitch * 0.6;
+      leftBunnyEar.rotation.z = -0.24 - Math.abs(Math.sin(elapsed * beatFreq)) * 0.18 * danceIntensity - earTwitch;
+      rightBunnyEar.rotation.z = 0.24 + Math.abs(Math.sin(elapsed * beatFreq)) * 0.18 * danceIntensity + earTwitch * 0.6;
 
       // BobaCat Tail Swish
-      catTailGroup.rotation.y = Math.sin(elapsed * beatFreq) * 0.38 * danceIntensity;
+      catTailGroup.rotation.y = Math.sin(elapsed * beatFreq) * 0.38 * danceIntensity +
+        (petting ? Math.sin(elapsed * 12) * 0.26 : Math.sin(elapsed * 4) * attentionX * 0.12);
       catTailGroup.rotation.x = Math.cos(elapsed * beatFreq * 0.5) * 0.12;
 
       // 4-Lobed Plush Pink Bow Follow-Through
