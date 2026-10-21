@@ -94,14 +94,16 @@ jobs:
             fail('Token is active but cannot list Workers scripts on the configured account (code ' + codes + '). Grant Workers product Admin for initial Worker creation and check token resource scope.');
           }
           const exists = Array.isArray(scripts.body.result) && scripts.body.result.some(entry => entry.id === worker);
-          if (exists) {
-            const secrets = await check(root + '/' + worker + '/secrets');
-            if (!secrets.response.ok || secrets.body.success !== true) {
-              const codes = (secrets.body.errors ?? []).map(e => e.code).join(',') || secrets.response.status;
-              fail('Worker exists but token cannot access secrets metadata (code ' + codes + '). Grant Workers Editor or Workers Scripts Read access on this account.');
+          const secrets = await check(root + '/' + worker + '/secrets');
+          if (!secrets.response.ok || secrets.body.success !== true) {
+            const codes = (secrets.body.errors ?? []).map(e => e.code).join(',') || secrets.response.status;
+            // A brand new script can legitimately return 404, but an access denial must be stopped here.
+            if (!(secrets.response.status === 404 && !exists)) {
+              fail('Cloudflare denied read access to Worker secrets metadata (HTTP ' + secrets.response.status + ', code ' + codes + '). Token can list Workers but cannot provision this resource. Grant Workers product Admin on the correct Cloudflare account for initial creation, not only individual Worker access.');
             }
-          } else {
-            console.log('Target Worker was not found. Creating it requires Workers product Admin on this account.');
+          }
+          if (!exists) {
+            console.log('Target Worker is not listed. Initial Worker creation requires Workers product Admin on this account.');
           }
           console.log('Cloudflare Workers API read permissions verified.');
           NODE
