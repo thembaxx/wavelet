@@ -20,15 +20,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Verify Cloudflare credential is configured
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "::error::Add CLOUDFLARE_API_TOKEN as a GitHub Actions repository secret for Wavelet; no deployment occurred."
-            exit 1
-          fi
-
       - name: Checkout reviewed main
         uses: actions/checkout@v4
         with:
@@ -38,6 +29,47 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Verify Cloudflare token format and API authentication
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          node <<'NODE'
+          const token = process.env.CLOUDFLARE_API_TOKEN ?? '';
+          function fail(message) {
+            console.error(`::error::${message}`);
+            process.exit(1);
+          }
+          if (!token) fail('CLOUDFLARE_API_TOKEN is missing. Add it to Wavelet repository Actions secrets.');
+          if (/^\s*(Bearer|Token)\s+/i.test(token))
+            fail('CLOUDFLARE_API_TOKEN contains an Authorization prefix. Paste only the raw token, without Bearer.');
+          if (/^['"`]|['"`]$/.test(token))
+            fail('CLOUDFLARE_API_TOKEN contains surrounding quotation marks. Re-save only the raw token.');
+          if (/\s/.test(token) || /[^\x21-\x7e]/.test(token))
+            fail('CLOUDFLARE_API_TOKEN contains whitespace or non-ASCII characters. Re-paste the raw token.');
+          const endpoints = [
+            'https://api.cloudflare.com/client/v4/user/tokens/verify',
+            'https://api.cloudflare.com/client/v4/accounts/4558b6cb691038495ac4966102bdb898/tokens/verify',
+          ];
+          const errors = [];
+          for (const endpoint of endpoints) {
+            try {
+              const response = await fetch(endpoint, {
+                headers: { Authorization: `Bearer ${token}` },
+                signal: AbortSignal.timeout(15000),
+              });
+              const result = await response.json();
+              if (response.ok && result.success === true && result.result?.status === 'active') {
+                console.log('Cloudflare accepted an active API token. Proceeding to Worker deployment.');
+                process.exit(0);
+              }
+              errors.push(`${response.status}: ${(result.errors ?? []).map(e => e.code).join(',') || 'token not active'}`);
+            } catch {
+              errors.push('verification endpoint unavailable');
+            }
+          }
+          fail(`Cloudflare API token verification failed (${errors.join('; ')}). Replace the Actions secret with a raw, active Cloudflare API token from the correct account. No Worker was deployed.`);
+          NODE
 
       - name: Install and typecheck Worker
         working-directory: workers/multiplayer
