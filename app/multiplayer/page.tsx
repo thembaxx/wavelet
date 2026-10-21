@@ -155,6 +155,8 @@ export default function MultiplayerPage() {
     send({ type: 'play' });
   };
 
+  const selected = selection.index === snapshot?.index ? selection.value : '';
+  const me = snapshot?.players.find(p => p.id === myId);
   const host = snapshot?.hostId === myId;
   const remaining = snapshot?.round ? Math.max(0, Math.ceil((snapshot.round.deadline - now - clockOffset) / 1000)) : 0;
   const copyInvite = async () => {
