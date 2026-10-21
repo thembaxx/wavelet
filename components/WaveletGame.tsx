@@ -59,7 +59,6 @@ import {
   getEffectiveDifficulty,
   buildModeChallengeOptions,
   advanceRoundState,
-  buildStreamingLinks,
   calculateVinylTier,
   calculateWinLossRatio,
   createInitialProgression,
@@ -1918,7 +1917,6 @@ export const WaveletGame: React.FC = () => {
             {/* Played Tracks List with Direct Add to Spotify & Apple Music Links */}
             <div className="mt-3 flex-1 overflow-y-auto space-y-2 pr-1">
               {session.history.map((item, idx) => {
-                const links = buildStreamingLinks(item.song);
                 return (
                   <div
                     key={`${item.song.id}-${idx}`}
@@ -1947,30 +1945,9 @@ export const WaveletGame: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <a
-                        href={links.spotifyUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Add ${item.song.title} to Spotify`}
-                        className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-[#1DB954]"
-                      >
-                        <SpotifyLogo weight="fill" className="h-4 w-4" />
-                      </a>
-                      <a
-                        href={links.appleMusicUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Open ${item.song.title} in Apple Music`}
-                        className={`flex h-9 w-9 items-center justify-center rounded-full border ${
-                          isLight
-                            ? 'border-border bg-card text-[#FA243C]'
-                            : 'border-white/15 bg-white/10 text-[#FA243C]'
-                        }`}
-                      >
-                        <AppleLogo weight="fill" className="h-4 w-4" />
-                      </a>
-                    </div>
+                    <span className="shrink-0 rounded-full border border-primary/25 px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+                      Wavelet original
+                    </span>
                   </div>
                 );
               })}
