@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { CaretDown, Check, MagnifyingGlass, SpotifyLogo, VinylRecord } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -17,6 +18,7 @@ export interface CratePickerProps {
   onArtist: (artist: ArtistChoice) => void;
   onSearch: (term: string) => void;
   onAccount: () => void;
+  reducedMotion?: boolean;
 }
 
 export function CratePicker(props: CratePickerProps) {
@@ -27,7 +29,7 @@ export function CratePicker(props: CratePickerProps) {
   const select = (mode: FilterMode, value: string) => { audioEngine.playUiTick(); props.onSelect(mode, value); setOpen(false); };
 
   return <Popover open={open} onOpenChange={next => { setOpen(next); if (next) { setTab(props.mode === 'artist' ? 'artist' : props.mode === 'year' ? 'year' : props.customSearch ? 'search' : 'genre'); audioEngine.playTabSwitch(); } }}>
-    <PopoverTrigger asChild><Button variant="outline" className="crate-trigger" aria-label={`Choose music crate: ${label}`}><span className="crate-trigger-icon"><VinylRecord size={21} /></span><span><small>Your music</small><strong>{label}{props.mode === 'artist' ? ' only' : ''}</strong></span><CaretDown size={15} className="ml-auto shrink-0 text-muted-foreground" /></Button></PopoverTrigger>
+    <PopoverTrigger asChild><Button variant="outline" className="crate-trigger" aria-label={`Choose music crate: ${label}`}><span className="crate-trigger-icon"><VinylRecord size={21} /></span><span><small>Your music</small><span className="crate-animated-label"><AnimatePresence mode="wait" initial={false}><motion.strong key={`${props.mode}:${label}`} initial={props.reducedMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={props.reducedMotion ? { opacity: 0 } : { opacity: 0, y: -6 }} transition={{ duration: props.reducedMotion ? 0 : 0.16 }}>{label}{props.mode === 'artist' ? ' only' : ''}</motion.strong></AnimatePresence></span></span><CaretDown size={15} className="crate-chevron ml-auto shrink-0 text-muted-foreground" /></Button></PopoverTrigger>
     <PopoverContent className="crate-popover" align="start" sideOffset={10}>
       <div className="crate-popover-heading"><h3>Find your groove</h3><p>Choose a mix, or make it all about one artist.</p></div>
       <Tabs value={tab} onValueChange={setTab}>

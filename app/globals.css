@@ -398,3 +398,22 @@ html[data-motion="reduced"] .studio-icon-button:hover, html[data-motion="reduced
 @media (prefers-reduced-motion: reduce) {
   .easyui-animated-tabs button { transition: none; }
 }
+
+/* Motion polish: short, meaningful transitions that never block input. */
+.crate-animated-label { display: block; min-width: 0; max-width: 100%; overflow: hidden; line-height: 1.2; }
+.crate-animated-label strong { display: block; white-space: nowrap; }
+.crate-chevron { transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
+.crate-trigger[data-state="open"] .crate-chevron { transform: rotate(180deg); }
+.crate-trigger-icon { transition: transform 300ms cubic-bezier(.2,.8,.2,1); }
+.crate-popover [role="tabpanel"][data-state="active"] { animation: crate-panel-in 220ms cubic-bezier(.16,1,.3,1) both; }
+.crate-choice-list button { transition: background-color 160ms ease, transform 180ms cubic-bezier(.2,.8,.2,1); }
+.crate-choice-list button:active { transform: scale(.985); }
+@keyframes crate-panel-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@media (hover: hover) and (pointer: fine) {
+  .crate-trigger:hover .crate-trigger-icon { transform: rotate(-13deg); }
+  .crate-choice-list button:hover { transform: translateX(3px); }
+}
+html[data-motion="reduced"] .crate-popover [role="tabpanel"][data-state="active"] { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion="full"]) .crate-popover [role="tabpanel"][data-state="active"] { animation: none; }
+}
