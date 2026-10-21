@@ -70,6 +70,7 @@ import {
   GENRE_PRESETS,
 } from '@/lib/music-catalog';
 import { audioEngine } from '@/lib/audio-engine';
+import { isFreeGameTrack } from '@/lib/cleared-catalog';
 import {
   signInWithGooglePopup,
   signOutUser,
@@ -581,7 +582,7 @@ export const WaveletGame: React.FC = () => {
       if (mode === 'artist') setSongPool([]);
       let tracks: SongTrack[] = [];
       try {
-        if (mode === 'account' && connectedProfile?.customTracks.length) tracks = connectedProfile.customTracks;
+        if (mode === 'account') tracks = [];
         else {
           const preset = GENRE_PRESETS.find(genre => genre.id === value);
           const term = customQuery?.trim() || (mode === 'genre' ? preset?.query || `${value} hits` : mode === 'year' ? `${value} music hits` : value);
@@ -590,7 +591,7 @@ export const WaveletGame: React.FC = () => {
           const response = await fetch(`/api/songs?${query}`, { signal: controller.signal });
           if (!response.ok) throw new Error('Catalog unavailable');
           const data = await response.json();
-          tracks = Array.isArray(data.tracks) ? data.tracks : [];
+          tracks = Array.isArray(data.tracks) ? data.tracks.filter(isFreeGameTrack) : [];
         }
       } catch {
         if (controller.signal.aborted) return [];
@@ -598,13 +599,14 @@ export const WaveletGame: React.FC = () => {
       } finally {
         if (request === crateRequest.current) setIsLoadingSongs(false);
       }
+      tracks = tracks.filter(isFreeGameTrack);
       if (mode === 'artist') tracks = artistOnlyTracks(tracks, value, artist?.id);
       if (request === crateRequest.current) {
         setSongPool(tracks);
         if (!tracks.length) setCrateError(`No playable songs found for ${value}. Try another artist.`);
       }
       return tracks;
-    }, [connectedProfile],
+    }, [],
   );
 
   const initialCrateLoaded = useRef(false);
@@ -727,6 +729,7 @@ export const WaveletGame: React.FC = () => {
   // Select Challenge Mode (Track, Artist, Genre, Year)
   const handleSelectChallengeMode = useCallback((mode: GuessChallengeMode) => {
     audioEngine.playUiTick(1.18, 'selection');
+    if (mode === 'year') return; // Originals all date to 2026; no meaningful year quiz.
     setChallengeMode(mode);
     const modeDef = GAME_CHALLENGE_MODES.find((m) => m.id === mode);
     if (modeDef) {
@@ -757,12 +760,12 @@ export const WaveletGame: React.FC = () => {
       }
       audioEngine.playUiTick(1.3, 'medium');
 
-      let activePool = overridePool || songPool;
+      let activePool = (overridePool || songPool).filter(isFreeGameTrack);
       let request = crateRequest.current;
       if (customSearchTerm.trim().length > 1 && !overridePool) {
         const pending = fetchLiveCrate(filterMode, filterValue, customSearchTerm);
         request = crateRequest.current;
-        activePool = await pending;
+        activePool = (await pending).filter(isFreeGameTrack);
       }
       if (request !== crateRequest.current) { setIsStartingGame(false); return; }
 
@@ -1287,7 +1290,7 @@ export const WaveletGame: React.FC = () => {
               <div ref={introRef} className="studio-intro">
                 <p className="studio-eyebrow studio-intro-copy">The music guessing game</p>
                 <h1 className="max-w-md"><span className="studio-intro-word">Little clips.</span><br /><span className="studio-intro-word studio-intro-accent">Big music energy.</span></h1>
-                <p className="studio-intro-copy">Listen. Trust your ears. Find your groove.</p>
+                <p className="studio-intro-copy">Listen. Trust your ears. Explore free original studio grooves — no licensed chart hits yet.</p>
               </div>
               {preferences.danceVideo && !reducedMotion && <video src="/assets/aistudio/gemini_generated_video_7AE59D01_39556c31.mp4" autoPlay loop muted playsInline aria-label="Your companion dancing" className="studio-cameo" />}
             </div>
@@ -1304,7 +1307,7 @@ export const WaveletGame: React.FC = () => {
               onSelect={(mode, value) => { void handleSelectFilterValue(mode, value); }}
               onArtist={artist => { audioEngine.playUiTick(1.1); setSelectedArtist(artist); setFilterMode('artist'); setFilterValue(artist.name); setCustomSearchTerm(''); void fetchLiveCrate('artist', artist.name, undefined, artist); }}
               onSearch={term => { setCustomSearchTerm(term); setSelectedArtist(null); setFilterMode('genre'); setFilterValue('All'); void fetchLiveCrate('genre', 'All', term); }}
-              onAccount={() => { if (connectedProfile?.customTracks.length) { setSelectedArtist(null); setCustomSearchTerm(''); setFilterMode('account'); setFilterValue(connectedProfile.displayName); void fetchLiveCrate('account', connectedProfile.displayName); } else setIsAccountModalOpen(true); }} />
+              onAccount={() => { setCrateError('Music account gameplay is unavailable until permissions for interactive trivia are cleared. Try an original mix.'); }} />
           </>
         )}
 
