@@ -17,3 +17,9 @@ The interface uses shadcn/ui, Phosphor icons, Three.js contour animation, and Re
 The PWA caches its shell, public catalog responses, studio sounds, and up to 20 played previews. Uncached previews and account services require a connection. Updates can be applied in Settings between sets. Supported browsers also offer fullscreen, native media controls, and home-screen installation.
 
 The skippable three-step welcome introduces the studio through interactive Three.js objects. Replay it from **Settings → Replay the intro**; an active round pauses safely. Both the intro and its 3D bundle work offline after the app reports offline readiness. Apple install icons use Next.js file-based PNG metadata with fingerprinted URLs and traditional fallback filenames.
+
+## Multiplayer (private rooms)
+
+Wavelet now includes a separate **Play with friends** lobby at `/multiplayer`: 2–8 listeners can join via an eight-character invite code, mark ready, and compete across Track, Artist, Genre, or Year challenges. The Cloudflare PartyServer Worker is server-authoritative for answers, deadlines, and scores; solo play is unchanged.
+
+Multiplayer requires a separately deployed Worker and `NEXT_PUBLIC_WAVELET_MULTIPLAYER_URL` to be set in the Vercel project. See [Multiplayer setup, architecture, and validation](docs/MULTIPLAYER.md). The option is intentionally disabled when the Worker URL is not configured. Do not publicly launch music-preview gameplay without confirming appropriate rights and catalog availability.

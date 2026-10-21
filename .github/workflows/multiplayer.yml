@@ -1,0 +1,32 @@
+name: Multiplayer Worker validation
+
+on:
+  pull_request:
+    paths:
+      - 'workers/multiplayer/**'
+      - '.github/workflows/multiplayer.yml'
+  push:
+    paths:
+      - 'workers/multiplayer/**'
+      - '.github/workflows/multiplayer.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Worker dependencies
+        run: npm install --no-audit --no-fund
+        working-directory: workers/multiplayer
+      - name: Typecheck Worker
+        run: npm run typecheck
+        working-directory: workers/multiplayer
+      - name: Bundle Worker without deploying
+        run: npx wrangler deploy --dry-run --outdir /tmp/wavelet-worker
+        working-directory: workers/multiplayer

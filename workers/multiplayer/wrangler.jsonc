@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "wavelet-multiplayer",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-21",
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "WaveletRoom",
+        "class_name": "WaveletRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "WaveletRoom"
+      ]
+    }
+  ],
+  "vars": {
+    "CATALOG_ORIGIN": "https://wavelet-azure.vercel.app",
+    "ALLOWED_ORIGINS": "https://wavelet-azure.vercel.app"
+  }
+}
