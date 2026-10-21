@@ -13,8 +13,6 @@ import {
   SpeakerSlash,
   Check,
   X,
-  SpotifyLogo,
-  AppleLogo,
   CaretDown,
   CaretUp,
   ArrowsClockwise,
@@ -618,7 +616,7 @@ export const WaveletGame: React.FC = () => {
       let artist: ArtistChoice | undefined;
       try {
         const saved = JSON.parse(localStorage.getItem('wavelet_last_crate_v1') || 'null');
-        if (saved && ['genre', 'year', 'artist'].includes(saved.mode) && typeof saved.value === 'string' && saved.value.trim().length > 0 && saved.value.length <= 100) {
+        if (saved && ['genre', 'artist'].includes(saved.mode) && typeof saved.value === 'string' && saved.value.trim().length > 0 && saved.value.length <= 100) {
           mode = saved.mode; value = saved.value;
           search = typeof saved.search === 'string' ? saved.search.slice(0, 100) : '';
           if (mode === 'artist') artist = { id: typeof saved.artist?.id === 'string' ? saved.artist.id.slice(0, 100) : `curated:${value}`, name: value };
