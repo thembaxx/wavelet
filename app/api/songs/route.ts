@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getLicensedCatalog } from '@/lib/licensed-catalog';
-import { artistOnlyTracks } from '@/lib/catalog-filters';
+import { matchesArtist } from '@/lib/catalog-filters';
 
 /** Only authorized clips are permitted in gameplay. iTunes previews stay metadata-only. */
 export async function GET(request: NextRequest) {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   const country = use === 'solo' ? request.headers.get('x-vercel-ip-country') : null;
   const validity = use === 'multiplayer' ? 10 * (20 + 4.5) * 1000 : 0;
   let tracks = await getLicensedCatalog({ use, durationSeconds, country, minimumValidityMs: validity });
-  if (artist) tracks = artistOnlyTracks(tracks, artist, artistId);
+  if (artist) tracks = tracks.filter(track => matchesArtist(track, artist, artistId));
   else if (term && term !== 'all' && !term.includes(' hits') && !term.includes(' music')) {
     const matching = tracks.filter(track => [track.title, track.artist, track.album, track.genre, track.decade, String(track.releaseYear)].some(value => value.toLowerCase().includes(term)));
     if (matching.length) tracks = matching;
