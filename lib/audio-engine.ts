@@ -1,4 +1,5 @@
 import type { SongMoodProfile } from './game-rules';
+import { getOriginalGroove, type OriginalGroove } from './cleared-catalog';
 
 export interface AudioSpectrumFrame {
   bass: number;
@@ -298,6 +299,13 @@ export class WaveletAudioEngine {
     onEnded?: () => void;
   }) {
     this.stopSnippet();
+    // Never load arbitrary user/API previews. Original compositions are
+    // verified against the committed allowlist before touching audio playback.
+    const groove = getOriginalGroove(params.previewUrl);
+    if (!groove) {
+      params.onEnded?.();
+      return;
+    }
     const ctx = this.ensureContext();
 
     this.snippetTargetDuration = params.durationSec;
@@ -308,29 +316,46 @@ export class WaveletAudioEngine {
 
     this.playNeedleDrop();
 
-    if (params.previewUrl && typeof Audio !== 'undefined') {
-      try {
-        const audio = new Audio();
-        audio.crossOrigin = 'anonymous';
-        audio.src = params.previewUrl;
-        audio.muted = this.isMuted;
-        audio.volume = this.volume * 0.85;
-        this.audioEl = audio;
-        this.usingFallbackSynth = false;
-
-        audio.play().catch(() => {
-          if (this.audioEl === audio && this.isPlayingSnippet) this.startProceduralGroove(ctx, params.mood);
-        });
-      } catch {
-        this.startProceduralGroove(ctx, params.mood);
-      }
-    } else {
-      this.startProceduralGroove(ctx, params.mood);
-    }
+    this.startOriginalGroove(ctx, groove);
 
     this.snippetStopTimer = setTimeout(() => {
       this.stopSnippet(true);
     }, params.durationSec * 1000);
+  }
+
+  private startOriginalGroove(ctx: AudioContext | null, groove: OriginalGroove) {
+    this.usingFallbackSynth = true;
+    if (!ctx || !this.masterGain) return;
+
+    const beatMs = 30000 / groove.bpm;
+    let step = 0;
+    const note = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
+    const strike = (frequency: number, wave: OscillatorType, level: number, length: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const now = ctx.currentTime;
+      osc.type = wave;
+      osc.frequency.setValueAtTime(frequency, now);
+      gain.gain.setValueAtTime(Math.max(0.001, level), now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + length);
+      osc.connect(gain);
+      if (this.analyser) gain.connect(this.analyser);
+      gain.connect(this.masterGain!);
+      osc.start(now);
+      osc.stop(now + length + 0.01);
+      osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+    };
+    const advance = () => {
+      if (!this.isPlayingSnippet || this.isMuted) { step++; return; }
+      const index = step % groove.melody.length;
+      // Each original loop has its own notes, timbre and tempo. No samples.
+      strike(note(groove.melody[index]), groove.wave, 0.085, 0.22);
+      if (step % 2 === 0) strike(60, 'sine', 0.15, 0.13);
+      if (step % 4 === 2) strike(185, 'triangle', 0.045, 0.055);
+      step++;
+    };
+    advance();
+    this.synthBeatTimer = setInterval(advance, beatMs);
   }
 
   private startProceduralGroove(ctx: AudioContext | null, mood: SongMoodProfile) {
