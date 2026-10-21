@@ -372,3 +372,23 @@ html[data-motion="reduced"] .studio-icon-button:hover, html[data-motion="reduced
   .onboarding-modes button, .onboarding-appearance button { height: 56px; padding: 8px 4px; }
   .onboarding-footnote { font-size: 9px; margin-top: 10px; }
 }
+
+/* EasyUI adaptations: Wavelet palette, keyboard focus, and responsive controls. */
+.easyui-animated-tabs { display: flex; align-items: center; }
+.easyui-animated-tabs button { position: relative; display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; border: 0; background: transparent; isolation: isolate; }
+.easyui-animated-tabs button[data-state="on"],
+.easyui-animated-tabs.guess-mode-tabs button[data-state="on"],
+.easyui-animated-tabs.round-segmented button[data-state="on"] { background: transparent; box-shadow: none; color: var(--primary); }
+.easyui-animated-tabs .easyui-tab-indicator { position: absolute; inset: 0; z-index: -1; border: 1px solid var(--border); border-radius: inherit; background: var(--card); box-shadow: 0 2px 5px #1b3d2912; pointer-events: none; }
+.easyui-animated-tabs .easyui-tab-content { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; }
+.easyui-animated-tabs.guess-mode-tabs .easyui-tab-content { flex-direction: column; }
+.easyui-animated-tabs.round-segmented { padding: 4px; gap: 4px; }
+.easyui-animated-tabs.round-segmented button { padding: 0 6px; }
+.easyui-animated-tabs button:focus-visible,
+.easyui-unfold-trigger:focus-visible { outline: 3px solid var(--studio-accent); outline-offset: 2px; }
+.easyui-unfold-trigger { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 13px; font-weight: 700; color: var(--studio-ink); text-align: left; }
+.easyui-unfold-content { overflow: hidden; }
+.easyui-unfold-inner { padding-bottom: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  .easyui-animated-tabs button { transition: none; }
+}
