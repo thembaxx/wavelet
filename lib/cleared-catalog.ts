@@ -84,7 +84,7 @@ export function isFreeGameTrack(track: SongTrack): boolean {
     track.releaseYear === canonical.releaseYear &&
     track.rights?.provider === 'wavelet-original' &&
     track.rights?.gameUse === true &&
-    track.rights?.territories.includes('*') === true;
+    track.rights?.territories?.includes('*') === true;
 }
 
 export function freeGameCatalog(): SongTrack[] {
