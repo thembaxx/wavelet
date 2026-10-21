@@ -23,3 +23,8 @@ The skippable three-step welcome introduces the studio through interactive Three
 Wavelet now includes a separate **Play with friends** lobby at `/multiplayer`: 2–8 listeners can join via an eight-character invite code, mark ready, and compete across Track, Artist, Genre, or Year challenges. The Cloudflare PartyServer Worker is server-authoritative for answers, deadlines, and scores; solo play is unchanged.
 
 Multiplayer requires a separately deployed Worker and `NEXT_PUBLIC_WAVELET_MULTIPLAYER_URL` to be set in the Vercel project. See [Multiplayer setup, architecture, and validation](docs/MULTIPLAYER.md). The option is intentionally disabled when the Worker URL is not configured. Do not publicly launch music-preview gameplay without confirming appropriate rights and catalog availability.
+
+
+## Licensed song playback
+
+Wavelet now has a fail-closed rights-aware catalogue. See [LICENSED_MUSIC.md](docs/LICENSED_MUSIC.md) for the direct-licensing and Songclip / Feed Clips gateway integration. Without written game-use rights and an approved clip source, gameplay audio is unavailable; iTunes discovery supplies metadata only. Neither a streaming subscription nor a promotional preview URL is a game-use license.

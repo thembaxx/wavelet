@@ -163,6 +163,8 @@ export interface SongMoodProfile {
   energy: number;
 }
 
+import type { TrackPlaybackRights } from './music-rights';
+
 export interface SongTrack {
   id: string;
   title: string;
@@ -177,7 +179,9 @@ export interface SongTrack {
   appleMusicUrl?: string;
   spotifyUrl?: string;
   bpm?: number;
-  source?: 'itunes' | 'spotify' | 'apple-music' | 'curated';
+  source?: 'itunes' | 'spotify' | 'apple-music' | 'curated' | 'licensed';
+  rights?: TrackPlaybackRights;
+  licenseCountry?: string | null;
 }
 
 export interface GameConfig {
