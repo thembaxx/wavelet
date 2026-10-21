@@ -13,7 +13,8 @@ import { StudioDialog } from './StudioDialog';
 import { WaveletMark } from './WaveletBrand';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { AnimatedTabs } from './easyui/AnimatedTabs';
+import { UnfoldAccordion } from './easyui/UnfoldAccordion';
 import { Button } from '@/components/ui/button';
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -100,9 +101,7 @@ export function StudioSettings(props: StudioSettingsProps) {
 
         <section className="settings-section" aria-labelledby="look-settings-heading">
           <div className="settings-section-title"><h3 id="look-settings-heading">Look &amp; motion</h3><Desktop size={18} /></div>
-          <fieldset className="studio-fieldset"><legend>Appearance</legend><ToggleGroup type="single" value={preferences.theme} onValueChange={theme => { if (theme) change({ theme: theme as StudioPreferences['theme'] }); }} className="round-segmented" aria-label="Appearance">
-            <ToggleGroupItem value="light">Daylight</ToggleGroupItem><ToggleGroupItem value="dark">After hours</ToggleGroupItem><ToggleGroupItem value="system">Device</ToggleGroupItem>
-          </ToggleGroup></fieldset>
+          <fieldset className="studio-fieldset"><legend>Appearance</legend><AnimatedTabs className="round-segmented" ariaLabel="Appearance" reducedMotion={reducedMotion} value={preferences.theme} onValueChange={theme => change({ theme: theme as StudioPreferences['theme'] })} tabs={[{ id: 'light', label: 'Daylight' }, { id: 'dark', label: 'After hours' }, { id: 'system', label: 'Device' }]} /></fieldset>
           <label className="setting-row" htmlFor="motion-preference"><span><span className="setting-label">Motion</span><span className="setting-description">Keep the energy. Set your own pace.</span></span>
             <select id="motion-preference" value={preferences.motion} onChange={event => change({ motion: event.target.value as StudioPreferences['motion'] })}>
               <option value="system">Use device setting</option><option value="full">Full motion</option><option value="reduced">Reduced motion</option>
@@ -137,7 +136,7 @@ export function StudioSettings(props: StudioSettingsProps) {
           <button type="button" className="settings-link" aria-label="Replay the Wavelet intro" onClick={props.onReplayIntro}><span><span className="setting-label">Replay the intro</span><span className="setting-description">Three little steps. A few things to play with.</span></span><ArrowCounterClockwise size={20} /></button>
         </section>
 
-        <details className="settings-section studio-shortcuts"><summary>Keys to the studio</summary><dl><div><dt>Play / start</dt><dd><kbd>Space</kbd></dd></div><div><dt>Pause / resume</dt><dd><kbd>P</kbd></dd></div><div><dt>Mute all audio</dt><dd><kbd>M</kbd></dd></div><div><dt>Change appearance</dt><dd><kbd>T</kbd></dd></div><div><dt>Hide game controls</dt><dd><kbd>H</kbd></dd></div></dl><p>Some good things are hidden in the groove. Try the logo a few times.</p></details>
+        <section className="settings-section studio-shortcuts"><UnfoldAccordion reducedMotion={reducedMotion} items={[{ id: 'keyboard', title: 'Keys to the studio', content: <><dl><div><dt>Play / start</dt><dd><kbd>Space</kbd></dd></div><div><dt>Pause / resume</dt><dd><kbd>P</kbd></dd></div><div><dt>Mute all audio</dt><dd><kbd>M</kbd></dd></div><div><dt>Change appearance</dt><dd><kbd>T</kbd></dd></div><div><dt>Hide game controls</dt><dd><kbd>H</kbd></dd></div></dl><p>Some good things are hidden in the groove. Try the logo a few times.</p></> }]} /></section>
         <footer className="settings-footer"><WaveletMark className="h-7 w-7" /><span><strong>Wavelet</strong>Little clips. Big music energy.</span></footer>
       </div>
     </StudioDialog>

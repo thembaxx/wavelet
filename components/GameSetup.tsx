@@ -8,6 +8,8 @@ import { CratePicker, type CratePickerProps } from './CratePicker';
 import { DIFFICULTY_TIERS, GAME_CHALLENGE_MODES, type DifficultyTier, type GuessChallengeMode, type PlayMode, type SnippetDuration } from '@/lib/game-rules';
 import { audioEngine } from '@/lib/audio-engine';
 import { BloomShape } from './react-bits/BloomShape';
+import { AnimatedTabs } from './easyui/AnimatedTabs';
+import { MagneticButton } from './easyui/MagneticButton';
 
 const MODE_ICONS = { track: MusicNotes, artist: MicrophoneStage, genre: VinylRecord, year: CalendarBlank };
 
@@ -30,11 +32,11 @@ export function GameSetup(props: Props) {
 
   return <section aria-label="Game Configuration Dock" data-testid="game-configuration" className="studio-game-dock setup-panel squircle">
     <div className="setup-heading"><span>What are we guessing?</span><BloomShape key={challenge} className="setup-bloom" /></div>
-    <ToggleGroup type="single" value={challenge} onValueChange={value => { if (value) props.onChallenge(value as GuessChallengeMode); }} className="guess-mode-tabs" aria-label="Guessing game modes">{GAME_CHALLENGE_MODES.map(mode => { const Icon = MODE_ICONS[mode.id]; return <ToggleGroupItem data-spark key={mode.id} value={mode.id} data-testid={`mode-${mode.id}-btn`} aria-label={`Guess the ${mode.id}`}><Icon size={19} weight={challenge === mode.id ? 'fill' : 'regular'} /><span>{mode.id.charAt(0).toUpperCase() + mode.id.slice(1)}</span></ToggleGroupItem>; })}</ToggleGroup>
+    <AnimatedTabs className="guess-mode-tabs" ariaLabel="Guessing game modes" value={challenge} reducedMotion={props.reducedMotion} onValueChange={value => props.onChallenge(value as GuessChallengeMode)} tabs={GAME_CHALLENGE_MODES.map(mode => { const Icon = MODE_ICONS[mode.id]; return { id: mode.id, label: mode.id.charAt(0).toUpperCase() + mode.id.slice(1), ariaLabel: `Guess the ${mode.id}`, testId: `mode-${mode.id}-btn`, icon: <Icon size={19} weight={challenge === mode.id ? 'fill' : 'regular'} /> }; })} />
     <div className="setup-music-row"><CratePicker {...props} /><Button variant="outline" className="round-options-trigger squircle" data-testid="tune-rules-btn" aria-label="Round options" aria-haspopup="dialog" onClick={() => { audioEngine.playTabSwitch(); props.onRulesOpen(true); }}><SlidersHorizontal size={21} /><span>{duration}s · {count}</span></Button></div>
     <p className="setup-description" role="status">{props.loading ? <><CircleNotch size={14} className="animate-spin" /> Getting your crate ready…</> : props.error ? props.error : props.mode === 'artist' ? <><Headphones size={14} /> {props.availableTracks} {props.availableTracks === 1 ? 'song' : 'songs'} · only {props.artist?.name || props.value}{actualCount < count && actualCount > 0 ? ` · ${actualCount}-song set` : ''}</> : <>{activeMode.promptLabel} <span aria-hidden="true">·</span> {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</>}</p>
     <div className="play-spark">
-      <Button data-spark data-start="true" size="lg" className="setup-play-button squircle" disabled={props.loading || actualCount === 0} onClick={props.onStart}><span>{props.loading ? <CircleNotch size={18} className="animate-spin" /> : <Play size={18} weight="fill" />} Let’s play</span><span className="setup-play-count">{actualCount || count} {actualCount === 1 ? 'song' : 'songs'}</span></Button>
+      <MagneticButton data-spark data-start="true" reducedMotion={props.reducedMotion} className="setup-play-button squircle bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50" disabled={props.loading || actualCount === 0} onClick={props.onStart}><span>{props.loading ? <CircleNotch size={18} className="animate-spin" /> : <Play size={18} weight="fill" />} Let’s play</span><span className="setup-play-count">{actualCount || count} {actualCount === 1 ? 'song' : 'songs'}</span></MagneticButton>
     </div>
 
     <StudioDialog open={props.rulesOpen} onClose={() => props.onRulesOpen(false)} labelledBy="round-options-title" reducedMotion={props.reducedMotion}>
