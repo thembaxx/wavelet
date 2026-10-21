@@ -43,7 +43,8 @@ export function MagneticButton({
       onPointerLeave={event => { onPointerLeave?.(event); reset(); }}
       onPointerCancel={event => { onPointerCancel?.(event); reset(); }}
       onBlur={event => { onBlur?.(event); reset(); }}
-      whileTap={reducedMotion || disabled ? undefined : { scale: 0.98 }}
+      whileHover={reducedMotion || disabled ? undefined : { scale: 1.025 }}
+      whileTap={reducedMotion || disabled ? undefined : { scale: 0.975 }}
     />
   );
 }

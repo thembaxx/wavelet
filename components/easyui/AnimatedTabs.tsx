@@ -55,7 +55,7 @@ export function AnimatedTabs({
       {tabs.map((tab, index) => {
         const active = value === tab.id;
         return (
-          <button
+          <motion.button
             key={tab.id}
             ref={element => { buttons.current[index] = element; }}
             type="button"
@@ -65,6 +65,9 @@ export function AnimatedTabs({
             aria-label={tab.ariaLabel || tab.label}
             aria-pressed={active}
             onClick={() => { if (!active) onValueChange(tab.id); }}
+            whileHover={reducedMotion ? undefined : { y: -1 }}
+            whileTap={reducedMotion ? undefined : { scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 38 }}
           >
             {active && (reducedMotion
               ? <span className="easyui-tab-indicator" aria-hidden="true" />
@@ -78,7 +81,7 @@ export function AnimatedTabs({
               {tab.icon}
               <span>{tab.label}</span>
             </span>
-          </button>
+          </motion.button>
         );
       })}
     </div>

@@ -1433,7 +1433,9 @@ export const WaveletGame: React.FC = () => {
             <div className="pointer-events-auto flex flex-col items-center">
               <motion.button
                 type="button"
-                whileTap={{ scale: 0.95 }}
+                aria-expanded={!isDockCollapsed}
+                aria-controls="wavelet-round-controls"
+                whileTap={reducedMotion ? undefined : { scale: 0.95 }}
                 onClick={() => {
                   audioEngine.playUiTick(1.05, 'light');
                   setIsDockCollapsed((prev) => !prev);
@@ -1457,13 +1459,14 @@ export const WaveletGame: React.FC = () => {
                 )}
               </motion.button>
 
-              <AnimatePresence>
+              <AnimatePresence initial={false}>
                 {!isDockCollapsed && (
                   <motion.section
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 16 }}
-                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    id="wavelet-round-controls"
+                    initial={reducedMotion ? false : { opacity: 0, y: 12, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={reducedMotion ? { height: 0, opacity: 0 } : { opacity: 0, y: 12, height: 0 }}
+                    transition={{ duration: reducedMotion ? 0 : 0.32, ease: [0.16, 1, 0.3, 1] }}
                     aria-label="Active Song Quiz Controls"
                     className={`w-full overflow-hidden squircle border p-3.5 space-y-2.5 transition-colors ${
                       isLight
@@ -1473,6 +1476,7 @@ export const WaveletGame: React.FC = () => {
                   >
                     {/* Waveform & Cover Card (IMG_5813 + IMG_5847!) */}
                     <AppleMusicCoverCard
+                      key={session.currentIndex}
                       song={currentSong}
                       mood={currentMood}
                       themeMode={themeMode}
@@ -1705,18 +1709,20 @@ export const WaveletGame: React.FC = () => {
                     {/* Keep choices visible after answering so players can see their pick and the correct answer. */}
                     {playMode === 'quiz-4choice' && (
                       <div className="grid grid-cols-2 gap-1.5" aria-label="Answer choices">
-                        {challengeOptions.map((option) => {
+                        {challengeOptions.map((option, optionIndex) => {
                           const isEliminated = eliminatedOptionIds.includes(option.id);
                           const answered = Boolean(roundFeedback?.answered);
                           const isCorrectAnswer = answered && option.isCorrect;
                           const isWrongPick = answered && roundFeedback?.selectedOptionId === option.id && !option.isCorrect;
                           return (
                             <motion.button
-                              key={option.id}
+                              key={`${session.currentIndex}-${option.id}`}
                               type="button"
+                              initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+                              whileHover={!answered && !isEliminated && !reducedMotion ? { y: -2 } : undefined}
                               whileTap={!answered && !reducedMotion ? { scale: 0.97 } : undefined}
-                              animate={isCorrectAnswer && !reducedMotion ? { scale: [1, 1.035, 1] } : { scale: 1 }}
-                              transition={{ duration: 0.36 }}
+                              animate={isCorrectAnswer && !reducedMotion ? { opacity: 1, y: 0, scale: [1, 1.035, 1] } : { opacity: 1, y: 0, scale: 1 }}
+                              transition={{ duration: reducedMotion ? 0 : 0.34, delay: answered || reducedMotion ? 0 : optionIndex * 0.045 }}
                               disabled={isEliminated}
                               aria-disabled={answered || isEliminated}
                               aria-label={
