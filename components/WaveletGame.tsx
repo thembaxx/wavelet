@@ -1434,7 +1434,6 @@ export const WaveletGame: React.FC = () => {
               <motion.button
                 type="button"
                 aria-expanded={!isDockCollapsed}
-                aria-controls="wavelet-round-controls"
                 whileTap={reducedMotion ? undefined : { scale: 0.95 }}
                 onClick={() => {
                   audioEngine.playUiTick(1.05, 'light');
