@@ -1,0 +1,86 @@
+name: Deploy Wavelet multiplayer Worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'workers/multiplayer/**'
+      - '.github/workflows/deploy-multiplayer-worker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wavelet-multiplayer-worker-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Verify Cloudflare credential is configured
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Add CLOUDFLARE_API_TOKEN as a GitHub Actions repository secret for Wavelet; no deployment occurred."
+            exit 1
+          fi
+
+      - name: Checkout reviewed main
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install and typecheck Worker
+        working-directory: workers/multiplayer
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npx wrangler deploy --dry-run --outdir /tmp/wavelet-multiplayer-worker
+
+      - name: Deploy to Cloudflare
+        working-directory: workers/multiplayer
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          npx wrangler deploy 2>&1 | tee /tmp/wavelet-multiplayer-deploy.log
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const log = fs.readFileSync('/tmp/wavelet-multiplayer-deploy.log', 'utf8');
+          const found = log.match(/https:\/\/wavelet-multiplayer\.[a-zA-Z0-9-]+\.workers\.dev/);
+          if (!found) {
+            console.error('Could not verify the Workers.dev hostname; check Wrangler output and health manually.');
+            process.exit(1);
+          }
+          fs.appendFileSync(process.env.GITHUB_ENV, 'WAVELET_WORKER_URL=' + found[0] + '\n');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, 'Wavelet Worker: ' + found[0] + '\n');
+          NODE
+
+      - name: Verify Worker health
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5; do
+            if curl --fail --silent --show-error "$WAVELET_WORKER_URL/health" | node -e '
+              let payload = "";
+              process.stdin.on("data", chunk => payload += chunk);
+              process.stdin.on("end", () => {
+                const body = JSON.parse(payload);
+                if (body.ok !== true || body.service !== "wavelet-multiplayer") process.exit(1);
+              });
+            '; then
+              echo "Healthy Cloudflare Worker: $WAVELET_WORKER_URL"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::Worker health check failed."
+          exit 1
