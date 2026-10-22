@@ -166,7 +166,7 @@ export default function MultiplayerPage() {
   };
 
   return (
-    <main className="relative min-h-dvh overflow-hidden bg-[#0A1212] px-4 py-8 text-white selection:bg-[#EDFF8C] selection:text-black md:py-12">
+    <main className="relative h-dvh overflow-x-hidden overflow-y-auto overscroll-y-contain bg-[#0A1212] px-4 py-8 text-white selection:bg-[#EDFF8C] selection:text-black md:py-12">
       <div aria-hidden="true" className="pointer-events-none absolute -left-40 -top-40 h-[35rem] w-[35rem] rounded-full bg-[#309F92]/15 blur-[120px]" />
       <div aria-hidden="true" className="pointer-events-none absolute -right-32 top-56 h-[30rem] w-[30rem] rounded-full bg-[#4F5BD5]/15 blur-[120px]" />
       <div className="relative mx-auto w-full max-w-3xl">
