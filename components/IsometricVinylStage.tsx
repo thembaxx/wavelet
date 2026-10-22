@@ -1691,6 +1691,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     domEl.addEventListener('pointerdown', handlePointerDown);
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
 
     const handleResize = () => {
       if (!container) return;
@@ -2130,6 +2131,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       domEl.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
       grooveTex.dispose();
       bauhausCubeTex.dispose();
       ribbedBumpTex.dispose();
@@ -2143,7 +2145,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
 
   return (
     <div
-      className="absolute inset-0 z-0 w-full h-full overflow-hidden select-none touch-none"
+      className="absolute inset-0 z-0 w-full h-full overflow-hidden select-none touch-pan-y"
       aria-hidden="true"
     >
       <div

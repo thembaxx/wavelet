@@ -1878,12 +1878,14 @@ export const WaveletGame: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="gameover-modal-title"
-            className={`pointer-events-auto my-auto mx-auto flex max-h-[88vh] w-full max-w-md flex-col squircle border p-5 shadow-2xl ${
+            className={`pointer-events-auto my-auto mx-auto flex max-h-[88dvh] w-full max-w-md flex-col overflow-hidden squircle border p-5 shadow-2xl ${
               isLight
                 ? 'border-border bg-card text-foreground'
                 : 'border-white/15 bg-card text-foreground'
             }`}
           >
+            {/* Keep the action buttons reachable while the entire results content can scroll. */}
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain pr-1" role="region" aria-label="Session results and played tracks" tabIndex={0}>
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs font-semibold text-primary">
@@ -1913,7 +1915,7 @@ export const WaveletGame: React.FC = () => {
             </div>
 
             {/* Played Tracks List with Direct Add to Spotify & Apple Music Links */}
-            <div className="mt-3 flex-1 overflow-y-auto space-y-2 pr-1">
+            <div className="space-y-2">
               {session.history.map((item, idx) => {
                 const links = buildStreamingLinks(item.song);
                 return (
@@ -1973,9 +1975,11 @@ export const WaveletGame: React.FC = () => {
               })}
             </div>
 
+            </div>
+
             {/* Play Again & Change Mode/Crate Actions */}
             <div
-              className={`mt-4 grid grid-cols-2 gap-2.5 pt-3 border-t ${
+              className={`mt-4 grid shrink-0 grid-cols-2 gap-2.5 pt-3 border-t ${
                 isLight ? 'border-[#F1F1F1]' : 'border-white/10'
               }`}
             >

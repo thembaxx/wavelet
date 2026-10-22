@@ -293,7 +293,7 @@ html[data-motion="reduced"] .studio-icon-button:hover, html[data-motion="reduced
 /* One continuous, tactile welcome. Paper and chrome inherit the studio theme. */
 .onboarding-dialog { padding: 24px; }
 .onboarding-dialog::backdrop { background: color-mix(in srgb, var(--background) 60%, #0c241b 40%); backdrop-filter: blur(16px); }
-.onboarding-dialog .studio-dialog-panel { width: 100%; max-width: 1024px; max-height: min(760px, 94dvh); background: var(--background); border-radius: 36px; corner-shape: squircle; box-shadow: 0 32px 100px #06191026; }
+.onboarding-dialog .studio-dialog-panel { width: 100%; max-width: 1024px; max-height: min(760px, 94dvh); overflow-y: auto; overscroll-behavior-y: contain; background: var(--background); border-radius: 36px; corner-shape: squircle; box-shadow: 0 32px 100px #06191026; }
 .onboarding-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-shrink: 0; padding: 24px 32px 0; z-index: 1; }
 .onboarding-brand { display: flex; align-items: center; gap: 8px; color: var(--foreground); }
 .onboarding-brand img { border-radius: 12px; corner-shape: squircle; }
@@ -302,7 +302,8 @@ html[data-motion="reduced"] .studio-icon-button:hover, html[data-motion="reduced
 .onboarding-layout { display: grid; grid-template-columns: 1.1fr 1fr; min-height: 0; }
 .onboarding-visual { position: relative; min-height: 520px; overflow: hidden; isolation: isolate; background: radial-gradient(ellipse at 50% 48%, color-mix(in srgb, var(--secondary) 42%, transparent), transparent 66%); }
 .onboarding-orbit { position: absolute; width: 50%; height: 7%; left: 25%; bottom: 17%; border-radius: 50%; background: var(--foreground); opacity: .09; filter: blur(16px); transform: rotate(-8deg); pointer-events: none; }
-.onboarding-canvas { position: absolute; inset: 0; touch-action: none; }
+/* Horizontal drags rotate the 3D objects; vertical swipes still scroll the intro. */
+.onboarding-canvas { position: absolute; inset: 0; touch-action: pan-y; }
 .onboarding-canvas canvas { display: block; width: 100%; height: 100%; }
 .onboarding-fallback { position: absolute; inset: 0; display: grid; place-items: center; color: var(--primary); }
 .onboarding-object-note { position: absolute; left: 0; right: 0; top: 30px; display: flex; align-items: center; justify-content: center; gap: 8px; pointer-events: none; color: var(--muted-foreground); font-size: 11px; }
