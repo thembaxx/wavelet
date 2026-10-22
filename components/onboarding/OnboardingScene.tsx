@@ -123,7 +123,8 @@ export function OnboardingScene(props: Props) {
     };
     const up = (event: PointerEvent) => {
       dirty = true;
-      if (drag && !drag.moved) { if (latest.current.reducedMotion) spin += Math.PI / 3; else velocity += 10; }
+      // The browser cancels pointers when a touch becomes a vertical scroll.
+      if (event.type !== 'pointercancel' && drag && !drag.moved) { if (latest.current.reducedMotion) spin += Math.PI / 3; else velocity += 10; }
       drag = null; element.style.cursor = 'grab';
       if (element.hasPointerCapture(event.pointerId)) element.releasePointerCapture(event.pointerId);
     };
