@@ -6,14 +6,14 @@ Wavelet is the product name throughout the game, metadata, install manifest, ico
 
 The app icon is an original folded teal-and-lime **w** with soft depth, inspired by the supplied app-icon references. The full-bleed artwork is in `public/brand/wavelet-master.png`; the header uses a small WebP export. `app/icon.png` provides a PNG browser icon; `app/apple-icon.png` is the opaque 180px Apple touch icon. Next.js emits explicit sizes, types, and fingerprinted URLs for both. Keep the layout’s `metadata.icons` unset: this Next.js version suppresses file-based icons when that field is set. The traditional `/apple-touch-icon.png` and `/apple-touch-icon-precomposed.png` paths remain available for Apple’s fallback discovery. `public/icon.svg` retains the simplified vector ribbon. The maskable icon has additional padding for operating-system crops.
 
-| Element | Value |
-| --- | --- |
-| Deep jade | `#176B56` |
-| Forest ink | `#203D32` |
-| Soft pistachio | `#DEEDC5` |
-| Warm ivory | `#F7F8F2` |
-| After hours background | `#102721` |
-| Typeface | Satoshi variable, locally hosted |
+| Element                | Value                            |
+| ---------------------- | -------------------------------- |
+| Deep jade              | `#176B56`                        |
+| Forest ink             | `#203D32`                        |
+| Soft pistachio         | `#DEEDC5`                        |
+| Warm ivory             | `#F7F8F2`                        |
+| After hours background | `#102721`                        |
+| Typeface               | Satoshi variable, locally hosted |
 
 Satoshi comes from [Fontshare](https://www.fontshare.com/fonts/satoshi). Its Free Font License is included beside the font in `public/fonts/`.
 

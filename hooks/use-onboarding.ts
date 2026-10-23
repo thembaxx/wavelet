@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
-export const ONBOARDING_KEY = 'wavelet_onboarding_v1';
+export const ONBOARDING_KEY = "wavelet_onboarding_v1";
 
 export function useOnboarding(ready: boolean) {
   const [open, setOpen] = useState(false);
@@ -12,9 +12,13 @@ export function useOnboarding(ready: boolean) {
   useEffect(() => {
     if (!ready) return;
     const timer = window.setTimeout(() => {
-      if (new URLSearchParams(window.location.search).get('autostart') === '1') return;
-      try { if (['completed', 'skipped'].includes(localStorage.getItem(ONBOARDING_KEY) || '')) return; } catch { /* The intro still works without storage. */ }
-      setRun(previous => previous + 1);
+      if (new URLSearchParams(window.location.search).get("autostart") === "1") return;
+      try {
+        if (["completed", "skipped"].includes(localStorage.getItem(ONBOARDING_KEY) || "")) return;
+      } catch {
+        /* The intro still works without storage. */
+      }
+      setRun((previous) => previous + 1);
       setOpen(true);
     }, 0);
     return () => clearTimeout(timer);
@@ -22,12 +26,16 @@ export function useOnboarding(ready: boolean) {
 
   const replay = useCallback(() => {
     setReplaying(true);
-    setRun(previous => previous + 1);
+    setRun((previous) => previous + 1);
     setOpen(true);
   }, []);
 
   const dismiss = useCallback((completed: boolean) => {
-    try { localStorage.setItem(ONBOARDING_KEY, completed ? 'completed' : 'skipped'); } catch { /* Best effort. */ }
+    try {
+      localStorage.setItem(ONBOARDING_KEY, completed ? "completed" : "skipped");
+    } catch {
+      /* Best effort. */
+    }
     setOpen(false);
   }, []);
 

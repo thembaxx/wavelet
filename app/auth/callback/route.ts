@@ -1,38 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const code = searchParams.get('code');
-  const error = searchParams.get('error');
+  const code = searchParams.get("code");
+  const error = searchParams.get("error");
 
   const baseUrl =
-    process.env.APP_URL && !process.env.APP_URL.includes('MY_APP_URL')
-      ? process.env.APP_URL.replace(/\/$/, '')
+    process.env.APP_URL && !process.env.APP_URL.includes("MY_APP_URL")
+      ? process.env.APP_URL.replace(/\/$/, "")
       : new URL(req.url).origin;
 
   const redirectUri = `${baseUrl}/auth/callback`;
-  const clientId = process.env.SPOTIFY_CLIENT_ID || '';
-  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET || '';
+  const clientId = process.env.SPOTIFY_CLIENT_ID || "";
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET || "";
 
   let payload: Record<string, unknown> = {
-    type: 'OAUTH_AUTH_SUCCESS',
-    provider: 'spotify',
-    status: error ? 'error' : 'connected',
+    type: "OAUTH_AUTH_SUCCESS",
+    provider: "spotify",
+    status: error ? "error" : "connected",
     error: error || null,
     tracks: [],
-    profileName: 'Spotify Listener',
+    profileName: "Spotify Listener",
   };
 
   if (code && clientId && clientSecret) {
     try {
-      const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
+      const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
         },
         body: new URLSearchParams({
-          grant_type: 'authorization_code',
+          grant_type: "authorization_code",
           code,
           redirect_uri: redirectUri,
         }),
@@ -43,15 +43,15 @@ export async function GET(req: NextRequest) {
         const accessToken = tokenData.access_token;
 
         const [profileRes, topRes] = await Promise.all([
-          fetch('https://api.spotify.com/v1/me', {
+          fetch("https://api.spotify.com/v1/me", {
             headers: { Authorization: `Bearer ${accessToken}` },
           }),
-          fetch('https://api.spotify.com/v1/me/top/tracks?limit=20&time_range=medium_term', {
+          fetch("https://api.spotify.com/v1/me/top/tracks?limit=20&time_range=medium_term", {
             headers: { Authorization: `Bearer ${accessToken}` },
           }),
         ]);
 
-        let profileName = 'Spotify Listener';
+        let profileName = "Spotify Listener";
         if (profileRes.ok) {
           const p = (await profileRes.json()) as { display_name?: string };
           if (p.display_name) profileName = p.display_name;
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
             const year = item.album?.release_date
               ? Number(item.album.release_date.slice(0, 4)) || 2020
               : 2020;
-            const artist = item.artists?.[0]?.name || 'Unknown Artist';
+            const artist = item.artists?.[0]?.name || "Unknown Artist";
             const query = encodeURIComponent(`${item.name} ${artist}`);
             tracks.push({
               id: `spotify-${item.id}`,
@@ -87,20 +87,20 @@ export async function GET(req: NextRequest) {
               album: item.album?.name || item.name,
               releaseYear: year,
               decade: `${Math.floor(year / 10) * 10}s`,
-              genre: 'Personal Top Mix',
-              previewUrl: item.preview_url || '',
-              artworkUrl: item.album?.images?.[0]?.url || '',
+              genre: "Personal Top Mix",
+              previewUrl: item.preview_url || "",
+              artworkUrl: item.album?.images?.[0]?.url || "",
               spotifyUrl: item.external_urls?.spotify || `https://open.spotify.com/search/${query}`,
               appleMusicUrl: `https://music.apple.com/us/search?term=${query}`,
-              source: 'spotify',
+              source: "spotify",
             });
           }
         }
 
         payload = {
-          type: 'OAUTH_AUTH_SUCCESS',
-          provider: 'spotify',
-          status: 'connected',
+          type: "OAUTH_AUTH_SUCCESS",
+          provider: "spotify",
+          status: "connected",
           profileName,
           tracks,
         };
@@ -155,6 +155,6 @@ export async function GET(req: NextRequest) {
 </html>`;
 
   return new NextResponse(html, {
-    headers: { 'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow' },
+    headers: { "Content-Type": "text/html; charset=utf-8", "X-Robots-Tag": "noindex, nofollow" },
   });
 }

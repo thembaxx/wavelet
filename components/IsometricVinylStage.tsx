@@ -1,16 +1,12 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef } from 'react';
-import * as THREE from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { audioEngine } from '@/lib/audio-engine';
-import {
-  type SongMoodProfile,
-  type ThemeMode,
-  type MascotCharacterId,
-} from '@/lib/game-rules';
+import React, { useEffect, useRef } from "react";
+import * as THREE from "three";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { audioEngine } from "@/lib/audio-engine";
+import { type SongMoodProfile, type ThemeMode, type MascotCharacterId } from "@/lib/game-rules";
 
-export type MascotMoodState = 'idle' | 'listening' | 'celebrating' | 'sympathy' | 'hyped';
+export type MascotMoodState = "idle" | "listening" | "celebrating" | "sympathy" | "hyped";
 
 interface IsometricVinylStageProps {
   mood: SongMoodProfile;
@@ -18,7 +14,7 @@ interface IsometricVinylStageProps {
   characterId: MascotCharacterId;
   themeMode: ThemeMode;
   isPlayingSnippet: boolean;
-  gameState: 'title' | 'playing' | 'paused' | 'gameover';
+  gameState: "title" | "playing" | "paused" | "gameover";
   reducedMotion?: boolean;
   obscured?: boolean;
   onTurntableInteract?: () => void;
@@ -71,12 +67,12 @@ const _targetTopPlateColor = new THREE.Color();
 const _targetSuitColor = new THREE.Color();
 
 function createVinylGrooveTexture(maxAnisotropy: number): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = 512;
   canvas.height = 512;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
-  ctx.fillStyle = '#0B0A10';
+  ctx.fillStyle = "#0B0A10";
   ctx.fillRect(0, 0, 512, 512);
 
   const cx = 256;
@@ -97,13 +93,13 @@ function createVinylGrooveTexture(maxAnisotropy: number): THREE.CanvasTexture {
 
   // Anisotropic dual bow-tie sheen across the vinyl disc
   const grad = ctx.createLinearGradient(0, 0, 512, 512);
-  grad.addColorStop(0, 'rgba(255,255,255,0.0)');
-  grad.addColorStop(0.42, 'rgba(255,255,255,0.04)');
-  grad.addColorStop(0.48, 'rgba(255,255,255,0.18)');
-  grad.addColorStop(0.5, 'rgba(255,255,255,0.28)');
-  grad.addColorStop(0.52, 'rgba(255,255,255,0.18)');
-  grad.addColorStop(0.58, 'rgba(255,255,255,0.04)');
-  grad.addColorStop(1, 'rgba(255,255,255,0.0)');
+  grad.addColorStop(0, "rgba(255,255,255,0.0)");
+  grad.addColorStop(0.42, "rgba(255,255,255,0.04)");
+  grad.addColorStop(0.48, "rgba(255,255,255,0.18)");
+  grad.addColorStop(0.5, "rgba(255,255,255,0.28)");
+  grad.addColorStop(0.52, "rgba(255,255,255,0.18)");
+  grad.addColorStop(0.58, "rgba(255,255,255,0.04)");
+  grad.addColorStop(1, "rgba(255,255,255,0.0)");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 512, 512);
 
@@ -117,18 +113,18 @@ function createVinylGrooveTexture(maxAnisotropy: number): THREE.CanvasTexture {
  * Generates the Acid Lime (#EDFF8C) 9-Dot Bauhaus Cube texture inspired directly by IMG_5844.
  */
 function createBauhausCubeTexture(maxAnisotropy: number): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = 512;
   canvas.height = 512;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
-  ctx.fillStyle = '#EDFF8C';
+  ctx.fillStyle = "#EDFF8C";
   ctx.fillRect(0, 0, 512, 512);
 
   // Subtle architectural bevel illumination
   const grad = ctx.createLinearGradient(0, 0, 512, 512);
-  grad.addColorStop(0, 'rgba(255,255,255,0.38)');
-  grad.addColorStop(1, 'rgba(48,159,146,0.09)');
+  grad.addColorStop(0, "rgba(255,255,255,0.38)");
+  grad.addColorStop(1, "rgba(48,159,146,0.09)");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 512, 512);
 
@@ -141,12 +137,12 @@ function createBauhausCubeTexture(maxAnisotropy: number): THREE.CanvasTexture {
     for (let col = 0; col < 3; col++) {
       const isCenter = row === 1 && col === 1;
       // Subtle acoustic port ring shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      ctx.fillStyle = "rgba(0,0,0,0.12)";
       ctx.beginPath();
       ctx.arc(startX + col * spacing, startY + row * spacing + 2, 22, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = isCenter ? '#309F92' : '#000000';
+      ctx.fillStyle = isCenter ? "#309F92" : "#000000";
       ctx.beginPath();
       ctx.arc(startX + col * spacing, startY + row * spacing, 20, 0, Math.PI * 2);
       ctx.fill();
@@ -154,10 +150,10 @@ function createBauhausCubeTexture(maxAnisotropy: number): THREE.CanvasTexture {
   }
 
   // Wavelet's signature on the studio speaker.
-  ctx.fillStyle = '#000000';
-  ctx.font = '700 26px sans-serif';
-  ctx.fillText('WAVELET', 54, 456);
-  ctx.fillText('w.', 398, 456);
+  ctx.fillStyle = "#000000";
+  ctx.font = "700 26px sans-serif";
+  ctx.fillText("WAVELET", 54, 456);
+  ctx.fillText("w.", 398, 456);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -170,27 +166,27 @@ function createBauhausCubeTexture(maxAnisotropy: number): THREE.CanvasTexture {
  * matching IMG_5644 & IMG_5611.
  */
 function createRibbedKnitBumpTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = 512;
   canvas.height = 512;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
-  ctx.fillStyle = '#808080';
+  ctx.fillStyle = "#808080";
   ctx.fillRect(0, 0, 512, 512);
 
   // Fine vertical knit ribs
   for (let x = 0; x < 512; x += 8) {
     const ribGrad = ctx.createLinearGradient(x, 0, x + 8, 0);
-    ribGrad.addColorStop(0, '#3a3a3a');
-    ribGrad.addColorStop(0.5, '#efefef');
-    ribGrad.addColorStop(1, '#3a3a3a');
+    ribGrad.addColorStop(0, "#3a3a3a");
+    ribGrad.addColorStop(0.5, "#efefef");
+    ribGrad.addColorStop(1, "#3a3a3a");
     ctx.fillStyle = ribGrad;
     ctx.fillRect(x, 0, 8, 512);
   }
 
   // Subtle horizontal yarn stitch weave
   for (let y = 0; y < 512; y += 6) {
-    ctx.fillStyle = y % 12 === 0 ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.12)';
+    ctx.fillStyle = y % 12 === 0 ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.12)";
     ctx.fillRect(0, y, 512, 3);
   }
 
@@ -205,30 +201,30 @@ function createRibbedKnitBumpTexture(): THREE.CanvasTexture {
  * Organic sculpted peanut-shell waffle & vein relief map matching IMG_5644 & IMG_5611.
  */
 function createPeanutWaffleBumpTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = 512;
   canvas.height = 512;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
 
-  ctx.fillStyle = '#888888';
+  ctx.fillStyle = "#888888";
   ctx.fillRect(0, 0, 512, 512);
 
   // Longitudinal peanut shell ridges
   for (let x = 0; x < 512; x += 28) {
     const grad = ctx.createLinearGradient(x, 0, x + 28, 0);
-    grad.addColorStop(0, '#464646');
-    grad.addColorStop(0.25, '#a8a8a8');
-    grad.addColorStop(0.5, '#f2f2f2');
-    grad.addColorStop(0.75, '#a8a8a8');
-    grad.addColorStop(1, '#464646');
+    grad.addColorStop(0, "#464646");
+    grad.addColorStop(0.25, "#a8a8a8");
+    grad.addColorStop(0.5, "#f2f2f2");
+    grad.addColorStop(0.75, "#a8a8a8");
+    grad.addColorStop(1, "#464646");
     ctx.fillStyle = grad;
     ctx.fillRect(x, 0, 28, 512);
   }
 
   // Organic cross-hatch dimples & peanut shell cellular pockets
-  ctx.strokeStyle = 'rgba(52,52,52,0.58)';
+  ctx.strokeStyle = "rgba(52,52,52,0.58)";
   ctx.lineWidth = 7;
-  ctx.lineCap = 'round';
+  ctx.lineCap = "round";
   for (let y = 14; y < 512; y += 34) {
     ctx.beginPath();
     ctx.moveTo(0, y);
@@ -256,9 +252,9 @@ function updateVinylToyFaceCanvas(
   characterId: MascotCharacterId,
   singOpenAmount: number,
   isBlinking: boolean,
-  eyeLookX: number
+  eyeLookX: number,
 ) {
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   const w = canvas.width;
   const h = canvas.height;
   const s = w / 512; // Scale factor for 1024x1024
@@ -267,21 +263,21 @@ function updateVinylToyFaceCanvas(
   ctx.scale(s, s);
 
   // Base creamy porcelain vinyl skin tone
-  ctx.fillStyle = '#FCEAD8';
+  ctx.fillStyle = "#FCEAD8";
   ctx.fillRect(0, 0, 512, 512);
 
   // Subsurface warm illumination gradient across face
   const skinGrad = ctx.createRadialGradient(256, 260, 40, 256, 256, 268);
-  skinGrad.addColorStop(0, '#FFF7F0');
-  skinGrad.addColorStop(0.68, '#FCEAD8');
-  skinGrad.addColorStop(1, '#F1D0B3');
+  skinGrad.addColorStop(0, "#FFF7F0");
+  skinGrad.addColorStop(0.68, "#FCEAD8");
+  skinGrad.addColorStop(1, "#F1D0B3");
   ctx.fillStyle = skinGrad;
   ctx.fillRect(0, 0, 512, 512);
 
   // Soft ambient occlusion along top brow under bangs/hat
   const browAO = ctx.createLinearGradient(0, 90, 0, 195);
-  browAO.addColorStop(0, 'rgba(130, 82, 54, 0.22)');
-  browAO.addColorStop(1, 'rgba(130, 82, 54, 0)');
+  browAO.addColorStop(0, "rgba(130, 82, 54, 0.22)");
+  browAO.addColorStop(1, "rgba(130, 82, 54, 0)");
   ctx.fillStyle = browAO;
   ctx.fillRect(0, 0, 512, 200);
 
@@ -290,21 +286,21 @@ function updateVinylToyFaceCanvas(
     const blush = ctx.createRadialGradient(cx, cy, 3, cx, cy, radius);
     blush.addColorStop(0, `rgba(255, 126, 146, ${alpha})`);
     blush.addColorStop(0.55, `rgba(255, 146, 162, ${alpha * 0.48})`);
-    blush.addColorStop(1, 'rgba(255, 146, 162, 0)');
+    blush.addColorStop(1, "rgba(255, 146, 162, 0)");
     ctx.fillStyle = blush;
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
   };
 
-  const blushIntensity = state === 'celebrating' || state === 'hyped' ? 0.72 : 0.54;
+  const blushIntensity = state === "celebrating" || state === "hyped" ? 0.72 : 0.54;
   drawBlush(136, 302, 56, blushIntensity);
   drawBlush(376, 302, 56, blushIntensity);
 
-  ctx.strokeStyle = '#261714';
-  ctx.fillStyle = '#261714';
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  ctx.strokeStyle = "#261714";
+  ctx.fillStyle = "#261714";
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
 
   const leftEyeX = 166 + eyeLookX * 6;
   const rightEyeX = 346 + eyeLookX * 6;
@@ -312,7 +308,7 @@ function updateVinylToyFaceCanvas(
 
   const drawGlossyKawaiiEye = (ex: number, ey: number, sparkleExtra = false) => {
     // Sculpted outer eyelashes (2 flicks on outer corner like IMG_5644 & IMG_5611)
-    ctx.strokeStyle = '#261714';
+    ctx.strokeStyle = "#261714";
     ctx.lineWidth = 9.5;
     const dir = ex < 256 ? -1 : 1;
     ctx.beginPath();
@@ -323,19 +319,19 @@ function updateVinylToyFaceCanvas(
     ctx.stroke();
 
     // Deep glossy espresso-black iris
-    ctx.fillStyle = '#231512';
+    ctx.fillStyle = "#231512";
     ctx.beginPath();
     ctx.arc(ex, ey, 36, 0, Math.PI * 2);
     ctx.fill();
 
     // Warm lower iris crescent reflection
-    ctx.fillStyle = '#523226';
+    ctx.fillStyle = "#523226";
     ctx.beginPath();
     ctx.arc(ex, ey + 9, 25, 0.14 * Math.PI, 0.86 * Math.PI);
     ctx.fill();
 
     // Primary large Pixar catchlight
-    ctx.fillStyle = '#FFFFFF';
+    ctx.fillStyle = "#FFFFFF";
     ctx.beginPath();
     ctx.arc(ex + 11, ey - 12, 12, 0, Math.PI * 2);
     ctx.fill();
@@ -353,7 +349,7 @@ function updateVinylToyFaceCanvas(
   };
 
   const drawWinkingArcEye = (ex: number, ey: number, withLashes = true) => {
-    ctx.strokeStyle = '#231512';
+    ctx.strokeStyle = "#231512";
     ctx.lineWidth = 11.5;
     ctx.beginPath();
     ctx.arc(ex, ey + 12, 30, 1.14 * Math.PI, 1.86 * Math.PI);
@@ -372,28 +368,28 @@ function updateVinylToyFaceCanvas(
   };
 
   // Eye rendering per character and emotional state
-  if (characterId === 'sprout') {
+  if (characterId === "sprout") {
     // Sprout (IMG_5583 right): joyful curved ^ ^ eyes when idle/celebrating, or sparkling when hyped
-    if (state === 'hyped' && !isBlinking) {
+    if (state === "hyped" && !isBlinking) {
       drawGlossyKawaiiEye(leftEyeX, eyeY, true);
       drawWinkingArcEye(rightEyeX, eyeY, false);
     } else {
       drawWinkingArcEye(leftEyeX, eyeY, false);
       drawWinkingArcEye(rightEyeX, eyeY, false);
     }
-  } else if (characterId === 'bobacat') {
+  } else if (characterId === "bobacat") {
     // BobaCat (IMG_5583 left): cool half-lidded eyes with flat upper eyelid line
     if (isBlinking) {
       drawWinkingArcEye(leftEyeX, eyeY, false);
       drawWinkingArcEye(rightEyeX, eyeY, false);
-    } else if (state === 'celebrating' || state === 'hyped') {
+    } else if (state === "celebrating" || state === "hyped") {
       drawGlossyKawaiiEye(leftEyeX, eyeY, true);
       drawGlossyKawaiiEye(rightEyeX, eyeY, true);
     } else {
       drawGlossyKawaiiEye(leftEyeX, eyeY, false);
       drawGlossyKawaiiEye(rightEyeX, eyeY, false);
       // Cool half-lidded upper mask (exact match to IMG_5583 left cat!)
-      ctx.fillStyle = '#FCEAD8';
+      ctx.fillStyle = "#FCEAD8";
       ctx.fillRect(leftEyeX - 44, eyeY - 44, 88, 25);
       ctx.fillRect(rightEyeX - 44, eyeY - 44, 88, 25);
     }
@@ -403,7 +399,11 @@ function updateVinylToyFaceCanvas(
       drawWinkingArcEye(leftEyeX, eyeY, true);
       drawWinkingArcEye(rightEyeX, eyeY, true);
     } else {
-      drawGlossyKawaiiEye(leftEyeX, eyeY, state === 'celebrating' || state === 'hyped' || state === 'listening');
+      drawGlossyKawaiiEye(
+        leftEyeX,
+        eyeY,
+        state === "celebrating" || state === "hyped" || state === "listening",
+      );
       drawWinkingArcEye(rightEyeX, eyeY, true);
     }
   }
@@ -411,13 +411,13 @@ function updateVinylToyFaceCanvas(
   // Mouth / Nose Expression (matching IMG_5644 cat-pout vs IMG_5611 sweet smile vs singing)
   const mouthX = 256;
   const mouthY = 274;
-  ctx.strokeStyle = '#261714';
-  ctx.fillStyle = '#261714';
+  ctx.strokeStyle = "#261714";
+  ctx.fillStyle = "#261714";
   ctx.lineWidth = 10;
 
   if (
-    state === 'sympathy' ||
-    (characterId === 'bobacat' && state !== 'celebrating' && singOpenAmount < 0.15)
+    state === "sympathy" ||
+    (characterId === "bobacat" && state !== "celebrating" && singOpenAmount < 0.15)
   ) {
     // Cute rounded-triangle nose + inverted-Y pout (exact match to IMG_5644 & IMG_5583 left!)
     ctx.beginPath();
@@ -425,12 +425,12 @@ function updateVinylToyFaceCanvas(
     ctx.fill();
 
     // Tiny specular highlight on nose
-    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.fillStyle = "rgba(255,255,255,0.45)";
     ctx.beginPath();
     ctx.ellipse(mouthX - 4, mouthY - 16, 4, 2.2, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = '#261714';
+    ctx.strokeStyle = "#261714";
     ctx.beginPath();
     ctx.moveTo(mouthX, mouthY - 5);
     ctx.lineTo(mouthX, mouthY + 11);
@@ -440,25 +440,25 @@ function updateVinylToyFaceCanvas(
     ctx.lineTo(mouthX + 18, mouthY + 24);
     ctx.stroke();
   } else if (
-    state === 'listening' ||
+    state === "listening" ||
     singOpenAmount > 0.18 ||
-    state === 'celebrating' ||
-    state === 'hyped'
+    state === "celebrating" ||
+    state === "hyped"
   ) {
-    const openH = state === 'celebrating' ? 27 : 13 + singOpenAmount * 23;
-    const openW = state === 'celebrating' ? 28 : 21 + singOpenAmount * 9;
+    const openH = state === "celebrating" ? 27 : 13 + singOpenAmount * 23;
+    const openW = state === "celebrating" ? 28 : 21 + singOpenAmount * 9;
 
-    ctx.fillStyle = '#5E2129';
+    ctx.fillStyle = "#5E2129";
     ctx.beginPath();
     ctx.roundRect(mouthX - openW, mouthY - 6, openW * 2, openH + 10, [9, 9, 26, 26]);
     ctx.fill();
 
-    ctx.fillStyle = '#FF8FA3';
+    ctx.fillStyle = "#FF8FA3";
     ctx.beginPath();
     ctx.arc(mouthX, mouthY + openH - 2, openW * 0.65, 0, Math.PI);
     ctx.fill();
 
-    ctx.strokeStyle = '#261714';
+    ctx.strokeStyle = "#261714";
     ctx.lineWidth = 8;
     ctx.beginPath();
     ctx.roundRect(mouthX - openW, mouthY - 6, openW * 2, openH + 10, [9, 9, 26, 26]);
@@ -531,14 +531,14 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     if (!container) return;
 
     const isHeadless =
-      typeof navigator !== 'undefined' &&
+      typeof navigator !== "undefined" &&
       (navigator.webdriver || /HeadlessChrome/i.test(navigator.userAgent));
 
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
 
     const initialBgHex =
-      propsRef.current.themeMode === 'light'
+      propsRef.current.themeMode === "light"
         ? propsRef.current.mood.bgLightHex
         : propsRef.current.mood.bgDarkHex;
 
@@ -562,7 +562,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       renderer = new THREE.WebGLRenderer({
         alpha: true,
         antialias: !isHeadless,
-        powerPreference: 'high-performance',
+        powerPreference: "high-performance",
       });
     } catch {
       return;
@@ -576,7 +576,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     renderer.shadowMap.enabled = !isHeadless;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    container.innerHTML = '';
+    container.innerHTML = "";
     container.appendChild(renderer.domElement);
 
     if (!isHeadless) {
@@ -630,7 +630,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     // Multi-layered Architectural Diorama Pedestal
     const platformGeo = new THREE.CylinderGeometry(6.9, 7.25, 0.54, 64);
     const platformMat = new THREE.MeshStandardMaterial({
-      color: propsRef.current.themeMode === 'light' ? 0xf0f2e5 : 0x163129,
+      color: propsRef.current.themeMode === "light" ? 0xf0f2e5 : 0x163129,
       roughness: 0.42,
       metalness: 0.06,
     });
@@ -642,7 +642,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     // Recessed Woven Studio Rug Pad under Turntable & Mascot (offset Y >= 0.02 for zero Z-fighting)
     const rugGeo = new THREE.CylinderGeometry(5.15, 5.2, 0.03, 64);
     const rugMat = new THREE.MeshStandardMaterial({
-      color: propsRef.current.themeMode === 'light' ? 0xf3f4f1 : 0x181d26,
+      color: propsRef.current.themeMode === "light" ? 0xf3f4f1 : 0x181d26,
       roughness: 0.82,
       metalness: 0.02,
     });
@@ -719,7 +719,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     // Part 2: Architectural Plinth Deck Base
     const plinthGeo = new THREE.BoxGeometry(4.24, 0.46, 3.48);
     const plinthMat = new THREE.MeshStandardMaterial({
-      color: propsRef.current.themeMode === 'light' ? 0xf6f6f3 : 0x181e27,
+      color: propsRef.current.themeMode === "light" ? 0xf6f6f3 : 0x181e27,
       roughness: 0.28,
       metalness: 0.18,
     });
@@ -732,7 +732,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     // Part 3: Brushed Anodized Top Plate
     const topPlateGeo = new THREE.BoxGeometry(3.98, 0.06, 3.24);
     const topPlateMat = new THREE.MeshStandardMaterial({
-      color: propsRef.current.themeMode === 'light' ? 0xe5e5e2 : 0x222a36,
+      color: propsRef.current.themeMode === "light" ? 0xe5e5e2 : 0x222a36,
       roughness: 0.22,
       metalness: 0.52,
     });
@@ -1176,7 +1176,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     headSphereMesh.castShadow = true;
     headGroup.add(headSphereMesh);
 
-    const faceCanvas = document.createElement('canvas');
+    const faceCanvas = document.createElement("canvas");
     faceCanvas.width = 512;
     faceCanvas.height = 512;
     updateVinylToyFaceCanvas(
@@ -1185,7 +1185,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       propsRef.current.characterId,
       0,
       false,
-      0
+      0,
     );
     const faceTex = new THREE.CanvasTexture(faceCanvas);
     faceTex.colorSpace = THREE.SRGBColorSpace;
@@ -1198,7 +1198,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       Math.PI * 0.25,
       Math.PI * 0.5,
       Math.PI * 0.28,
-      Math.PI * 0.48
+      Math.PI * 0.48,
     );
     facePatchGeo.scale(1.09, 0.96, 0.95);
     const facePatchMat = new THREE.MeshPhysicalMaterial({
@@ -1252,7 +1252,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       Math.PI * 0.68,
       Math.PI * 1.64,
       0,
-      Math.PI
+      Math.PI,
     );
     hoodBackGeo.scale(1.07, 0.96, 0.95);
     const hoodBackMesh = new THREE.Mesh(hoodBackGeo, peanutSuitMat);
@@ -1491,14 +1491,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     const octaShapeGeo = new THREE.OctahedronGeometry(0.14, 0);
 
     const shapeColors = [
-      0x309f92,
-      0xedff8c,
-      0xff7a59,
-      0x4f5bd5,
-      0x309f92,
-      0xedff8c,
-      0xf294a7,
-      0x7ca1c4,
+      0x309f92, 0xedff8c, 0xff7a59, 0x4f5bd5, 0x309f92, 0xedff8c, 0xf294a7, 0x7ca1c4,
     ];
     for (let i = 0; i < shapeCount; i++) {
       const geo =
@@ -1635,7 +1628,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
             // A rare full spin is more delightful than spinning after every gentle pat.
             mascotSpinBoost = petCount % 3 === 0 ? Math.PI * 2 : 0.24;
           }
-          audioEngine.playUiTick(1.38, 'medium');
+          audioEngine.playUiTick(1.38, "medium");
           propsRef.current.onMascotInteract?.();
         } else if (
           hitObj === vinylMesh ||
@@ -1647,14 +1640,14 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
             vinylScratchSpring.impulse(14.0);
             cubeBassSpring.impulse(2.8);
           }
-          audioEngine.playUiTick(0.92, 'medium');
+          audioEngine.playUiTick(0.92, "medium");
           propsRef.current.onTurntableInteract?.();
         }
       }
     };
 
     const handlePointerMove = (e: PointerEvent) => {
-      if (!propsRef.current.reducedMotion && e.pointerType !== 'touch') {
+      if (!propsRef.current.reducedMotion && e.pointerType !== "touch") {
         const rect = renderer.domElement.getBoundingClientRect();
         const inside = e.target === renderer.domElement && rect.width > 0 && rect.height > 0;
         if (inside) {
@@ -1662,15 +1655,16 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
           pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
           raycaster.setFromCamera(pointer, camera);
         }
-        const overCompanion = inside && raycaster.intersectObjects(
-          [headSphereMesh, bellyMesh, brimMesh, domeMesh], false
-        ).length > 0;
+        const overCompanion =
+          inside &&
+          raycaster.intersectObjects([headSphereMesh, bellyMesh, brimMesh, domeMesh], false)
+            .length > 0;
         attentionTarget = overCompanion ? 1 : 0;
         if (overCompanion) {
           lookTargetX = THREE.MathUtils.clamp(pointer.x, -0.85, 0.85);
           lookTargetY = THREE.MathUtils.clamp(pointer.y, -0.7, 0.7);
         }
-        renderer.domElement.style.cursor = overCompanion ? 'pointer' : 'auto';
+        renderer.domElement.style.cursor = overCompanion ? "pointer" : "auto";
       }
       if (!isDragging || propsRef.current.reducedMotion) return;
       const dx = e.clientX - prevPointerX;
@@ -1688,10 +1682,10 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     };
 
     const domEl = renderer.domElement;
-    domEl.addEventListener('pointerdown', handlePointerDown);
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-    window.addEventListener('pointercancel', handlePointerUp);
+    domEl.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
 
     const handleResize = () => {
       if (!container) return;
@@ -1710,14 +1704,23 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     let prevTimeMs = startTimeMs;
     let animFrameId = 0;
     let lastHeadlessRender = 0;
-    let lastFaceSignature = '';
+    let lastFaceSignature = "";
 
-    const stillSpectrum = { bass: 0.12, mid: 0.1, treble: 0.08, energy: 0.1, bins: new Float32Array(16).fill(0.12) };
+    const stillSpectrum = {
+      bass: 0.12,
+      mid: 0.1,
+      treble: 0.08,
+      energy: 0.1,
+      bins: new Float32Array(16).fill(0.12),
+    };
 
     const animate = (nowMs: number) => {
       animFrameId = requestAnimationFrame(animate);
 
-      if (document.hidden || propsRef.current.obscured) { prevTimeMs = nowMs; return; }
+      if (document.hidden || propsRef.current.obscured) {
+        prevTimeMs = nowMs;
+        return;
+      }
       const minFrameTime = isHeadless ? 500 : propsRef.current.reducedMotion ? 100 : 0;
       if (lastHeadlessRender > 0 && nowMs - lastHeadlessRender < minFrameTime) {
         return;
@@ -1729,8 +1732,10 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       const dt = Math.min(rawDt, 0.045);
       const currentProps = propsRef.current;
       const elapsed = currentProps.reducedMotion ? 0 : (nowMs - startTimeMs) / 1000;
-      const spectrum = currentProps.reducedMotion ? stillSpectrum : audioEngine.sampleSpectrum(elapsed);
-      const isLight = currentProps.themeMode === 'light';
+      const spectrum = currentProps.reducedMotion
+        ? stillSpectrum
+        : audioEngine.sampleSpectrum(elapsed);
+      const isLight = currentProps.themeMode === "light";
 
       if (!currentProps.reducedMotion && !isHeadless) {
         if (nowMs >= nextBlinkMs) {
@@ -1743,7 +1748,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         }
       }
       const petting = !currentProps.reducedMotion && nowMs < petUntilMs;
-      const attention = currentProps.reducedMotion ? 0 : (petting ? 1 : attentionTarget);
+      const attention = currentProps.reducedMotion ? 0 : petting ? 1 : attentionTarget;
       attentionX = THREE.MathUtils.damp(attentionX, attention, 5.5, dt);
       attentionY = THREE.MathUtils.damp(attentionY, attention, 5.5, dt);
       lookX = THREE.MathUtils.damp(lookX, attention * lookTargetX, 5.5, dt);
@@ -1751,16 +1756,13 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
 
       // Trigger celebratory spring jump when mascotState transitions to celebrating or hyped
       if (!currentProps.reducedMotion && currentProps.mascotState !== prevMascotState) {
-        if (
-          currentProps.mascotState === 'celebrating' ||
-          currentProps.mascotState === 'hyped'
-        ) {
+        if (currentProps.mascotState === "celebrating" || currentProps.mascotState === "hyped") {
           mascotBounceSpring.impulse(5.5);
           mascotSquashSpring.impulse(2.8);
           hatFollowSpring.impulse(6.8);
           beanieFollowSpring.impulse(8.5);
           mascotSpinBoost = Math.PI * 2;
-        } else if (currentProps.mascotState === 'sympathy') {
+        } else if (currentProps.mascotState === "sympathy") {
           mascotSquashSpring.impulse(-2.2);
           hatFollowSpring.impulse(-3.5);
         }
@@ -1779,7 +1781,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       }
 
       // Configure Character-Specific Silhouette & Props (Pebble, BobaCat, Sprout)
-      if (currentProps.characterId === 'pebble') {
+      if (currentProps.characterId === "pebble") {
         bowGroup.visible = true;
         hoodRimMesh.visible = true;
         hoodBackMesh.visible = true;
@@ -1796,7 +1798,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         leftTeardrop3D.visible = true;
         rightTeardrop3D.visible = true;
         _targetSuitColor.set(0xe6b87d);
-      } else if (currentProps.characterId === 'bobacat') {
+      } else if (currentProps.characterId === "bobacat") {
         bowGroup.visible = false;
         hoodRimMesh.visible = false;
         hoodBackMesh.visible = false;
@@ -1811,7 +1813,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         scooterProp.visible = false;
         leftPointingFinger.visible = false;
         leftTeardrop3D.visible = true;
-        rightTeardrop3D.visible = currentProps.mascotState === 'sympathy';
+        rightTeardrop3D.visible = currentProps.mascotState === "sympathy";
         _targetSuitColor.set(0xfcead8);
       } else {
         // Sprout (IMG_5583 right)
@@ -1827,8 +1829,8 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         catTailGroup.visible = false;
         scooterProp.visible = true;
         leftPointingFinger.visible = true;
-        leftTeardrop3D.visible = currentProps.mascotState === 'sympathy';
-        rightTeardrop3D.visible = currentProps.mascotState === 'sympathy';
+        leftTeardrop3D.visible = currentProps.mascotState === "sympathy";
+        rightTeardrop3D.visible = currentProps.mascotState === "sympathy";
         _targetSuitColor.set(0x5cb896);
       }
       peanutSuitMat.color.lerp(_targetSuitColor, dt * 6);
@@ -1838,9 +1840,15 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       const singOpenAmount = currentProps.isPlayingSnippet
         ? Math.round(Math.abs(Math.sin(elapsed * 9.5)) * (0.35 + spectrum.energy * 0.65) * 6) / 6
         : 0;
-      const eyeLookX = currentProps.reducedMotion ? 0 : Math.round(
-        THREE.MathUtils.clamp((currentProps.isPlayingSnippet ? Math.sin(elapsed * 1.8) * 0.35 : 0) + lookX * 0.75, -1, 1) * 3
-      ) / 3;
+      const eyeLookX = currentProps.reducedMotion
+        ? 0
+        : Math.round(
+            THREE.MathUtils.clamp(
+              (currentProps.isPlayingSnippet ? Math.sin(elapsed * 1.8) * 0.35 : 0) + lookX * 0.75,
+              -1,
+              1,
+            ) * 3,
+          ) / 3;
       const nextFaceSig = `${currentProps.mascotState}:${currentProps.characterId}:${singOpenAmount}:${isBlinking ? 1 : 0}:${eyeLookX}`;
       if (nextFaceSig !== lastFaceSignature) {
         lastFaceSignature = nextFaceSig;
@@ -1850,7 +1858,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
           currentProps.characterId,
           singOpenAmount,
           isBlinking,
-          eyeLookX
+          eyeLookX,
         );
         faceTex.needsUpdate = true;
       }
@@ -1859,9 +1867,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       _targetPrimaryColor.set(currentProps.mood.primaryHex);
       _targetSecondaryColor.set(currentProps.mood.secondaryHex);
       _targetAccentColor.set(currentProps.mood.accentHex);
-      _targetBgColor.set(
-        isLight ? currentProps.mood.bgLightHex : currentProps.mood.bgDarkHex
-      );
+      _targetBgColor.set(isLight ? currentProps.mood.bgLightHex : currentProps.mood.bgDarkHex);
       _targetStageColor.set(isLight ? 0xf0f2e5 : 0x163129);
       _targetPlinthColor.set(isLight ? 0xf6f6f3 : 0x181e27);
       _targetTopPlateColor.set(isLight ? 0xe5e5e2 : 0x222a36);
@@ -1872,10 +1878,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       }
 
       platformMat.color.lerp(_targetStageColor, colorMix);
-      rugMat.color.lerp(
-        _tempColor.set(isLight ? 0xf2f3ef : 0x171c25),
-        colorMix
-      );
+      rugMat.color.lerp(_tempColor.set(isLight ? 0xf2f3ef : 0x171c25), colorMix);
       plinthMat.color.lerp(_targetPlinthColor, colorMix);
       topPlateMat.color.lerp(_targetTopPlateColor, colorMix);
       shadowMat.opacity = THREE.MathUtils.damp(shadowMat.opacity, isLight ? 0.16 : 0.34, 4, dt);
@@ -1883,9 +1886,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
 
       rimLight.color.lerp(_targetPrimaryColor, dt * 4);
       accentLight.color.lerp(_targetAccentColor, dt * 4);
-      stylusSpotLight.intensity = currentProps.isPlayingSnippet
-        ? 1.6 + spectrum.treble * 2.2
-        : 0.4;
+      stylusSpotLight.intensity = currentProps.isPlayingSnippet ? 1.6 + spectrum.treble * 2.2 : 0.4;
       stageRingMat.color.lerp(_targetPrimaryColor, dt * 4);
       stageRingMat.emissive.lerp(_targetPrimaryColor, dt * 4);
       pulseRingMat.color.lerp(_targetAccentColor, dt * 4);
@@ -1897,7 +1898,8 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       eqMat.emissive.lerp(_targetPrimaryColor, dt * 4);
 
       // Harmonic Floor Pulse Ring Expansion
-      const ringPulse = 1 + (currentProps.isPlayingSnippet ? spectrum.bass * 0.045 : 0.008 * Math.sin(elapsed * 2));
+      const ringPulse =
+        1 + (currentProps.isPlayingSnippet ? spectrum.bass * 0.045 : 0.008 * Math.sin(elapsed * 2));
       pulseRingMesh.scale.set(ringPulse, ringPulse, 1);
 
       // Bauhaus #EDFF8C Speaker Cube & Acoustic Driver Excursion Physics
@@ -1927,12 +1929,13 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       const scratchBoost = Math.max(0, vinylScratchSpring.step(0, dt));
       const bpmRatio = THREE.MathUtils.clamp(currentProps.mood.bpm / 120, 0.75, 1.45);
       const baseSpinSpeed = currentProps.isPlayingSnippet ? 3.5 * bpmRatio : 0.6;
-      if (!currentProps.reducedMotion) platterGroup.rotation.y -= (baseSpinSpeed + scratchBoost) * dt;
+      if (!currentProps.reducedMotion)
+        platterGroup.rotation.y -= (baseSpinSpeed + scratchBoost) * dt;
       faderKnobMesh.position.z = THREE.MathUtils.damp(
         faderKnobMesh.position.z,
         0.55 + (bpmRatio - 1) * 0.65,
         5,
-        dt
+        dt,
       );
 
       // Tonearm Swing & Stylus Drop Kinematics
@@ -1942,13 +1945,13 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         tonearmPivot.rotation.y,
         targetTonearmRot,
         7,
-        dt
+        dt,
       );
       armTubeMesh.rotation.x = THREE.MathUtils.damp(
         armTubeMesh.rotation.x,
         Math.PI / 2 + targetTonearmLift,
         7,
-        dt
+        dt,
       );
 
       if (!isDragging) {
@@ -1962,15 +1965,17 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       // PIXAR MASCOT DANCE CHOREOGRAPHY & SECONDARY SPRING FOLLOW-THROUGH
       // =======================================================================
       const beatFreq = (currentProps.mood.bpm / 60) * Math.PI;
-      const danceIntensity = currentProps.reducedMotion ? 0 :
-        currentProps.isPlayingSnippet || currentProps.mascotState === 'celebrating'
+      const danceIntensity = currentProps.reducedMotion
+        ? 0
+        : currentProps.isPlayingSnippet || currentProps.mascotState === "celebrating"
           ? 1.0
-          : currentProps.mascotState === 'hyped'
+          : currentProps.mascotState === "hyped"
             ? 0.85
             : 0.35;
 
       if (
-        !currentProps.reducedMotion && (currentProps.mascotState === 'celebrating' || currentProps.mascotState === 'hyped') &&
+        !currentProps.reducedMotion &&
+        (currentProps.mascotState === "celebrating" || currentProps.mascotState === "hyped") &&
         mascotBounceSpring.value < 0.04 &&
         Math.random() < 0.06
       ) {
@@ -2004,10 +2009,12 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       const petWiggle = petting ? Math.sin(elapsed * 27) * 0.055 : 0;
       headGroup.rotation.z =
         Math.sin(elapsed * beatFreq + 0.4) * (0.095 + spectrum.mid * 0.11) * danceIntensity +
-        lookX * 0.08 + petWiggle;
+        lookX * 0.08 +
+        petWiggle;
       headGroup.rotation.y = lookX * 0.22 * attentionX;
       headGroup.rotation.x =
-        -0.18 - lookY * 0.16 * attentionY +
+        -0.18 -
+        lookY * 0.16 * attentionY +
         (currentProps.isPlayingSnippet
           ? Math.sin(elapsed * beatFreq * 2) * 0.085
           : Math.sin(elapsed * 1.6) * 0.035);
@@ -2020,21 +2027,28 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       bucketHatGroup.rotation.z = Math.sin(elapsed * beatFreq - 0.5) * 0.055 * danceIntensity;
       bucketHatGroup.rotation.x = -0.14 + hatFollowVal * 0.05;
 
-      if (currentProps.characterId === 'pebble') {
+      if (currentProps.characterId === "pebble") {
         catBeanieGroup.position.y = 0.58 + Math.max(-0.02, beanieFollowVal * 0.045);
       }
       catBeanieGroup.rotation.z = Math.sin(elapsed * beatFreq - 0.9) * 0.065 * danceIntensity;
 
       // Rare ear flicks and a happy tail swish on touch/attention.
-      const earTwitch = !currentProps.reducedMotion && nowMs < earTwitchUntilMs
-        ? Math.sin((earTwitchUntilMs - nowMs) / 240 * Math.PI) * 0.17 : 0;
-      leftCatEar.rotation.z = 0.24 + Math.sin(elapsed * beatFreq * 2) * 0.07 * danceIntensity + earTwitch;
-      rightCatEar.rotation.z = -0.24 - Math.sin(elapsed * beatFreq * 2) * 0.07 * danceIntensity - earTwitch * 0.6;
-      leftBunnyEar.rotation.z = -0.24 - Math.abs(Math.sin(elapsed * beatFreq)) * 0.18 * danceIntensity - earTwitch;
-      rightBunnyEar.rotation.z = 0.24 + Math.abs(Math.sin(elapsed * beatFreq)) * 0.18 * danceIntensity + earTwitch * 0.6;
+      const earTwitch =
+        !currentProps.reducedMotion && nowMs < earTwitchUntilMs
+          ? Math.sin(((earTwitchUntilMs - nowMs) / 240) * Math.PI) * 0.17
+          : 0;
+      leftCatEar.rotation.z =
+        0.24 + Math.sin(elapsed * beatFreq * 2) * 0.07 * danceIntensity + earTwitch;
+      rightCatEar.rotation.z =
+        -0.24 - Math.sin(elapsed * beatFreq * 2) * 0.07 * danceIntensity - earTwitch * 0.6;
+      leftBunnyEar.rotation.z =
+        -0.24 - Math.abs(Math.sin(elapsed * beatFreq)) * 0.18 * danceIntensity - earTwitch;
+      rightBunnyEar.rotation.z =
+        0.24 + Math.abs(Math.sin(elapsed * beatFreq)) * 0.18 * danceIntensity + earTwitch * 0.6;
 
       // BobaCat Tail Swish
-      catTailGroup.rotation.y = Math.sin(elapsed * beatFreq) * 0.38 * danceIntensity +
+      catTailGroup.rotation.y =
+        Math.sin(elapsed * beatFreq) * 0.38 * danceIntensity +
         (petting ? Math.sin(elapsed * 12) * 0.26 : Math.sin(elapsed * 4) * attentionX * 0.12);
       catTailGroup.rotation.x = Math.cos(elapsed * beatFreq * 0.5) * 0.12;
 
@@ -2044,7 +2058,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
 
       // 3D Teardrop Quiver on Cheeks
       const tearQuiver =
-        currentProps.mascotState === 'sympathy'
+        currentProps.mascotState === "sympathy"
           ? 1.15 + Math.sin(elapsed * 14) * 0.1
           : 1.0 + Math.sin(elapsed * beatFreq * 2) * 0.05;
       leftTeardrop3D.scale.setScalar(tearQuiver);
@@ -2059,8 +2073,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       // Chubby Arms & Mint Scooter Groove + Spinning Scooter Wheels
       armsAndScooterGroup.position.y =
         1.05 + Math.sin(elapsed * beatFreq * 2 - 0.25) * 0.085 * danceIntensity;
-      armsAndScooterGroup.rotation.z =
-        Math.cos(elapsed * beatFreq) * 0.145 * danceIntensity;
+      armsAndScooterGroup.rotation.z = Math.cos(elapsed * beatFreq) * 0.145 * danceIntensity;
       frontWheel.rotation.z -= (1.5 + spectrum.energy * 6.5) * dt * danceIntensity;
       rearWheel.rotation.z -= (1.5 + spectrum.energy * 6.5) * dt * danceIntensity;
 
@@ -2086,10 +2099,10 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         shape.position.set(
           Math.cos(a) * r,
           0.95 + Math.sin(elapsed * 1.4 + i * 0.9) * 0.35 + beatLift,
-          Math.sin(a) * r - 0.6
+          Math.sin(a) * r - 0.6,
         );
         const s =
-          currentProps.isPlayingSnippet || currentProps.mascotState === 'celebrating'
+          currentProps.isPlayingSnippet || currentProps.mascotState === "celebrating"
             ? 0.85 + spectrum.energy * 0.55
             : 0.55;
         shape.scale.setScalar(s);
@@ -2128,10 +2141,10 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     return () => {
       cancelAnimationFrame(animFrameId);
       resizeObserver.disconnect();
-      domEl.removeEventListener('pointerdown', handlePointerDown);
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-      window.removeEventListener('pointercancel', handlePointerUp);
+      domEl.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
       grooveTex.dispose();
       bauhausCubeTex.dispose();
       ribbedBumpTex.dispose();
@@ -2141,18 +2154,14 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     };
   }, []);
 
-  const isLight = themeMode === 'light';
+  const isLight = themeMode === "light";
 
   return (
     <div
       className="absolute inset-0 z-0 w-full h-full overflow-hidden select-none touch-pan-y"
       aria-hidden="true"
     >
-      <div
-        ref={mountRef}
-        data-testid="vinyl-3d-stage"
-        className="relative w-full h-full"
-      />
+      <div ref={mountRef} data-testid="vinyl-3d-stage" className="relative w-full h-full" />
     </div>
   );
 };
