@@ -4,7 +4,7 @@ Little clips. Big music energy. A responsive music guessing game with short song
 
 Use Node.js 22.18+ and Bun. Install with `bun install --frozen-lockfile`, then run `bun run dev`. Open `http://localhost:3000`.
 
-The frontend uses the Bun version declared in `package.json` and `bun.lock` as its only lockfile. Vercel installs with `bun install --frozen-lockfile` and builds with `bun run build`, as configured in `vercel.json`. Do not generate a root `package-lock.json`; the separately deployed multiplayer Worker uses npm in `workers/multiplayer/`.
+The frontend uses the Bun version declared in `package.json` and `bun.lock` as its only lockfile. `vercel.json` runs install and build through `npx --yes bun@1.4.4`, so Vercel's older preinstalled Bun cannot reject the newer lockfile format. Installation uses `--frozen-lockfile`. Keep the Bun version in these two files aligned when upgrading. Do not generate a root `package-lock.json`; the separately deployed multiplayer Worker uses npm in `workers/multiplayer/`.
 
 `bun run test` runs the game, exclusive artist filter, audio, preferences, and service worker regression tests. `bun run lint` checks the project. `bun run build` creates the production build and a versioned service worker. Offline behavior is enabled only in production; verify it with `bun run build` and `bun run start`, then reopen after the offline-ready message in Settings.
 
