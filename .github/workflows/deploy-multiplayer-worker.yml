@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'workers/multiplayer/**'
-      - '.github/workflows/deploy-multiplayer-worker.yml'
+      - "workers/multiplayer/**"
+      - ".github/workflows/deploy-multiplayer-worker.yml"
   workflow_dispatch:
 
 permissions:
@@ -28,7 +28,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Verify Cloudflare token format and API authentication
         env:

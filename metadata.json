@@ -2,7 +2,5 @@
   "name": "Wavelet \u2014 The Music Guessing Game",
   "description": "Little clips. Big music energy. Guess the track, artist, genre, or year in a playful 3D music quiz.",
   "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

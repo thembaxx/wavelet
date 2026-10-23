@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, type PointerEvent } from 'react';
-import Image from 'next/image';
-import gsap from 'gsap';
-import type { MascotCharacterProfile } from '@/lib/game-rules';
+import { useEffect, useRef, type PointerEvent } from "react";
+import Image from "next/image";
+import gsap from "gsap";
+import type { MascotCharacterProfile } from "@/lib/game-rules";
 
 interface CompanionPortraitProps {
   character: MascotCharacterProfile;
@@ -21,8 +21,8 @@ export function CompanionPortrait({
   character,
   reducedMotion,
   size = 50,
-  className = '',
-  alt = '',
+  className = "",
+  alt = "",
 }: CompanionPortraitProps) {
   const rootRef = useRef<HTMLSpanElement>(null);
   const reactionRef = useRef<HTMLSpanElement>(null);
@@ -36,18 +36,18 @@ export function CompanionPortrait({
     const breath = breathRef.current;
     if (!root || !reaction || !gaze || !breath) return;
 
-    gsap.set([reaction, gaze, breath], { clearProps: 'transform' });
+    gsap.set([reaction, gaze, breath], { clearProps: "transform" });
     if (reducedMotion) return;
 
-    const duration = character.id === 'bobacat' ? 3.25 : character.id === 'sprout' ? 2.6 : 2.95;
+    const duration = character.id === "bobacat" ? 3.25 : character.id === "sprout" ? 2.6 : 2.95;
     const breathing = gsap.to(breath, {
       y: -1.25,
       scale: 1.025,
-      rotation: character.id === 'sprout' ? 0.8 : -0.55,
+      rotation: character.id === "sprout" ? 0.8 : -0.55,
       duration,
       repeat: -1,
       yoyo: true,
-      ease: 'sine.inOut',
+      ease: "sine.inOut",
     });
 
     // An offscreen settings dialog should never keep running its portrait tweens.
@@ -58,18 +58,18 @@ export function CompanionPortrait({
       sync();
     });
     observer.observe(root);
-    document.addEventListener('visibilitychange', sync);
+    document.addEventListener("visibilitychange", sync);
 
     return () => {
       observer.disconnect();
-      document.removeEventListener('visibilitychange', sync);
+      document.removeEventListener("visibilitychange", sync);
       breathing.kill();
       gsap.killTweensOf([reaction, gaze, breath]);
     };
   }, [character.id, reducedMotion]);
 
   const followPointer = (event: PointerEvent<HTMLSpanElement>) => {
-    if (reducedMotion || event.pointerType === 'touch' || !gazeRef.current) return;
+    if (reducedMotion || event.pointerType === "touch" || !gazeRef.current) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     const x = (event.clientX - bounds.left) / bounds.width - 0.5;
     const y = (event.clientY - bounds.top) / bounds.height - 0.5;
@@ -78,23 +78,49 @@ export function CompanionPortrait({
       y: y * 2,
       rotation: x * 5,
       duration: 0.36,
-      ease: 'power2.out',
-      overwrite: 'auto',
+      ease: "power2.out",
+      overwrite: "auto",
     });
   };
 
   const lookForward = () => {
     if (!reducedMotion && gazeRef.current) {
-      gsap.to(gazeRef.current, { x: 0, y: 0, rotation: 0, duration: 0.85, ease: 'elastic.out(1, 0.55)', overwrite: 'auto' });
+      gsap.to(gazeRef.current, {
+        x: 0,
+        y: 0,
+        rotation: 0,
+        duration: 0.85,
+        ease: "elastic.out(1, 0.55)",
+        overwrite: "auto",
+      });
     }
   };
 
   const reactToTouch = () => {
     if (reducedMotion || !reactionRef.current) return;
-    gsap.timeline({ defaults: { overwrite: 'auto' } })
-      .to(reactionRef.current, { scaleX: 1.09, scaleY: 0.9, y: 2, duration: 0.11, ease: 'power2.in' })
-      .to(reactionRef.current, { scaleX: 0.95, scaleY: 1.12, y: -3, duration: 0.2, ease: 'back.out(2)' })
-      .to(reactionRef.current, { scaleX: 1, scaleY: 1, y: 0, duration: 0.52, ease: 'elastic.out(1, 0.5)' });
+    gsap
+      .timeline({ defaults: { overwrite: "auto" } })
+      .to(reactionRef.current, {
+        scaleX: 1.09,
+        scaleY: 0.9,
+        y: 2,
+        duration: 0.11,
+        ease: "power2.in",
+      })
+      .to(reactionRef.current, {
+        scaleX: 0.95,
+        scaleY: 1.12,
+        y: -3,
+        duration: 0.2,
+        ease: "back.out(2)",
+      })
+      .to(reactionRef.current, {
+        scaleX: 1,
+        scaleY: 1,
+        y: 0,
+        duration: 0.52,
+        ease: "elastic.out(1, 0.5)",
+      });
   };
 
   return (
@@ -110,7 +136,13 @@ export function CompanionPortrait({
       <span ref={reactionRef} className="living-companion-reaction">
         <span ref={gazeRef} className="living-companion-gaze">
           <span ref={breathRef} className="living-companion-breath">
-            <Image src={character.avatarImg} alt={alt} width={size} height={size} className="living-companion-image" />
+            <Image
+              src={character.avatarImg}
+              alt={alt}
+              width={size}
+              height={size}
+              className="living-companion-image"
+            />
           </span>
         </span>
       </span>

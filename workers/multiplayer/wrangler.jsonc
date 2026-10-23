@@ -7,22 +7,20 @@
     "bindings": [
       {
         "name": "WaveletRoom",
-        "class_name": "WaveletRoom"
-      }
-    ]
+        "class_name": "WaveletRoom",
+      },
+    ],
   },
   "migrations": [
     {
       "tag": "v1",
-      "new_sqlite_classes": [
-        "WaveletRoom"
-      ]
-    }
+      "new_sqlite_classes": ["WaveletRoom"],
+    },
   ],
   "vars": {
     "CATALOG_ORIGIN": "https://wavelet.themba.dev",
-    "ALLOWED_ORIGINS": "https://wavelet.themba.dev,https://wavelet-azure.vercel.app"
+    "ALLOWED_ORIGINS": "https://wavelet.themba.dev,https://wavelet-azure.vercel.app",
   },
   "account_id": "4558b6cb691038495ac4966102bdb898",
-  "workers_dev": true
+  "workers_dev": true,
 }

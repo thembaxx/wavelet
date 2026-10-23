@@ -1,5 +1,5 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
 /**
  * Deterministic evaluator mirroring the exact boolean gates of firestore.rules
@@ -16,67 +16,64 @@ interface RuleEvaluationContext {
   auth: AuthContext | null;
   pathUserId: string;
   requestTimeIso: string;
-  operation: 'get' | 'list' | 'create' | 'update' | 'delete';
+  operation: "get" | "list" | "create" | "update" | "delete";
   existingData?: Record<string, unknown>;
   incomingData?: Record<string, unknown>;
 }
 
 const ALLOWED_KEYS = [
-  'uid',
-  'callsign',
-  'tagline',
-  'mascotId',
-  'xp',
-  'coins',
-  'overallScore',
-  'bestSetScore',
-  'totalWins',
-  'totalLosses',
-  'totalGamesPlayed',
-  'highestStreakEver',
-  'fastestSnippetGuessed',
-  'unlockedBadges',
-  'trackWins',
-  'trackLosses',
-  'trackGames',
-  'trackBestScore',
-  'trackBestStreak',
-  'artistWins',
-  'artistLosses',
-  'artistGames',
-  'artistBestScore',
-  'artistBestStreak',
-  'genreWins',
-  'genreLosses',
-  'genreGames',
-  'genreBestScore',
-  'genreBestStreak',
-  'yearWins',
-  'yearLosses',
-  'yearGames',
-  'yearBestScore',
-  'yearBestStreak',
-  'createdAt',
-  'updatedAt',
+  "uid",
+  "callsign",
+  "tagline",
+  "mascotId",
+  "xp",
+  "coins",
+  "overallScore",
+  "bestSetScore",
+  "totalWins",
+  "totalLosses",
+  "totalGamesPlayed",
+  "highestStreakEver",
+  "fastestSnippetGuessed",
+  "unlockedBadges",
+  "trackWins",
+  "trackLosses",
+  "trackGames",
+  "trackBestScore",
+  "trackBestStreak",
+  "artistWins",
+  "artistLosses",
+  "artistGames",
+  "artistBestScore",
+  "artistBestStreak",
+  "genreWins",
+  "genreLosses",
+  "genreGames",
+  "genreBestScore",
+  "genreBestStreak",
+  "yearWins",
+  "yearLosses",
+  "yearGames",
+  "yearBestScore",
+  "yearBestStreak",
+  "createdAt",
+  "updatedAt",
 ];
 
 function isValidId(id: unknown): boolean {
   return (
-    typeof id === 'string' &&
-    id.length >= 1 &&
-    id.length <= 128 &&
-    /^[a-zA-Z0-9_-]+$/.test(id)
+    typeof id === "string" && id.length >= 1 && id.length <= 128 && /^[a-zA-Z0-9_-]+$/.test(id)
   );
 }
 
 function isBoundedInt(val: unknown): boolean {
-  return typeof val === 'number' && Number.isInteger(val) && val >= 0 && val <= 1000000000;
+  return typeof val === "number" && Number.isInteger(val) && val >= 0 && val <= 1000000000;
 }
 
 function isValidBadgesList(badges: unknown): boolean {
   if (!Array.isArray(badges) || badges.length > 20) return false;
   if (badges.length === 0) return true;
-  return typeof badges[0] === 'string' && badges[0].length >= 1 && badges[0].length <= 40;
+  return typeof badges[0] === "string" && badges[0].length >= 1 && badges[0].length <= 40;
 }
 
 function isValidUserProfile(
@@ -98,16 +95,16 @@ function isValidUserProfile(
     isValidId(data.uid) &&
     data.uid === userId &&
     data.uid === authUid &&
-    typeof data.callsign === 'string' &&
+    typeof data.callsign === "string" &&
     data.callsign.length >= 1 &&
     data.callsign.length <= 40 &&
-    typeof data.tagline === 'string' &&
+    typeof data.tagline === "string" &&
     data.tagline.length >= 0 &&
     data.tagline.length <= 80 &&
-    typeof data.mascotId === 'string' &&
+    typeof data.mascotId === "string" &&
     data.mascotId.length >= 1 &&
     data.mascotId.length <= 16 &&
-    ['pebble', 'bobacat', 'sprout'].includes(data.mascotId) &&
+    ["pebble", "bobacat", "sprout"].includes(data.mascotId) &&
     isBoundedInt(data.xp) &&
     isBoundedInt(data.coins) &&
     isBoundedInt(data.overallScore) &&
@@ -138,25 +135,25 @@ function isValidUserProfile(
     isBoundedInt(data.yearGames) &&
     isBoundedInt(data.yearBestScore) &&
     isBoundedInt(data.yearBestStreak) &&
-    typeof data.createdAt === 'string' &&
-    typeof data.updatedAt === 'string'
+    typeof data.createdAt === "string" &&
+    typeof data.updatedAt === "string"
   );
 }
 
-function evaluateUserProfileRules(ctx: RuleEvaluationContext): 'ALLOWED' | 'PERMISSION_DENIED' {
+function evaluateUserProfileRules(ctx: RuleEvaluationContext): "ALLOWED" | "PERMISSION_DENIED" {
   const isSignedIn = ctx.auth !== null;
   const isVerifiedUser = isSignedIn && ctx.auth?.email_verified === true;
   const isOwner = isSignedIn && ctx.auth?.uid === ctx.pathUserId;
 
-  if (ctx.operation === 'list') {
-    return 'PERMISSION_DENIED';
+  if (ctx.operation === "list") {
+    return "PERMISSION_DENIED";
   }
 
-  if (ctx.operation === 'get') {
-    return isOwner && isValidId(ctx.pathUserId) ? 'ALLOWED' : 'PERMISSION_DENIED';
+  if (ctx.operation === "get") {
+    return isOwner && isValidId(ctx.pathUserId) ? "ALLOWED" : "PERMISSION_DENIED";
   }
 
-  if (ctx.operation === 'create') {
+  if (ctx.operation === "create") {
     const ok =
       isVerifiedUser &&
       isOwner &&
@@ -164,10 +161,10 @@ function evaluateUserProfileRules(ctx: RuleEvaluationContext): 'ALLOWED' | 'PERM
       isValidUserProfile(ctx.incomingData, ctx.pathUserId, ctx.auth!.uid) &&
       ctx.incomingData?.createdAt === ctx.requestTimeIso &&
       ctx.incomingData?.updatedAt === ctx.requestTimeIso;
-    return ok ? 'ALLOWED' : 'PERMISSION_DENIED';
+    return ok ? "ALLOWED" : "PERMISSION_DENIED";
   }
 
-  if (ctx.operation === 'update') {
+  if (ctx.operation === "update") {
     if (
       !isVerifiedUser ||
       !isOwner ||
@@ -176,33 +173,33 @@ function evaluateUserProfileRules(ctx: RuleEvaluationContext): 'ALLOWED' | 'PERM
       !ctx.incomingData ||
       !isValidUserProfile(ctx.incomingData, ctx.pathUserId, ctx.auth!.uid)
     ) {
-      return 'PERMISSION_DENIED';
+      return "PERMISSION_DENIED";
     }
     if (
       ctx.incomingData.uid !== ctx.existingData.uid ||
       ctx.incomingData.createdAt !== ctx.existingData.createdAt ||
       ctx.incomingData.updatedAt !== ctx.requestTimeIso
     ) {
-      return 'PERMISSION_DENIED';
+      return "PERMISSION_DENIED";
     }
-    return 'ALLOWED';
+    return "ALLOWED";
   }
 
-  if (ctx.operation === 'delete') {
-    return isVerifiedUser && isOwner && isValidId(ctx.pathUserId) ? 'ALLOWED' : 'PERMISSION_DENIED';
+  if (ctx.operation === "delete") {
+    return isVerifiedUser && isOwner && isValidId(ctx.pathUserId) ? "ALLOWED" : "PERMISSION_DENIED";
   }
 
-  return 'PERMISSION_DENIED';
+  return "PERMISSION_DENIED";
 }
 
-const NOW_ISO = '2026-10-20T08:00:00.000Z';
+const NOW_ISO = "2026-10-20T08:00:00.000Z";
 
 function buildValidPayload(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    uid: 'user_1',
-    callsign: 'DJ Pebble',
-    tagline: 'Crate Selector · 365 Studio',
-    mascotId: 'pebble',
+    uid: "user_1",
+    callsign: "DJ Pebble",
+    tagline: "Crate Selector · 365 Studio",
+    mascotId: "pebble",
     xp: 650,
     coins: 150,
     overallScore: 1200,
@@ -212,7 +209,7 @@ function buildValidPayload(overrides: Record<string, unknown> = {}): Record<stri
     totalGamesPlayed: 1,
     highestStreakEver: 3,
     fastestSnippetGuessed: 3,
-    unlockedBadges: ['first-spin'],
+    unlockedBadges: ["first-spin"],
     trackWins: 2,
     trackLosses: 0,
     trackGames: 1,
@@ -239,176 +236,176 @@ function buildValidPayload(overrides: Record<string, unknown> = {}): Record<stri
   };
 }
 
-test('Dirty Dozen Security Payloads all return PERMISSION_DENIED and valid owner writes succeed', () => {
-  const validAuth: AuthContext = { uid: 'user_1', email_verified: true };
+test("Dirty Dozen Security Payloads all return PERMISSION_DENIED and valid owner writes succeed", () => {
+  const validAuth: AuthContext = { uid: "user_1", email_verified: true };
 
   // Valid owner create succeeds
   assert.equal(
     evaluateUserProfileRules({
       auth: validAuth,
-      pathUserId: 'user_1',
+      pathUserId: "user_1",
       requestTimeIso: NOW_ISO,
-      operation: 'create',
+      operation: "create",
       incomingData: buildValidPayload(),
     }),
-    'ALLOWED',
+    "ALLOWED",
   );
 
   // 1. Unauthenticated Create
   assert.equal(
     evaluateUserProfileRules({
       auth: null,
-      pathUserId: 'user_1',
+      pathUserId: "user_1",
       requestTimeIso: NOW_ISO,
-      operation: 'create',
+      operation: "create",
       incomingData: buildValidPayload(),
     }),
-    'PERMISSION_DENIED',
+    "PERMISSION_DENIED",
   );
 
   // 2. Unverified Email Write
   assert.equal(
     evaluateUserProfileRules({
-      auth: { uid: 'user_1', email_verified: false },
-      pathUserId: 'user_1',
+      auth: { uid: "user_1", email_verified: false },
+      pathUserId: "user_1",
       requestTimeIso: NOW_ISO,
-      operation: 'create',
+      operation: "create",
       incomingData: buildValidPayload(),
     }),
-    'PERMISSION_DENIED',
+    "PERMISSION_DENIED",
   );
 
   // 3. Cross-User Identity Spoofing (Create)
   assert.equal(
     evaluateUserProfileRules({
-      auth: { uid: 'user_2', email_verified: true },
-      pathUserId: 'user_1',
+      auth: { uid: "user_2", email_verified: true },
+      pathUserId: "user_1",
       requestTimeIso: NOW_ISO,
-      operation: 'create',
+      operation: "create",
       incomingData: buildValidPayload(),
     }),
-    'PERMISSION_DENIED',
+    "PERMISSION_DENIED",
   );
 
   // 4. Shadow / Ghost Field Injection
   assert.equal(
     evaluateUserProfileRules({
       auth: validAuth,
-      pathUserId: 'user_1',
+      pathUserId: "user_1",
       requestTimeIso: NOW_ISO,
-      operation: 'create',
+      operation: "create",
       incomingData: buildValidPayload({ isAdmin: true }),
     }),
-    'PERMISSION_DENIED',
+    "PERMISSION_DENIED",
   );
 
   // 5. Callsign Volumetric Overflow
   assert.equal(
     evaluateUserProfileRules({
       auth: validAuth,
-      pathUserId: 'user_1',
+      pathUserId: "user_1",
       requestTimeIso: NOW_ISO,
-      operation: 'create',
-      incomingData: buildValidPayload({ callsign: 'A'.repeat(100) }),
+      operation: "create",
+      incomingData: buildValidPayload({ callsign: "A".repeat(100) }),
     }),
-    'PERMISSION_DENIED',
+    "PERMISSION_DENIED",
   );
 
   // 6. Invalid Mascot Enum
   assert.equal(
     evaluateUserProfileRules({
       auth: validAuth,
-      pathUserId: 'user_1',
+      pathUserId: "user_1",
       requestTimeIso: NOW_ISO,
-      operation: 'create',
-      incomingData: buildValidPayload({ mascotId: 'hacker_bot' }),
+      operation: "create",
+      incomingData: buildValidPayload({ mascotId: "hacker_bot" }),
     }),
-    'PERMISSION_DENIED',
+    "PERMISSION_DENIED",
   );
 
   // 7. Negative Score / Counter Poisoning
   assert.equal(
     evaluateUserProfileRules({
       auth: validAuth,
-      pathUserId: 'user_1',
+      pathUserId: "user_1",
       requestTimeIso: NOW_ISO,
-      operation: 'create',
+      operation: "create",
       incomingData: buildValidPayload({ artistWins: -5 }),
     }),
-    'PERMISSION_DENIED',
+    "PERMISSION_DENIED",
   );
 
   // 8. Unbounded Array Exhaustion
   assert.equal(
     evaluateUserProfileRules({
       auth: validAuth,
-      pathUserId: 'user_1',
+      pathUserId: "user_1",
       requestTimeIso: NOW_ISO,
-      operation: 'create',
+      operation: "create",
       incomingData: buildValidPayload({
         unlockedBadges: Array.from({ length: 25 }, (_, i) => `badge-${i}`),
       }),
     }),
-    'PERMISSION_DENIED',
+    "PERMISSION_DENIED",
   );
 
   // 9. Array Element Type Poisoning
   assert.equal(
     evaluateUserProfileRules({
       auth: validAuth,
-      pathUserId: 'user_1',
+      pathUserId: "user_1",
       requestTimeIso: NOW_ISO,
-      operation: 'create',
+      operation: "create",
       incomingData: buildValidPayload({ unlockedBadges: [99999] }),
     }),
-    'PERMISSION_DENIED',
+    "PERMISSION_DENIED",
   );
 
   // 10. Immutable Field Tampering on Update
   assert.equal(
     evaluateUserProfileRules({
       auth: validAuth,
-      pathUserId: 'user_1',
-      requestTimeIso: '2026-10-20T09:00:00.000Z',
-      operation: 'update',
+      pathUserId: "user_1",
+      requestTimeIso: "2026-10-20T09:00:00.000Z",
+      operation: "update",
       existingData: buildValidPayload(),
       incomingData: buildValidPayload({
-        createdAt: '2026-10-20T09:00:00.000Z',
-        updatedAt: '2026-10-20T09:00:00.000Z',
+        createdAt: "2026-10-20T09:00:00.000Z",
+        updatedAt: "2026-10-20T09:00:00.000Z",
       }),
     }),
-    'PERMISSION_DENIED',
+    "PERMISSION_DENIED",
   );
 
   // 11. Forged Client Timestamp
   assert.equal(
     evaluateUserProfileRules({
       auth: validAuth,
-      pathUserId: 'user_1',
+      pathUserId: "user_1",
       requestTimeIso: NOW_ISO,
-      operation: 'create',
-      incomingData: buildValidPayload({ updatedAt: '2099-01-01T00:00:00.000Z' }),
+      operation: "create",
+      incomingData: buildValidPayload({ updatedAt: "2099-01-01T00:00:00.000Z" }),
     }),
-    'PERMISSION_DENIED',
+    "PERMISSION_DENIED",
   );
 
   // 12. Unauthorized Cross-User Read / Collection Listing
   assert.equal(
     evaluateUserProfileRules({
-      auth: { uid: 'user_2', email_verified: true },
-      pathUserId: 'user_1',
+      auth: { uid: "user_2", email_verified: true },
+      pathUserId: "user_1",
       requestTimeIso: NOW_ISO,
-      operation: 'get',
+      operation: "get",
     }),
-    'PERMISSION_DENIED',
+    "PERMISSION_DENIED",
   );
   assert.equal(
     evaluateUserProfileRules({
       auth: validAuth,
-      pathUserId: 'user_1',
+      pathUserId: "user_1",
       requestTimeIso: NOW_ISO,
-      operation: 'list',
+      operation: "list",
     }),
-    'PERMISSION_DENIED',
+    "PERMISSION_DENIED",
   );
 });

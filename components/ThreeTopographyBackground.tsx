@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import * as THREE from 'three';
-import type { ThemeMode } from '@/lib/game-rules';
+import { useEffect, useRef } from "react";
+import * as THREE from "three";
+import type { ThemeMode } from "@/lib/game-rules";
 
 // Contour treatment adapted from React Bits Topography / Background Studio.
 // This Three.js implementation shares Wavelet's theme and motion preferences.
@@ -43,32 +43,58 @@ const fragmentShader = `
   }
 `;
 
-export function ThreeTopographyBackground({ theme, reducedMotion, enabled = true }: { theme: ThemeMode; reducedMotion: boolean; enabled?: boolean }) {
+export function ThreeTopographyBackground({
+  theme,
+  reducedMotion,
+  enabled = true,
+}: {
+  theme: ThemeMode;
+  reducedMotion: boolean;
+  enabled?: boolean;
+}) {
   const mount = useRef<HTMLDivElement>(null);
   const props = useRef({ theme, reducedMotion, enabled });
   const refresh = useRef<(() => void) | null>(null);
 
-  useEffect(() => { props.current = { theme, reducedMotion, enabled }; refresh.current?.(); }, [theme, reducedMotion, enabled]);
+  useEffect(() => {
+    props.current = { theme, reducedMotion, enabled };
+    refresh.current?.();
+  }, [theme, reducedMotion, enabled]);
 
   useEffect(() => {
     const element = mount.current;
     if (!element) return;
     let renderer: THREE.WebGLRenderer;
-    try { renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'low-power' }); } catch { return; }
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "low-power" });
+    } catch {
+      return;
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     element.appendChild(renderer.domElement);
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const geometry = new THREE.PlaneGeometry(2, 2);
     const material = new THREE.ShaderMaterial({
-      uniforms: { uTime: { value: 0 }, uOpacity: { value: 0.12 }, uPointer: { value: new THREE.Vector2() }, uResolution: { value: new THREE.Vector2(1, 1) }, uInk: { value: new THREE.Color('#718b6f') }, uPaper: { value: new THREE.Color('#f7f8f2') } },
-      vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
-      fragmentShader, depthTest: false, depthWrite: false,
+      uniforms: {
+        uTime: { value: 0 },
+        uOpacity: { value: 0.12 },
+        uPointer: { value: new THREE.Vector2() },
+        uResolution: { value: new THREE.Vector2(1, 1) },
+        uInk: { value: new THREE.Color("#718b6f") },
+        uPaper: { value: new THREE.Color("#f7f8f2") },
+      },
+      vertexShader:
+        "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }",
+      fragmentShader,
+      depthTest: false,
+      depthWrite: false,
     });
     const scene = new THREE.Scene();
     scene.add(new THREE.Mesh(geometry, material));
     const pointer = new THREE.Vector2();
-    let frame = 0, lastFrame = 0;
+    let frame = 0,
+      lastFrame = 0;
     const start = performance.now();
     const draw = (now: number) => {
       frame = 0;
@@ -76,30 +102,59 @@ export function ThreeTopographyBackground({ theme, reducedMotion, enabled = true
       if (document.hidden) return;
       if (now - lastFrame >= 32 || state.reducedMotion || !state.enabled) {
         lastFrame = now;
-        material.uniforms.uPaper.value.set(state.theme === 'dark' ? '#102721' : '#f7f8f2');
-        material.uniforms.uInk.value.set(state.theme === 'dark' ? '#78b58e' : '#6b896a');
-        material.uniforms.uOpacity.value = state.enabled ? state.theme === 'dark' ? 0.09 : 0.12 : 0;
+        material.uniforms.uPaper.value.set(state.theme === "dark" ? "#102721" : "#f7f8f2");
+        material.uniforms.uInk.value.set(state.theme === "dark" ? "#78b58e" : "#6b896a");
+        material.uniforms.uOpacity.value = state.enabled
+          ? state.theme === "dark"
+            ? 0.09
+            : 0.12
+          : 0;
         material.uniforms.uTime.value = state.reducedMotion ? 0 : (now - start) / 1000;
-        material.uniforms.uPointer.value.lerp(state.reducedMotion ? new THREE.Vector2() : pointer, 0.035);
+        material.uniforms.uPointer.value.lerp(
+          state.reducedMotion ? new THREE.Vector2() : pointer,
+          0.035,
+        );
         renderer.render(scene, camera);
       }
       if (!state.reducedMotion && state.enabled) frame = requestAnimationFrame(draw);
     };
-    const requestDraw = () => { if (!frame) frame = requestAnimationFrame(draw); };
+    const requestDraw = () => {
+      if (!frame) frame = requestAnimationFrame(draw);
+    };
     refresh.current = requestDraw;
-    const resize = () => { const { width, height } = element.getBoundingClientRect(); renderer.setSize(width, height); material.uniforms.uResolution.value.set(width, height); requestDraw(); };
+    const resize = () => {
+      const { width, height } = element.getBoundingClientRect();
+      renderer.setSize(width, height);
+      material.uniforms.uResolution.value.set(width, height);
+      requestDraw();
+    };
     const observer = new ResizeObserver(resize);
     observer.observe(element);
-    const onPointer = (event: PointerEvent) => { pointer.set(event.clientX / innerWidth - .5, .5 - event.clientY / innerHeight); };
-    window.addEventListener('pointermove', onPointer, { passive: true });
-    document.addEventListener('visibilitychange', requestDraw);
+    const onPointer = (event: PointerEvent) => {
+      pointer.set(event.clientX / innerWidth - 0.5, 0.5 - event.clientY / innerHeight);
+    };
+    window.addEventListener("pointermove", onPointer, { passive: true });
+    document.addEventListener("visibilitychange", requestDraw);
     resize();
     return () => {
-      cancelAnimationFrame(frame); observer.disconnect(); window.removeEventListener('pointermove', onPointer);
-      document.removeEventListener('visibilitychange', requestDraw); refresh.current = null;
-      geometry.dispose(); material.dispose(); renderer.dispose(); renderer.domElement.remove();
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("pointermove", onPointer);
+      document.removeEventListener("visibilitychange", requestDraw);
+      refresh.current = null;
+      geometry.dispose();
+      material.dispose();
+      renderer.dispose();
+      renderer.domElement.remove();
     };
   }, []);
 
-  return <div ref={mount} className="topography-background" data-testid="topography-background" aria-hidden="true" />;
+  return (
+    <div
+      ref={mount}
+      className="topography-background"
+      data-testid="topography-background"
+      aria-hidden="true"
+    />
+  );
 }

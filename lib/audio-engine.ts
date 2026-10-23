@@ -1,4 +1,4 @@
-import type { SongMoodProfile } from './game-rules';
+import type { SongMoodProfile } from "./game-rules";
 
 export interface AudioSpectrumFrame {
   bass: number;
@@ -11,7 +11,7 @@ export interface AudioSpectrumFrame {
   durationSec: number;
 }
 
-export type HapticPattern = 'selection' | 'light' | 'medium' | 'heavy' | 'success' | 'error';
+export type HapticPattern = "selection" | "light" | "medium" | "heavy" | "success" | "error";
 
 export class WaveletAudioEngine {
   private ctx: AudioContext | null = null;
@@ -35,7 +35,7 @@ export class WaveletAudioEngine {
   private bins = new Float32Array(16);
 
   private ensureContext(): AudioContext | null {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     if (!this.ctx) {
       const AudioCtx =
         window.AudioContext ||
@@ -50,44 +50,48 @@ export class WaveletAudioEngine {
         this.analyser.smoothingTimeConstant = 0.78;
         this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
         // Sound Lab exports are decoded after a user gesture, using the same mixer.
-        if (typeof this.ctx.decodeAudioData === 'function') {
+        if (typeof this.ctx.decodeAudioData === "function") {
           const context = this.ctx;
-          for (const name of ['felt', 'nib', 'clasp', 'unclasp', 'bloom', 'shrug']) {
-            void fetch(`/sounds/${name}.wav`).then(response => {
-              if (!response.ok) throw new Error('Sound unavailable');
-              return response.arrayBuffer();
-            }).then(data => context.decodeAudioData(data)).then(buffer => this.uiBuffers.set(name, buffer)).catch(() => {});
+          for (const name of ["felt", "nib", "clasp", "unclasp", "bloom", "shrug"]) {
+            void fetch(`/sounds/${name}.wav`)
+              .then((response) => {
+                if (!response.ok) throw new Error("Sound unavailable");
+                return response.arrayBuffer();
+              })
+              .then((data) => context.decodeAudioData(data))
+              .then((buffer) => this.uiBuffers.set(name, buffer))
+              .catch(() => {});
           }
         }
       }
     }
-    if (this.ctx && this.ctx.state === 'suspended') {
+    if (this.ctx && this.ctx.state === "suspended") {
       this.ctx.resume().catch(() => {});
     }
     return this.ctx;
   }
 
-  public triggerHaptic(pattern: HapticPattern = 'light') {
+  public triggerHaptic(pattern: HapticPattern = "light") {
     if (!this.hapticsEnabled) return;
-    if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+    if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
     try {
       switch (pattern) {
-        case 'selection':
+        case "selection":
           navigator.vibrate(5);
           break;
-        case 'light':
+        case "light":
           navigator.vibrate(10);
           break;
-        case 'medium':
+        case "medium":
           navigator.vibrate(18);
           break;
-        case 'heavy':
+        case "heavy":
           navigator.vibrate([24, 30, 16]);
           break;
-        case 'success':
+        case "success":
           navigator.vibrate([12, 35, 22, 35, 30]);
           break;
-        case 'error':
+        case "error":
           navigator.vibrate([35, 45, 50]);
           break;
       }
@@ -98,7 +102,8 @@ export class WaveletAudioEngine {
 
   public setMuted(muted: boolean) {
     this.isMuted = muted;
-    if (this.ctx && this.masterGain) this.masterGain.gain.setTargetAtTime(muted ? 0 : this.volume, this.ctx.currentTime, 0.015);
+    if (this.ctx && this.masterGain)
+      this.masterGain.gain.setTargetAtTime(muted ? 0 : this.volume, this.ctx.currentTime, 0.015);
     if (this.audioEl) {
       this.audioEl.muted = muted;
     }
@@ -110,12 +115,21 @@ export class WaveletAudioEngine {
 
   public setVolume(volume: number) {
     this.volume = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 0.7;
-    if (this.ctx && this.masterGain) this.masterGain.gain.setTargetAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime, 0.015);
+    if (this.ctx && this.masterGain)
+      this.masterGain.gain.setTargetAtTime(
+        this.isMuted ? 0 : this.volume,
+        this.ctx.currentTime,
+        0.015,
+      );
     if (this.audioEl) this.audioEl.volume = this.volume * 0.85;
   }
 
-  public setSoundEffectsEnabled(enabled: boolean) { this.soundEffectsEnabled = enabled; }
-  public setHapticsEnabled(enabled: boolean) { this.hapticsEnabled = enabled; }
+  public setSoundEffectsEnabled(enabled: boolean) {
+    this.soundEffectsEnabled = enabled;
+  }
+  public setHapticsEnabled(enabled: boolean) {
+    this.hapticsEnabled = enabled;
+  }
 
   private playStudioSound(name: string, pitch = 1): boolean {
     const buffer = this.uiBuffers.get(name);
@@ -130,7 +144,7 @@ export class WaveletAudioEngine {
   }
 
   public playDiscovery(companion = false) {
-    this.triggerHaptic('success');
+    this.triggerHaptic("success");
     if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx || !this.masterGain) return;
@@ -139,7 +153,7 @@ export class WaveletAudioEngine {
       const oscillator = ctx.createOscillator();
       const envelope = ctx.createGain();
       const start = ctx.currentTime + index * 0.085;
-      oscillator.type = 'sine';
+      oscillator.type = "sine";
       oscillator.frequency.setValueAtTime(frequency, start);
       envelope.gain.setValueAtTime(0, start);
       envelope.gain.linearRampToValueAtTime(0.11, start + 0.008);
@@ -148,7 +162,10 @@ export class WaveletAudioEngine {
       envelope.connect(this.masterGain!);
       oscillator.start(start);
       oscillator.stop(start + 0.38);
-      oscillator.onended = () => { oscillator.disconnect(); envelope.disconnect(); };
+      oscillator.onended = () => {
+        oscillator.disconnect();
+        envelope.disconnect();
+      };
     });
   }
 
@@ -156,23 +173,23 @@ export class WaveletAudioEngine {
    * Tactile micro-interaction sound + synchronized haptic pulse.
    * Crafted like a warm acoustic woodblock / mechanical switch click.
    */
-  public playUiTick(pitchMultiplier = 1, haptic: HapticPattern = 'selection') {
+  public playUiTick(pitchMultiplier = 1, haptic: HapticPattern = "selection") {
     this.triggerHaptic(haptic);
     if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
-    if (this.playStudioSound(haptic === 'selection' ? 'nib' : 'felt', pitchMultiplier)) return;
+    if (this.playStudioSound(haptic === "selection" ? "nib" : "felt", pitchMultiplier)) return;
 
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const filter = ctx.createBiquadFilter();
     const gain = ctx.createGain();
 
-    osc.type = 'sine';
+    osc.type = "sine";
     osc.frequency.setValueAtTime(640 * pitchMultiplier, now);
     osc.frequency.exponentialRampToValueAtTime(210 * pitchMultiplier, now + 0.036);
 
-    filter.type = 'lowpass';
+    filter.type = "lowpass";
     filter.frequency.setValueAtTime(1800, now);
 
     gain.gain.setValueAtTime(0.11, now);
@@ -189,18 +206,18 @@ export class WaveletAudioEngine {
    * Two-note warm harmonic pop for tab switches and drawer openings.
    */
   public playTabSwitch(opening = true) {
-    this.triggerHaptic('light');
+    this.triggerHaptic("light");
     if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
-    if (this.playStudioSound(opening ? 'unclasp' : 'clasp')) return;
+    if (this.playStudioSound(opening ? "unclasp" : "clasp")) return;
 
     const now = ctx.currentTime;
     const freqs = opening ? [440, 587.33] : [587.33, 440];
     freqs.forEach((f, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'triangle';
+      osc.type = "triangle";
       const t = now + idx * 0.035;
       osc.frequency.setValueAtTime(f, t);
       gain.gain.setValueAtTime(0.08, t);
@@ -213,7 +230,7 @@ export class WaveletAudioEngine {
   }
 
   public playNeedleDrop() {
-    this.triggerHaptic('medium');
+    this.triggerHaptic("medium");
     if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
@@ -221,7 +238,7 @@ export class WaveletAudioEngine {
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = 'sine';
+    osc.type = "sine";
     osc.frequency.setValueAtTime(175, now);
     osc.frequency.exponentialRampToValueAtTime(44, now + 0.12);
 
@@ -235,25 +252,20 @@ export class WaveletAudioEngine {
   }
 
   public playCorrectFanfare(streak = 1) {
-    this.triggerHaptic('success');
+    this.triggerHaptic("success");
     if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
-    if (this.playStudioSound('bloom', 1 + Math.min(streak - 1, 4) * 0.04)) return;
+    if (this.playStudioSound("bloom", 1 + Math.min(streak - 1, 4) * 0.04)) return;
 
     const now = ctx.currentTime;
     const rootShift = Math.min(streak, 5) * 18;
-    const freqs = [
-      523.25 + rootShift,
-      659.25 + rootShift,
-      783.99 + rootShift,
-      1046.5 + rootShift,
-    ];
+    const freqs = [523.25 + rootShift, 659.25 + rootShift, 783.99 + rootShift, 1046.5 + rootShift];
 
     freqs.forEach((f, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'triangle';
+      osc.type = "triangle";
       const start = now + idx * 0.052;
       osc.frequency.setValueAtTime(f, start);
 
@@ -268,16 +280,16 @@ export class WaveletAudioEngine {
   }
 
   public playWrongScratch() {
-    this.triggerHaptic('error');
+    this.triggerHaptic("error");
     if (this.isMuted || !this.soundEffectsEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
-    if (this.playStudioSound('shrug')) return;
+    if (this.playStudioSound("shrug")) return;
 
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = 'sawtooth';
+    osc.type = "sawtooth";
     osc.frequency.setValueAtTime(290, now);
     osc.frequency.linearRampToValueAtTime(135, now + 0.12);
     osc.frequency.exponentialRampToValueAtTime(55, now + 0.3);
@@ -308,10 +320,10 @@ export class WaveletAudioEngine {
 
     this.playNeedleDrop();
 
-    if (params.previewUrl && typeof Audio !== 'undefined') {
+    if (params.previewUrl && typeof Audio !== "undefined") {
       try {
         const audio = new Audio();
-        audio.crossOrigin = 'anonymous';
+        audio.crossOrigin = "anonymous";
         audio.src = params.previewUrl;
         audio.muted = this.isMuted;
         audio.volume = this.volume * 0.85;
@@ -319,7 +331,8 @@ export class WaveletAudioEngine {
         this.usingFallbackSynth = false;
 
         audio.play().catch(() => {
-          if (this.audioEl === audio && this.isPlayingSnippet) this.startProceduralGroove(ctx, params.mood);
+          if (this.audioEl === audio && this.isPlayingSnippet)
+            this.startProceduralGroove(ctx, params.mood);
         });
       } catch {
         this.startProceduralGroove(ctx, params.mood);
@@ -348,7 +361,7 @@ export class WaveletAudioEngine {
       if (step % 2 === 0) {
         const kickOsc = this.ctx.createOscillator();
         const kickGain = this.ctx.createGain();
-        kickOsc.type = 'sine';
+        kickOsc.type = "sine";
         kickOsc.frequency.setValueAtTime(135, now);
         kickOsc.frequency.exponentialRampToValueAtTime(42, now + 0.14);
         kickGain.gain.setValueAtTime(0.2, now);
@@ -363,7 +376,7 @@ export class WaveletAudioEngine {
       const note = scale[(step * 2 + Math.floor(mood.energy * 5)) % scale.length];
       const synthOsc = this.ctx.createOscillator();
       const synthGain = this.ctx.createGain();
-      synthOsc.type = step % 4 === 0 ? 'sawtooth' : 'triangle';
+      synthOsc.type = step % 4 === 0 ? "sawtooth" : "triangle";
       synthOsc.frequency.setValueAtTime(note, now);
       synthGain.gain.setValueAtTime(0.075, now);
       synthGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
@@ -392,7 +405,7 @@ export class WaveletAudioEngine {
     if (this.audioEl) {
       try {
         this.audioEl.pause();
-        this.audioEl.src = '';
+        this.audioEl.src = "";
       } catch {}
       this.audioEl = null;
     }
@@ -444,11 +457,10 @@ export class WaveletAudioEngine {
         i < 4
           ? 0.35 + 0.62 * beatPulse
           : i < 10
-          ? 0.25 + 0.55 * offbeatPulse * Math.abs(Math.sin(timeSec * 5 + i))
-          : 0.2 + 0.5 * Math.abs(Math.cos(timeSec * 8 + i * 0.7));
+            ? 0.25 + 0.55 * offbeatPulse * Math.abs(Math.sin(timeSec * 5 + i))
+            : 0.2 + 0.5 * Math.abs(Math.cos(timeSec * 8 + i * 0.7));
 
-      const analyzerVal =
-        this.freqData && this.freqData[i] ? this.freqData[i] / 255 : 0;
+      const analyzerVal = this.freqData && this.freqData[i] ? this.freqData[i] / 255 : 0;
       const val = Math.min(1, Math.max(wave, analyzerVal));
       this.bins[i] = val;
 
