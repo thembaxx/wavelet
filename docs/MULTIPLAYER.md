@@ -5,8 +5,8 @@
 - The existing Next.js/Vercel app owns the new `/multiplayer` UI. Solo games and offline PWA remain unchanged.
 - The independent `workers/multiplayer` Worker hosts one SQLite-backed Durable Object per room using PartyServer 0.5.10.
 - The browser talks to `wss://WORKER/parties/wavelet-room/XXXXXXXX`; no secret or privileged score calculation lives in the browser.
-- The Worker requests a playable catalog from the existing Wavelet `/api/songs` endpoint, once at match start. It never writes audio to Durable Object storage.
-- Each client plays its preview locally only after an explicit user gesture. The Worker controls the round deadline and computes scores from receipt time.
+- The Worker requests the approved original catalog from Wavelet `/api/songs`, once at match start, and rejects tracks lacking the strict original-preview and rights fields. It never writes audio to Durable Object storage.
+- Each client synthesizes the original melody locally using Web Audio only after an explicit user gesture; no third-party preview URL is fetched. The Worker controls the round deadline and computes scores from receipt time.
 - Reconnecting guests authenticate to the room with a private player ID and random reconnect secret saved in `sessionStorage`; these are never broadcast.
 - Scores are **match-local**. They are not applied to solo progression, XP, coins, quests, or leaderboards.
 
@@ -29,11 +29,11 @@ The Worker uses its own package.json intentionally. Do not add PartyServer depen
 5. Set `NEXT_PUBLIC_WAVELET_MULTIPLAYER_URL=https://<worker-host>` in Vercel and redeploy the Next.js frontend.
 6. Verify browser WebSocket connections and the room status on the published origin.
 
-**Licensing gate:** Current `/api/songs` uses third-party promotional preview URLs. Verify commercial/public use rights before enabling real public multiplayer; consider rights-cleared audio or another licensed catalog. A successful WebSocket connection does **not** establish music licensing.
+**Licensing gate:** The free beta uses only 24 original procedurally synthesized tracks with strict allowlist checks on the API, client and Worker. Year mode and Spotify/Apple Music sync are intentionally disabled. New recordings require track-level verification and explicit multiplayer permissions before integration; see [music rights](MUSIC_RIGHTS.md).
 
 ## Protocol
 
-The client sends JSON commands `join`, `ready`, `configure`, `start`, `answer`, `reset`, and `leave`.
+The client sends JSON commands `join`, `ready`, `configure`, `start`, `play`, `answer`, `reset`, and `leave`. The `play` command records a best-effort, per-listener-per-round play intent (deduplicated on the Worker) and is **not** a royalty report or proof of hearing audio.
 The Worker sends `joined` (private identity), `state` (public lobby/round snapshot), and `error`.
 
 - Only the host configures and starts, with at least two connected, ready players.
@@ -50,7 +50,7 @@ The Worker sends `joined` (private identity), `state` (public lobby/round snapsh
 - Reload mid-match, reconnect after a temporary network outage, and a second tab using the same saved identity.
 - A duplicate guess must not award points twice, a late answer must be rejected, and guessed scores must be ignored.
 - One browser backgrounded, another on a slow connection; the round must still end consistently.
-- Verify all four modes have four distinct choices with playable previews.
+- Verify all three enabled modes have four distinct choices, and each original synthesizer melody plays. Year mode stays disabled for the 2026 catalog.
 - Worker source typecheck, Wrangler dry-run bundle, frontend typecheck, lint and Next.js production build.
 
 ## Limitations and follow-ups

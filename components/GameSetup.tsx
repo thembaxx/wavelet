@@ -86,7 +86,7 @@ export function GameSetup(props: Props) {
           value={challenge}
           reducedMotion={props.reducedMotion}
           onValueChange={(value) => props.onChallenge(value as GuessChallengeMode)}
-          tabs={GAME_CHALLENGE_MODES.map((mode) => {
+          tabs={GAME_CHALLENGE_MODES.filter((mode) => mode.id !== "year").map((mode) => {
             const Icon = MODE_ICONS[mode.id];
             return {
               id: mode.id,

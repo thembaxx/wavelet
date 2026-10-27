@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CaretDown, Check, MagnifyingGlass, SpotifyLogo, VinylRecord } from "@phosphor-icons/react";
+import { CaretDown, Check, MagnifyingGlass, VinylRecord } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArtistPicker } from "./ArtistPicker";
-import { GENRE_PRESETS, YEAR_PRESETS } from "@/lib/music-catalog";
+import { GENRE_PRESETS } from "@/lib/music-catalog";
 import type { FilterMode } from "@/lib/game-rules";
 import type { ArtistChoice } from "@/lib/catalog-filters";
 import { audioEngine } from "@/lib/audio-engine";
@@ -33,7 +33,7 @@ export function CratePicker(props: CratePickerProps) {
       ? props.artist?.name || props.value
       : props.mode === "account"
         ? "My music crate"
-        : props.customSearch || (props.value === "All" ? "All hits" : props.value);
+        : props.customSearch || (props.value === "All" ? "Original mix" : props.value);
   const select = (mode: FilterMode, value: string) => {
     audioEngine.playUiTick();
     props.onSelect(mode, value);
@@ -46,15 +46,7 @@ export function CratePicker(props: CratePickerProps) {
       onOpenChange={(next) => {
         setOpen(next);
         if (next) {
-          setTab(
-            props.mode === "artist"
-              ? "artist"
-              : props.mode === "year"
-                ? "year"
-                : props.customSearch
-                  ? "search"
-                  : "genre",
-          );
+          setTab(props.mode === "artist" ? "artist" : props.customSearch ? "search" : "genre");
           audioEngine.playTabSwitch();
         }
       }}
@@ -90,14 +82,16 @@ export function CratePicker(props: CratePickerProps) {
       </PopoverTrigger>
       <PopoverContent className="crate-popover" align="start" sideOffset={10}>
         <div className="crate-popover-heading">
-          <h3>Find your groove</h3>
-          <p>Choose a mix, or make it all about one artist.</p>
+          <h3>Free original grooves</h3>
+          <p>
+            These are Wavelet-created demo loops, not recognizable commercial recordings. Choose a
+            mix or studio project.
+          </p>
         </div>
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="crate-tabs">
             <TabsTrigger value="genre">Genres</TabsTrigger>
             <TabsTrigger value="artist">Artists</TabsTrigger>
-            <TabsTrigger value="year">Decades</TabsTrigger>
             <TabsTrigger value="search">
               <MagnifyingGlass size={16} />
               <span className="sr-only">Search catalog</span>
@@ -124,18 +118,6 @@ export function CratePicker(props: CratePickerProps) {
               }}
             />
           </TabsContent>
-          <TabsContent value="year">
-            <div className="crate-choice-list">
-              {YEAR_PRESETS.map((era) => (
-                <button key={era.id} type="button" onClick={() => select("year", era.id)}>
-                  <span>{era.label}</span>
-                  {props.mode === "year" && props.value === era.id && (
-                    <Check size={16} weight="bold" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </TabsContent>
           <TabsContent value="search">
             <form
               className="crate-custom-search"
@@ -161,17 +143,9 @@ export function CratePicker(props: CratePickerProps) {
             </form>
           </TabsContent>
         </Tabs>
-        <button
-          type="button"
-          className="crate-account-link"
-          onClick={() => {
-            setOpen(false);
-            props.onAccount();
-          }}
-        >
-          <SpotifyLogo size={17} />
-          <span>Use my music crate</span>
-        </button>
+        <p className="crate-picker-note">
+          Catalog is limited to original royalty-free demo compositions while Wavelet is free.
+        </p>
       </PopoverContent>
     </Popover>
   );

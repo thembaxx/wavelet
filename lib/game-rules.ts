@@ -163,6 +163,16 @@ export interface SongMoodProfile {
   energy: number;
 }
 
+export interface TrackRights {
+  provider: "wavelet-original";
+  recording: "original-synthesis";
+  composition: "original";
+  gameUse: boolean;
+  territories: string[];
+  attribution: string;
+  evidence: string;
+}
+
 export interface SongTrack {
   id: string;
   title: string;
@@ -177,7 +187,8 @@ export interface SongTrack {
   appleMusicUrl?: string;
   spotifyUrl?: string;
   bpm?: number;
-  source?: "itunes" | "spotify" | "apple-music" | "curated";
+  source?: "itunes" | "spotify" | "apple-music" | "curated" | "original";
+  rights?: TrackRights;
 }
 
 export interface GameConfig {

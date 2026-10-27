@@ -8,6 +8,8 @@ type Track = {
   genre: string;
   releaseYear: number;
   previewUrl: string;
+  source?: string;
+  rights?: { provider?: string; gameUse?: boolean; territories?: string[] };
 };
 type Choice = { id: string; label: string };
 type Player = {
@@ -18,6 +20,8 @@ type Player = {
   connected: boolean;
   score: number;
   answer: string | null;
+  lastPlayedIndex?: number;
+  playCount?: number;
 };
 type Round = {
   options: Choice[];
@@ -50,9 +54,11 @@ type Message =
   | { type: "configure"; challenge: Challenge; count: number }
   | { type: "start" }
   | { type: "answer"; optionId: string }
+  | { type: "play" }
   | { type: "leave" }
   | { type: "reset" };
-const MODES = new Set<Challenge>(["track", "artist", "genre", "year"]);
+// Years are identical for every original 2026 demo track. A year quiz would be misleading.
+const MODES = new Set<Challenge>(["track", "artist", "genre"]);
 const MAX_PLAYERS = 8;
 const ROUND_MS = 20000;
 const REVEAL_MS = 4500;
@@ -149,6 +155,7 @@ export class WaveletRoom extends Server<Env> {
         connected: p.connected,
         score: p.score,
         answered: p.answer !== null,
+        playCount: p.playCount ?? 0,
       })),
       round:
         round && (phase === "playing" || phase === "reveal" || phase === "finished")
@@ -215,6 +222,8 @@ export class WaveletRoom extends Server<Env> {
         connected: true,
         score: 0,
         answer: null,
+        lastPlayedIndex: -1,
+        playCount: 0,
       };
       for (const other of this.getConnections<{ playerId?: string }>()) {
         if (other.id !== connection.id && other.state?.playerId === player.id)
@@ -276,7 +285,11 @@ export class WaveletRoom extends Server<Env> {
               typeof t.genre === "string" &&
               Number.isInteger(t.releaseYear) &&
               typeof t.previewUrl === "string" &&
-              /^https:\/\//.test(t.previewUrl),
+              t.source === "original" &&
+              t.rights?.provider === "wavelet-original" &&
+              t.rights?.gameUse === true &&
+              t.rights?.territories?.includes("*") === true &&
+              t.previewUrl === "wavelet-original:" + t.id,
           )
           .slice(0, 50);
         if (new Set(pool.map((t) => answerKey(t, this.room.challenge))).size < 4)
@@ -287,11 +300,20 @@ export class WaveletRoom extends Server<Env> {
         for (const p of this.room.players) {
           p.score = 0;
           p.answer = null;
+          p.playCount = 0;
+          p.lastPlayedIndex = -1;
         }
         this.beginRound();
       } catch (err) {
         this.room.phase = "lobby";
         this.error(connection, err instanceof Error ? err.message : "Could not load songs");
+      }
+    } else if (msg.type === "play" && this.room.phase === "playing" && this.room.round) {
+      // Counts accepted listener play intents, not royalty-bearing audio streams.
+      // Replaying a round never double-counts a listener.
+      if (player.lastPlayedIndex !== this.room.index) {
+        player.lastPlayedIndex = this.room.index;
+        player.playCount = (player.playCount ?? 0) + 1;
       }
     } else if (msg.type === "answer" && this.room.phase === "playing" && this.room.round) {
       if (
@@ -323,6 +345,8 @@ export class WaveletRoom extends Server<Env> {
         p.ready = false;
         p.score = 0;
         p.answer = null;
+        p.playCount = 0;
+        p.lastPlayedIndex = -1;
       }
     } else if (msg.type === "leave") {
       connection.close(1000, "Left room");
