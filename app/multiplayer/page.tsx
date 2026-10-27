@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { audioEngine } from "@/lib/audio-engine";
+import { diagnostics, trackMultiplayerConnection } from "@/lib/feedback";
 import { getOriginalGroove } from "@/lib/cleared-catalog";
 import type { SongMoodProfile } from "@/lib/game-rules";
 import { motion, AnimatePresence } from "motion/react";
@@ -128,8 +129,14 @@ export default function MultiplayerPage() {
     let disposed = false;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     let attempts = 0;
+    let reconnecting = false;
+    let completedRound = -1;
+    let connection: ReturnType<typeof trackMultiplayerConnection> | undefined;
     const connect = () => {
       if (disposed) return;
+      connection = trackMultiplayerConnection(reconnecting);
+      const feedback = connection;
+      reconnecting = true;
       const target = `${HOST.replace(/^http/, "ws")}/parties/wavelet-room/${code}`;
       const ws = new WebSocket(target);
       socket.current = ws;
@@ -153,6 +160,7 @@ export default function MultiplayerPage() {
           return;
         }
         if (message.type === "joined") {
+          feedback.joined();
           setMyId(message.playerId);
           try {
             sessionStorage.setItem(
@@ -163,12 +171,24 @@ export default function MultiplayerPage() {
             /* Guest session */
           }
         } else if (message.type === "state") {
+          if (message.phase === "lobby" || message.phase === "loading") completedRound = -1;
+          if (message.phase === "reveal" && message.index !== completedRound) {
+            completedRound = message.index;
+            diagnostics.record("round_complete", "success", { code: "multiplayer" });
+          }
           setClockOffset(message.serverTime - Date.now());
           setSnapshot(message);
-        } else if (message.type === "error") setError(message.message);
+        } else if (message.type === "error") {
+          feedback.failed("server_rejected");
+          setError(message.message);
+        }
       };
-      ws.onerror = () => setError("Connection interrupted. Reconnecting…");
+      ws.onerror = () => {
+        feedback.failed("socket_error");
+        setError("Connection interrupted. Reconnecting…");
+      };
       ws.onclose = () => {
+        feedback.closed(disposed);
         setOnline(false);
         if (!disposed) {
           attempts++;
@@ -179,6 +199,7 @@ export default function MultiplayerPage() {
     connect();
     return () => {
       disposed = true;
+      connection?.closed(true);
       if (timeout) clearTimeout(timeout);
       socket.current?.close(1000, "Leaving page");
       socket.current = null;
