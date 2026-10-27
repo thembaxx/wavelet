@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence, MotionConfig } from "motion/react";
 import gsap from "gsap";
@@ -13,8 +20,6 @@ import {
   SpeakerSlash,
   Check,
   X,
-  SpotifyLogo,
-  AppleLogo,
   CaretDown,
   CaretUp,
   ArrowsClockwise,
@@ -59,7 +64,6 @@ import {
   getEffectiveDifficulty,
   buildModeChallengeOptions,
   advanceRoundState,
-  buildStreamingLinks,
   calculateVinylTier,
   calculateWinLossRatio,
   createInitialProgression,
@@ -67,6 +71,14 @@ import {
 } from "@/lib/game-rules";
 import { CURATED_REAL_SONGS, GENRE_PRESETS } from "@/lib/music-catalog";
 import { audioEngine } from "@/lib/audio-engine";
+import {
+  createSharedChallenge,
+  decodeSharedChallenge,
+  resolveSharedChallengeTracks,
+  sharedChallengeUrl,
+  type SharedChallenge,
+} from "@/lib/shared-challenge";
+import { isFreeGameTrack } from "@/lib/cleared-catalog";
 import {
   signInWithGooglePopup,
   signOutUser,
@@ -285,6 +297,11 @@ const RoundStepProcessBar: React.FC<{
   );
 };
 
+function subscribeChallengeUrl(onChange: () => void) {
+  window.addEventListener("popstate", onChange);
+  return () => window.removeEventListener("popstate", onChange);
+}
+
 export const WaveletGame: React.FC = () => {
   const {
     preferences,
@@ -346,6 +363,22 @@ export const WaveletGame: React.FC = () => {
 
   // Game configuration state (including Distinct Challenge Modes & Difficulty Scaling)
   const [challengeMode, setChallengeMode] = useState<GuessChallengeMode>("track");
+  const [incomingChallenge, setIncomingChallenge] = useState<SharedChallenge | null>(null);
+  const [sharedSession, setSharedSession] = useState<SharedChallenge | null>(null);
+  const [challengeLink, setChallengeLink] = useState("");
+  const [challengeNotice, setChallengeNotice] = useState("");
+  const challengeSearch = useSyncExternalStore(
+    subscribeChallengeUrl,
+    () => window.location.search,
+    () => "",
+  );
+  const challengeToken = new URLSearchParams(challengeSearch).get("challenge");
+  const receivedChallenge = useMemo(
+    () => (challengeToken ? decodeSharedChallenge(challengeToken) : null),
+    [challengeToken],
+  );
+  const challengeToStart = incomingChallenge ?? (sharedSession ? null : receivedChallenge);
+
   const [difficulty, setDifficulty] = useState<DifficultyTier>("club");
   const [filterMode, setFilterMode] = useState<FilterMode>("genre");
   const [filterValue, setFilterValue] = useState<string>("All");
@@ -476,7 +509,11 @@ export const WaveletGame: React.FC = () => {
 
     return buildModeChallengeOptions({
       target: currentSong,
-      pool: songPool.length >= 4 ? songPool : CURATED_REAL_SONGS,
+      pool: sharedSession
+        ? CURATED_REAL_SONGS
+        : songPool.length >= 4
+          ? songPool
+          : CURATED_REAL_SONGS,
       challengeMode: activeMode,
       difficulty: baseDiff,
       streak: session.streak,
@@ -484,6 +521,7 @@ export const WaveletGame: React.FC = () => {
     });
   }, [
     currentSong,
+    sharedSession,
     songPool,
     session.status,
     session.config.challengeMode,
@@ -604,8 +642,7 @@ export const WaveletGame: React.FC = () => {
       if (mode === "artist") setSongPool([]);
       let tracks: SongTrack[] = [];
       try {
-        if (mode === "account" && connectedProfile?.customTracks.length)
-          tracks = connectedProfile.customTracks;
+        if (mode === "account") tracks = [];
         else {
           const preset = GENRE_PRESETS.find((genre) => genre.id === value);
           const term =
@@ -623,7 +660,7 @@ export const WaveletGame: React.FC = () => {
           const response = await fetch(`/api/songs?${query}`, { signal: controller.signal });
           if (!response.ok) throw new Error("Catalog unavailable");
           const data = await response.json();
-          tracks = Array.isArray(data.tracks) ? data.tracks : [];
+          tracks = Array.isArray(data.tracks) ? data.tracks.filter(isFreeGameTrack) : [];
         }
       } catch {
         if (controller.signal.aborted) return [];
@@ -634,6 +671,7 @@ export const WaveletGame: React.FC = () => {
       } finally {
         if (request === crateRequest.current) setIsLoadingSongs(false);
       }
+      tracks = tracks.filter(isFreeGameTrack);
       if (mode === "artist") tracks = artistOnlyTracks(tracks, value, artist?.id);
       if (request === crateRequest.current) {
         setSongPool(tracks);
@@ -642,7 +680,7 @@ export const WaveletGame: React.FC = () => {
       }
       return tracks;
     },
-    [connectedProfile],
+    [],
   );
 
   const initialCrateLoaded = useRef(false);
@@ -659,7 +697,7 @@ export const WaveletGame: React.FC = () => {
         const saved = JSON.parse(localStorage.getItem("wavelet_last_crate_v1") || "null");
         if (
           saved &&
-          ["genre", "year", "artist"].includes(saved.mode) &&
+          ["genre", "artist"].includes(saved.mode) &&
           typeof saved.value === "string" &&
           saved.value.trim().length > 0 &&
           saved.value.length <= 100
@@ -818,9 +856,52 @@ export const WaveletGame: React.FC = () => {
     setDoubleBoostActive(false);
   }, []);
 
+  const startSharedRound = useCallback(
+    (challenge: SharedChallenge) => {
+      const playlist = resolveSharedChallengeTracks(challenge);
+      audioEngine.stopSnippet(false);
+      setChallengeMode(challenge.mode);
+      setDifficulty(challenge.difficulty);
+      setPlayMode(challenge.playMode);
+      setSnippetDuration(challenge.snippet);
+      setRoundFeedback(null);
+      resetRoundPowerUps();
+      setIsDockCollapsed(false);
+      setIsRulesDrawerOpen(false);
+      setSharedSession(challenge);
+      setIncomingChallenge(null);
+      setSession({
+        status: "playing",
+        config: {
+          filterMode: "genre",
+          filterValue: "All",
+          snippetDuration: challenge.snippet,
+          songCount: playlist.length,
+          playMode: challenge.playMode,
+          challengeMode: challenge.mode,
+          difficulty: challenge.difficulty,
+        },
+        playlist,
+        currentIndex: 0,
+        score: 0,
+        streak: 0,
+        bestStreak: 0,
+        correctCount: 0,
+        history: [],
+        isRevealed: false,
+      });
+      triggerSnippetPlay(playlist[0], challenge.snippet, challenge.mode);
+      setChallengeNotice(
+        `Shared challenge ${challenge.seed} · ${playlist.length} original tracks. Replay uses the same order and settings.`,
+      );
+    },
+    [resetRoundPowerUps, triggerSnippetPlay],
+  );
+
   // Select Challenge Mode (Track, Artist, Genre, Year)
   const handleSelectChallengeMode = useCallback((mode: GuessChallengeMode) => {
     audioEngine.playUiTick(1.18, "selection");
+    if (mode === "year") return; // Originals all date to 2026; no meaningful year quiz.
     setChallengeMode(mode);
     const modeDef = GAME_CHALLENGE_MODES.find((m) => m.id === mode);
     if (modeDef) {
@@ -846,17 +927,18 @@ export const WaveletGame: React.FC = () => {
     async (overridePool?: SongTrack[]) => {
       if ((isLoadingSongs && !overridePool) || isStartingGame) return;
       setIsStartingGame(true);
+      setSharedSession(null);
       if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
       audioEngine.playUiTick(1.3, "medium");
 
-      let activePool = overridePool || songPool;
+      let activePool = (overridePool || songPool).filter(isFreeGameTrack);
       let request = crateRequest.current;
       if (customSearchTerm.trim().length > 1 && !overridePool) {
         const pending = fetchLiveCrate(filterMode, filterValue, customSearchTerm);
         request = crateRequest.current;
-        activePool = await pending;
+        activePool = (await pending).filter(isFreeGameTrack);
       }
       if (request !== crateRequest.current) {
         setIsStartingGame(false);
@@ -927,7 +1009,7 @@ export const WaveletGame: React.FC = () => {
   useEffect(() => {
     if (typeof window === "undefined" || autostartFiredRef.current) return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get("autostart") === "1") {
+    if (!params.has("challenge") && params.get("autostart") === "1") {
       autostartFiredRef.current = true;
       const timer = window.setTimeout(() => {
         void startNewGame(CURATED_REAL_SONGS);
@@ -1490,7 +1572,10 @@ export const WaveletGame: React.FC = () => {
                         Big music energy.
                       </span>
                     </h1>
-                    <p className="studio-intro-copy">Listen. Trust your ears. Find your groove.</p>
+                    <p className="studio-intro-copy">
+                      Listen. Trust your ears. Explore free original studio grooves — no licensed
+                      chart hits yet.
+                    </p>
                   </div>
                   {preferences.danceVideo && !reducedMotion && (
                     <video
@@ -1508,6 +1593,93 @@ export const WaveletGame: React.FC = () => {
                 {/* Unobstructed 3D Center Stage */}
                 <div className="pointer-events-none flex-1" />
 
+                <section
+                  className="pointer-events-auto my-4 space-y-3 rounded-2xl border border-primary/25 bg-card p-4"
+                  aria-label="Shareable original music challenge"
+                >
+                  <h2 className="font-bold">Play the same challenge</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Share the exact original tracks, round order and game settings. This is a
+                    practice challenge; scores are not remotely verified.
+                  </p>
+                  {challengeToStart && (
+                    <div className="space-y-2">
+                      <p>
+                        {challengeToStart.trackIds.length} tracks · {challengeToStart.mode} ·{" "}
+                        {challengeToStart.difficulty} · {challengeToStart.snippet}s clips
+                      </p>
+                      <button
+                        className="rounded-full bg-primary px-4 py-2 font-bold text-primary-foreground"
+                        onClick={() => startSharedRound(challengeToStart)}
+                      >
+                        Start shared challenge
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    className="rounded-full border px-4 py-2 text-sm font-bold"
+                    disabled={isLoadingSongs || !songPool.length || challengeMode === "year"}
+                    onClick={() => {
+                      try {
+                        if (challengeMode === "year") return;
+                        const seed = crypto.getRandomValues(new Uint32Array(1))[0] || 1;
+                        const challenge = createSharedChallenge({
+                          pool: songPool,
+                          seed,
+                          snippet: snippetDuration,
+                          mode: challengeMode,
+                          difficulty,
+                          playMode,
+                          count: Math.min(songCount, songPool.length),
+                        });
+                        const link = sharedChallengeUrl(challenge, window.location.href);
+                        setChallengeLink(link);
+                        setIncomingChallenge(challenge);
+                        setChallengeNotice(
+                          "Challenge created. Copy the link, or start it here. Your account and scores are not included.",
+                        );
+                      } catch {
+                        setChallengeNotice(
+                          "A challenge could not be created. Choose a playable original mix and try again.",
+                        );
+                      }
+                    }}
+                  >
+                    Create challenge link
+                  </button>
+                  {challengeLink && (
+                    <div className="space-y-2">
+                      <label className="block text-sm">
+                        Challenge link
+                        <input
+                          className="mt-1 w-full rounded-lg border bg-transparent p-2"
+                          readOnly
+                          value={challengeLink}
+                          onFocus={(event) => event.target.select()}
+                        />
+                      </label>
+                      <button
+                        className="rounded-full border px-4 py-2 text-sm"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(challengeLink);
+                            setChallengeNotice("Challenge link copied.");
+                          } catch {
+                            setChallengeNotice("Select and copy the challenge link above.");
+                          }
+                        }}
+                      >
+                        Copy challenge link
+                      </button>
+                    </div>
+                  )}
+                  {(challengeNotice || (challengeToken && !receivedChallenge)) && (
+                    <p role="status" className="text-sm">
+                      {challengeNotice ||
+                        "This challenge link is invalid or uses an unsupported catalogue. Choose a new original mix."}
+                    </p>
+                  )}
+                </section>
                 <GameSetup
                   challenge={challengeMode}
                   onChallenge={handleSelectChallengeMode}
@@ -1551,13 +1723,9 @@ export const WaveletGame: React.FC = () => {
                     void fetchLiveCrate("genre", "All", term);
                   }}
                   onAccount={() => {
-                    if (connectedProfile?.customTracks.length) {
-                      setSelectedArtist(null);
-                      setCustomSearchTerm("");
-                      setFilterMode("account");
-                      setFilterValue(connectedProfile.displayName);
-                      void fetchLiveCrate("account", connectedProfile.displayName);
-                    } else setIsAccountModalOpen(true);
+                    setCrateError(
+                      "Music account gameplay is unavailable until permissions for interactive trivia are cleared. Try an original mix.",
+                    );
                   }}
                 />
               </>
@@ -2177,7 +2345,9 @@ export const WaveletGame: React.FC = () => {
                   <motion.button
                     type="button"
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => startNewGame()}
+                    onClick={() =>
+                      sharedSession ? startSharedRound(sharedSession) : startNewGame()
+                    }
                     className={`flex min-h-[46px] w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition-colors ${
                       isLight
                         ? "bg-muted text-foreground hover:bg-[#E5E5E5]"
@@ -2218,7 +2388,6 @@ export const WaveletGame: React.FC = () => {
                     : "border-white/15 bg-card text-foreground"
                 }`}
               >
-                {/* Keep the action buttons reachable while the entire results content can scroll. */}
                 <div
                   className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain pr-1"
                   role="region"
@@ -2256,7 +2425,6 @@ export const WaveletGame: React.FC = () => {
                   {/* Played Tracks List with Direct Add to Spotify & Apple Music Links */}
                   <div className="space-y-2">
                     {session.history.map((item, idx) => {
-                      const links = buildStreamingLinks(item.song);
                       return (
                         <div
                           key={`${item.song.id}-${idx}`}
@@ -2283,30 +2451,9 @@ export const WaveletGame: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <a
-                              href={links.spotifyUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              aria-label={`Add ${item.song.title} to Spotify`}
-                              className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-[#1DB954]"
-                            >
-                              <SpotifyLogo weight="fill" className="h-4 w-4" />
-                            </a>
-                            <a
-                              href={links.appleMusicUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              aria-label={`Open ${item.song.title} in Apple Music`}
-                              className={`flex h-9 w-9 items-center justify-center rounded-full border ${
-                                isLight
-                                  ? "border-border bg-card text-[#FA243C]"
-                                  : "border-white/15 bg-white/10 text-[#FA243C]"
-                              }`}
-                            >
-                              <AppleLogo weight="fill" className="h-4 w-4" />
-                            </a>
-                          </div>
+                          <span className="shrink-0 rounded-full border border-primary/25 px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+                            Wavelet original
+                          </span>
                         </div>
                       );
                     })}
@@ -2323,7 +2470,9 @@ export const WaveletGame: React.FC = () => {
                     type="button"
                     whileTap={{ scale: 0.97 }}
                     data-start="true"
-                    onClick={() => startNewGame()}
+                    onClick={() =>
+                      sharedSession ? startSharedRound(sharedSession) : startNewGame()
+                    }
                     className={`flex min-h-[48px] items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold ${primaryBtnClasses}`}
                   >
                     <ArrowsClockwise weight="bold" className="h-4 w-4" />

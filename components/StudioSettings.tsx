@@ -291,7 +291,7 @@ export function StudioSettings(props: StudioSettingsProps) {
               <span className="setting-description">
                 {props.musicConnected
                   ? "Manage your connected music profile."
-                  : "Spotify connection & artist-based taste crates."}
+                  : "Music-provider sync paused; play free original demo grooves."}
               </span>
             </span>
             <ArrowUpRight size={18} />
@@ -321,7 +321,7 @@ export function StudioSettings(props: StudioSettingsProps) {
           <p className="setting-description" role="status">
             {props.appStatus ||
               (props.offlineReady
-                ? "Your studio is saved for offline use. Song clips are available offline after they’ve been played."
+                ? "Your studio is saved for offline use. Original grooves play offline without downloads."
                 : "Your studio is being saved for offline use. Keep this page open for a moment.")}
           </p>
           {props.onFullscreen && (

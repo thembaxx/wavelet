@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { audioEngine } from "@/lib/audio-engine";
+import { getOriginalGroove } from "@/lib/cleared-catalog";
+import type { SongMoodProfile } from "@/lib/game-rules";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft,
@@ -29,6 +32,7 @@ type Player = {
   connected: boolean;
   score: number;
   answered: boolean;
+  playCount?: number;
 };
 type Round = {
   options: { id: string; label: string }[];
@@ -96,16 +100,11 @@ export default function MultiplayerPage() {
   const [audioError, setAudioError] = useState("");
   const [listening, setListening] = useState(false);
   const socket = useRef<WebSocket | null>(null);
-  const playerAudio = useRef<HTMLAudioElement | null>(null);
   const stopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const stopAudio = useCallback(() => {
     if (stopTimer.current) clearTimeout(stopTimer.current);
-    playerAudio.current?.pause();
-    if (playerAudio.current) {
-      playerAudio.current.src = "";
-      playerAudio.current = null;
-    }
+    audioEngine.stopSnippet();
     setListening(false);
   }, []);
 
@@ -185,7 +184,7 @@ export default function MultiplayerPage() {
       socket.current = null;
     };
     // The nickname is captured when entering a room; edits do not reconnect the active session.
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
   useEffect(() => {
@@ -199,7 +198,7 @@ export default function MultiplayerPage() {
   useEffect(
     () => () => {
       if (stopTimer.current) clearTimeout(stopTimer.current);
-      playerAudio.current?.pause();
+      audioEngine.stopSnippet();
     },
     [],
   );
@@ -228,26 +227,25 @@ export default function MultiplayerPage() {
     window.history.replaceState(null, "", `/multiplayer?room=${next}`);
     setCode(next);
   };
-  const playClip = async () => {
-    if (!snapshot?.round?.previewUrl) return;
+  const playClip = () => {
+    const previewUrl = snapshot?.round?.previewUrl || "";
+    const groove = getOriginalGroove(previewUrl);
+    if (!groove) {
+      setAudioError("This clip is not approved for Wavelet gameplay.");
+      return;
+    }
     stopAudio();
     setAudioError("");
-    const audio = new Audio(snapshot.round.previewUrl);
-    playerAudio.current = audio;
-    audio.onended = () => setListening(false);
-    audio.onerror = () => {
-      setAudioError("Audio preview unavailable for this track");
-      setListening(false);
-    };
-    try {
-      await audio.play();
-      setListening(true);
-      stopTimer.current = setTimeout(stopAudio, 5000);
-    } catch {
-      setAudioError("Tap again to enable audio, or check browser playback permissions");
-      setListening(false);
-    }
+    audioEngine.playSnippet({
+      previewUrl,
+      durationSec: 5,
+      mood: { bpm: groove.bpm, energy: 0.5 } as SongMoodProfile,
+      onEnded: () => setListening(false),
+    });
+    setListening(true);
+    send({ type: "play" });
   };
+
   const selected = selection.index === snapshot?.index ? selection.value : "";
   const me = snapshot?.players.find((p) => p.id === myId);
   const host = snapshot?.hostId === myId;
@@ -300,8 +298,8 @@ export default function MultiplayerPage() {
             Better together<span className="text-[#EDFF8C]">.</span>
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/60 md:text-base">
-            Same song. Same countdown. Your ears against your friends. Create a room and invite up
-            to seven more listeners.
+            Same original studio groove. Same countdown. Free demo music created for Wavelet — no
+            commercial chart clips. Invite up to seven listeners.
           </p>
         </div>
 
