@@ -63,7 +63,6 @@ import {
   calculateRoundPoints,
   getEffectiveDifficulty,
   buildModeChallengeOptions,
-  advanceRoundState,
   calculateVinylTier,
   calculateWinLossRatio,
   createInitialProgression,
@@ -71,6 +70,7 @@ import {
 } from "@/lib/game-rules";
 import { CURATED_REAL_SONGS, GENRE_PRESETS } from "@/lib/music-catalog";
 import { audioEngine } from "@/lib/audio-engine";
+import { completeSoloRound } from "@/lib/game-feedback";
 import {
   createSharedChallenge,
   decodeSharedChallenge,
@@ -1196,7 +1196,7 @@ export const WaveletGame: React.FC = () => {
     if (!roundFeedback) return;
     audioEngine.playUiTick(1.15, "medium");
 
-    const nextState = advanceRoundState(session, {
+    const nextState = completeSoloRound(session, {
       correct: roundFeedback.correct,
       timeRemainingRatio: Math.max(0.2, 1 - snippetProgress),
       doubleBoost: doubleBoostActive,

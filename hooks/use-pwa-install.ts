@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { diagnostics } from "@/lib/feedback";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -49,7 +50,10 @@ export function usePWAInstall() {
       setAppStatus("Wavelet is ready on your home screen.");
     };
     const onController = () => {
-      if (updating.current) window.location.reload();
+      if (updating.current) {
+        diagnostics.record("offline_update", "success", { code: "update_applied" });
+        window.location.reload();
+      }
     };
     const onOnline = () => setIsOnline(true);
     const onOffline = () => setIsOnline(false);
@@ -61,6 +65,7 @@ export function usePWAInstall() {
     document.addEventListener("fullscreenchange", sync);
     navigator.serviceWorker?.addEventListener("controllerchange", onController);
     if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
+      const started = performance.now();
       navigator.serviceWorker
         .register("/sw.js", { updateViaCache: "none" })
         .then(async (current) => {
@@ -79,11 +84,22 @@ export function usePWAInstall() {
             });
           });
           await navigator.serviceWorker.ready;
-          if (!disposed) setOfflineReady(true);
+          if (!disposed) {
+            diagnostics.record("offline_setup", "success", {
+              code: "offline_ready",
+              durationMs: performance.now() - started,
+            });
+            setOfflineReady(true);
+          }
         })
         .catch(() => {
-          if (!disposed)
+          if (!disposed) {
+            diagnostics.record("offline_setup", "failure", {
+              code: "offline_unavailable",
+              durationMs: performance.now() - started,
+            });
             setAppStatus("Offline setup is unavailable in this browser. Online play still works.");
+          }
         });
     }
     return () => {
@@ -120,7 +136,13 @@ export function usePWAInstall() {
     const waiting = registration.current?.waiting;
     if (!waiting) return;
     updating.current = true;
-    waiting.postMessage({ type: "SKIP_WAITING" });
+    try {
+      waiting.postMessage({ type: "SKIP_WAITING" });
+    } catch {
+      updating.current = false;
+      diagnostics.record("offline_update", "failure", { code: "update_failed" });
+      setAppStatus("The update could not start. Try again from Studio settings.");
+    }
   }, []);
 
   const toggleFullscreen = useCallback(async () => {

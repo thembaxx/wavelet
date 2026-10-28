@@ -1,5 +1,6 @@
 import type { SongMoodProfile } from "./game-rules";
 import { getOriginalGroove, type OriginalGroove } from "./cleared-catalog.ts";
+import { diagnostics } from "./feedback.ts";
 
 export interface AudioSpectrumFrame {
   bass: number;
@@ -35,14 +36,30 @@ export class WaveletAudioEngine {
   private onSnippetEndCallback: (() => void) | null = null;
   private bins = new Float32Array(16);
 
-  private ensureContext(): AudioContext | null {
-    if (typeof window === "undefined") return null;
+  private ensureContext(reportStartup = false): AudioContext | null {
+    const started = performance.now();
+    const report = (outcome: "success" | "failure", code: string) => {
+      if (reportStartup)
+        diagnostics.record("audio_start", outcome, {
+          code,
+          durationMs: performance.now() - started,
+        });
+    };
+    if (typeof window === "undefined") {
+      report("failure", "audio_unavailable");
+      return null;
+    }
     if (!this.ctx) {
       const AudioCtx =
         window.AudioContext ||
         (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
-        this.ctx = new AudioCtx();
+        try {
+          this.ctx = new AudioCtx();
+        } catch (error) {
+          report("failure", "audio_context_error");
+          throw error;
+        }
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.value = this.isMuted ? 0 : this.volume;
         this.masterGain.connect(this.ctx.destination);
@@ -67,8 +84,20 @@ export class WaveletAudioEngine {
       }
     }
     if (this.ctx && this.ctx.state === "suspended") {
-      this.ctx.resume().catch(() => {});
-    }
+      void this.ctx.resume().then(
+        () =>
+          report(
+            this.ctx?.state === "running" ? "success" : "failure",
+            this.ctx?.state === "running" ? "audio_running" : "audio_not_running",
+          ),
+        () => report("failure", "audio_resume_rejected"),
+      );
+    } else if (!this.ctx) report("failure", "audio_unavailable");
+    else
+      report(
+        this.ctx.state === "running" ? "success" : "failure",
+        this.ctx.state === "running" ? "audio_running" : "audio_not_running",
+      );
     return this.ctx;
   }
 
@@ -315,10 +344,11 @@ export class WaveletAudioEngine {
     // verified against the committed allowlist before touching audio playback.
     const groove = getOriginalGroove(params.previewUrl);
     if (!groove) {
+      diagnostics.record("audio_start", "failure", { code: "preview_rejected" });
       params.onEnded?.();
       return;
     }
-    const ctx = this.ensureContext();
+    const ctx = this.ensureContext(true);
 
     this.snippetTargetDuration = params.durationSec;
     this.snippetStartTime = performance.now();
