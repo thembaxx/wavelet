@@ -37,7 +37,7 @@
     "firebase": "^13.1.0",
     "gsap": "^3.15.0",
     "motion": "^14.6.0",
-    "next": "^16.4.2",
+    "next": "^16.4.3",
     "postcss": "^8.5.31",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@firebase/eslint-plugin-security-rules": "^0.0.2",
-    "@next/eslint-plugin-next": "16.4.2",
+    "@next/eslint-plugin-next": "16.4.3",
     "@tailwindcss/postcss": "4.3.3",
     "@tailwindcss/typography": "^0.5.20",
     "@types/node": "^26.6.5",
