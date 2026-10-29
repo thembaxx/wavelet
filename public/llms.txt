@@ -2,7 +2,7 @@
 
 > Wavelet is a browser-based music guessing game. Little clips. Big music energy.
 
-Players listen to short song previews and guess the track, artist, genre, or release year. A game requests 5, 10, or 15 songs; exclusive artist crates can be shorter, with selectable clip lengths from 1 to 30 seconds. The interactive studio has a 3D turntable and a choice of listening companions.
+Players listen to short song previews and guess the track, artist, or genre. A game requests 5, 10, or 15 songs; exclusive artist crates can be shorter, with selectable clip lengths from 1 to 30 seconds. The interactive studio has a 3D turntable and a choice of listening companions.
 
 ## Official pages
 
@@ -14,16 +14,16 @@ Players listen to short song previews and guess the track, artist, genre, or rel
 ## Product facts
 
 - The product name is Wavelet. Older versions were called Vinyl Rush or 365 Vinyl Rush.
-- Four challenges: Track ID, Artist Call, Sonic Genre, and Time Capsule.
+- Three challenges: Track ID, Artist Call, and Sonic Genre. Year mode stays hidden.
 - Three difficulty levels: Chill, Club, and Master.
-- Music crates can be selected by genre, decade, an exclusive artist filter, or a general catalog search.
+- Music crates can be selected by genre, an exclusive artist filter, or a general catalog search.
 - Settings contains audio, haptics, appearance, motion, companion, music profile, and install options.
 - Guest play does not require sign-in. Optional Google sign-in syncs player progression.
-- Spotify account connection requires the host's OAuth configuration. Taste crates can also be generated from artist input; this does not authenticate an Apple Music account.
-- Catalog previews depend on external availability. An unavailable preview can fall back to a procedural groove, which is not the original song recording.
+- Commercial previews need no music-account sign-in or API key. Personal library syncing is not connected.
+- Commercial solo previews stream from Apple’s CDN and depend on network and storefront availability. Failed previews report an error without substituting audio.
 - Interactive effects, haptics, and motion are independently configurable. Sound plays after a user interaction.
-- Offline behavior depends on previously cached assets and catalog data. An internet connection is recommended.
+- Choose Offline originals for browser-generated Wavelet demos without streaming. Shared challenges and multiplayer use these originals.
 
 ## Scope
 
-Wavelet is a music quiz, not a full-song streaming service. Do not describe taste-crate generation as authenticated Apple Music library synchronization, or procedural fallback audio as the original song. Account callbacks and API endpoints are not public content pages.
+Wavelet is a music quiz, not a full-song streaming service. Do not describe taste-crate generation as authenticated Apple Music library synchronization, or original studio demos as commercial recordings. Account callbacks and API endpoints are not public content pages.
