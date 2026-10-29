@@ -38,16 +38,15 @@ export function MusicAccountModal({
     >
       <div className="space-y-4 p-6">
         <h2 id="account-modal-title" className="text-xl font-bold">
-          Music account connections are paused
+          Real music, no account needed
         </h2>
         <p className="text-sm leading-relaxed">
-          Wavelet is free and currently plays only its own original, procedurally generated music.
-          Spotify and Apple Music do not grant automatic permission to use their tracks in a
-          name-that-tune game, even with a paid listener subscription.
+          Commercial song previews are available in solo play. Choose Commercial Mix or search for
+          an artist under Your music. No Spotify or Apple Music sign-in is needed.
         </p>
         <p className="text-sm text-muted-foreground">
-          Try the free Original Studio Mix or choose a Wavelet studio project. Music connections
-          will return only after rights are confirmed in writing.
+          Personal library syncing and full-track playback are not connected. Offline originals
+          remain available when you don’t have an internet connection.
         </p>
         {connectedProfile && (
           <button

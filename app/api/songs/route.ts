@@ -1,15 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { freeGameCatalog } from "@/lib/cleared-catalog";
 import { normalizeArtist } from "@/lib/catalog-filters";
+import { searchPreviewSongs } from "@/lib/itunes-catalog";
 
-// Only approved original compositions. Do not use Apple/Spotify previews as a
-// substitute: a free app does not grant the right to stream their recordings.
+// Preserve original-catalog callers (multiplayer and old clients). Online solo
+// explicitly requests the streaming preview provider with source=itunes.
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const requested = Number(searchParams.get("limit") || 30);
   const limit = Number.isFinite(requested) ? Math.min(50, Math.max(1, Math.floor(requested))) : 30;
   const artist = (searchParams.get("artist") || "").trim().slice(0, 100);
   const term = (searchParams.get("term") || "All").trim().slice(0, 100);
+  if (searchParams.get("source") === "itunes") {
+    try {
+      const tracks = await searchPreviewSongs(
+        term,
+        artist,
+        searchParams.get("artistId") || undefined,
+      );
+      return NextResponse.json(
+        { tracks: tracks.slice(0, limit), source: "itunes", ...(artist ? { artist } : {}) },
+        { headers: { "Cache-Control": "public, max-age=0, s-maxage=3600" } },
+      );
+    } catch {
+      return NextResponse.json(
+        {
+          tracks: [],
+          source: "itunes",
+          error:
+            "Music previews are temporarily unavailable. Try again or choose Offline originals.",
+        },
+        { status: 502, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+  }
   const pool = freeGameCatalog();
   const tracks = pool
     .filter((track) => {

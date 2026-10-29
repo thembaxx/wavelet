@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { WaveletAudioEngine } from "./audio-engine.ts";
 import type { SongMoodProfile } from "./game-rules.ts";
 
-test("only approved original loops play; mute/haptics/effects remain separate", async (t) => {
+test("original loops play, invalid remote URLs fail, and audio preferences remain separate", async (t) => {
   let contexts = 0;
   let notes = 0;
   let vibrations = 0;
@@ -98,4 +98,85 @@ test("only approved original loops play; mute/haptics/effects remain separate", 
   engine.playDiscovery();
   assert.equal(notes, before + 5, "studio effects play separately");
   assert.equal(vibrations, 1);
+});
+
+test("commercial playback waits for audio, obeys cut length and controls, and cancels stale playback", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const previous = Object.getOwnPropertyDescriptor(globalThis, "Audio");
+  let resolvePlay: () => void = () => {};
+  let rejectPlay: (error: Error) => void = () => {};
+  const instances: FakeAudio[] = [];
+  class FakeAudio {
+    src = "";
+    volume = 1;
+    muted = false;
+    preload = "";
+    onerror: null | (() => void) = null;
+    onended: null | (() => void) = null;
+    paused = false;
+    constructor() {
+      instances.push(this);
+    }
+    play() {
+      return new Promise<void>((resolve, reject) => {
+        resolvePlay = resolve;
+        rejectPlay = reject;
+      });
+    }
+    pause() {
+      this.paused = true;
+    }
+  }
+  Object.defineProperty(globalThis, "Audio", { configurable: true, value: FakeAudio });
+  t.after(() =>
+    previous
+      ? Object.defineProperty(globalThis, "Audio", previous)
+      : Reflect.deleteProperty(globalThis, "Audio"),
+  );
+  const engine = new WaveletAudioEngine();
+  t.after(() => engine.stopSnippet());
+  let started = 0;
+  let ended = 0;
+  let errors = 0;
+  const params = {
+    previewUrl: "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/test/clip.m4a",
+    durationSec: 3,
+    mood: { bpm: 120 } as SongMoodProfile,
+    onStarted: () => started++,
+    onEnded: () => ended++,
+    onError: () => errors++,
+  };
+  engine.setMuted(true);
+  engine.playSnippet(params);
+  assert.equal(instances[0].muted, true);
+  t.mock.timers.tick(4000);
+  assert.equal(ended, 0, "cut timer does not consume buffering time");
+  resolvePlay();
+  await Promise.resolve();
+  assert.equal(started, 1);
+  engine.setMuted(false);
+  engine.setVolume(0.5);
+  assert.equal(instances[0].muted, false);
+  assert.equal(instances[0].volume, 0.425);
+  t.mock.timers.tick(3000);
+  assert.equal(ended, 1);
+  assert.equal(instances[0].paused, true);
+  assert.equal(instances[0].src, "");
+
+  engine.playSnippet(params);
+  const stale = resolvePlay;
+  engine.playSnippet(params);
+  stale();
+  await Promise.resolve();
+  assert.equal(started, 1, "a stopped preview cannot restart the next round's clock");
+  rejectPlay(new Error("blocked"));
+  await Promise.resolve();
+  assert.equal(errors, 1);
+  assert.equal(ended, 2);
+  engine.playSnippet(params);
+  t.mock.timers.tick(12000);
+  assert.equal(errors, 2, "a stalled network load reports an error");
+  assert.equal(ended, 3);
+  t.mock.timers.tick(30000);
+  assert.equal(ended, 3, "completion fires only once per preview");
 });

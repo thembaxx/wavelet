@@ -1,44 +1,25 @@
-# Wavelet's zero-fee music policy (free beta)
+# Wavelet music sources
 
-Wavelet must not require a paid music license or a streaming subscription to work. **Being free is not itself a copyright exemption.**
+## Commercial previews (online solo)
 
-## What ships
+Online solo explicitly requests `/api/songs?source=itunes`. The server searches the iTunes catalog or looks up artist IDs in the South African storefront. It returns song title, artist identity, album, provider release date, artwork and store link only for results with an HTTPS preview on Apple’s audio CDN. Reissues with the same title and artist are deduplicated. The browser streams clips directly and stops them after the chosen 1–30 seconds. No audio is downloaded into the repository, proxied by Wavelet, or cached by its service worker.
 
-- `lib/cleared-catalog.ts` declares **24 newly written original procedural demo loops**. Their melodies are expressed as MIDI note arrays, synthesized in the browser by Web Audio; no songs are sampled, embedded or fetched from third-party providers.
-- Six genre crates are available: Pop, R&B/Soul, Hip-Hop/Rap, Electronic, Afrobeats and Alternative. In-game artist aliases (`Wavelet / ...`) are fictional studio project labels, **not claims that named external artists recorded these tracks**.
-- Every loop has 2026 as its creation/release year. Year guessing and decade crates are hidden because they would not offer an honest challenge.
-- `/api/songs` and `/api/artists` only serve the committed demo catalog. The API and solo game filter tracks through `isFreeGameTrack`; the Worker independently demands matching original preview IDs and game-use declarations. The browser audio engine will not open an arbitrary HTTPS preview.
-- Spotify and Apple Music account sync are disabled. Spotify's developer policy disallows music trivia games, and an Apple Music preview is not a general-purpose game license.
-- The new service worker no longer caches third-party previews; switching its cache namespace removes the old audio and catalog caches on activation.
-- Multiplayer records a deduplicated **play intent** per listener/round within a room. These counts are not accurate stream invoices, not a paid royalty report, and are not shipped to analytics.
+`lib/preview-catalog.ts` validates provider metadata and URLs; `lib/itunes-catalog.ts` owns bounded, cached API calls. A failed commercial search is shown as unavailable, never silently replaced with a demo. Stream errors offer replay or skip rather than synthesizing unrelated notes.
 
-No claim is made that these loops represent chart hits. The original music is only a playable technical/demo catalog and is not a substitute for famous songs.
+These records are identified as `source: "itunes"`; they do **not** claim original authorship, royalty-free status or verified game-use permission. Apple’s [Search API documentation and terms](https://performance-partners.apple.com/search-api) describe previews as promotional content and restrict independent entertainment use. This implementation does not establish a music-trivia license or a personal-use exemption.
 
-## Rights registry rules for future additions
+Music-account OAuth, personal library syncing and full-track subscription playback remain disconnected. Search API availability and preview access depend on the provider, storefront and network. Provider release dates can describe a reissue; Year mode stays hidden.
 
-Before any external track can be enabled, record and review:
+## Original demos (offline, shared challenges and multiplayer)
 
-1. The composition author/publisher and master recording owner (both separate rights).
-2. Exact license ID/document evidence, its signer, expiry and conditions.
-3. Explicit permission for **on-demand, short-clip interactive music trivia**, including multiplayer playback on each client and any caching.
-4. Allowed territories, attribution, redistribution, reporting and commercial/noncommercial restrictions.
-5. Whether each user/device counts as a billable play, and permitted maximum uses.
+`lib/cleared-catalog.ts` retains 24 original procedural loops, generated in the browser with Web Audio. Fictional `Wavelet / ...` names are studio project labels, not outside recording artists. The original registry, validation and shared challenge format are unchanged.
 
-A Creative Commons label alone is insufficient if it only applies to the composition or has NonCommercial/NoDerivatives conditions conflicting with the game. Public-domain **composition** does not establish public-domain status for the **recording**.
+Choose **Your music → Genres → Offline originals** to play without streaming or create a repeatable shared challenge. `/api/songs` without a provider parameter continues to return originals for existing clients and the multiplayer Worker. Commercial preview crates are currently solo-only; their share-link button is disabled.
 
-Do not enable Jamendo's *non-commercial developer API*, stock music packs, or other catalog integrations based solely on a free price tier. Require written rights/contract review for this particular use case. Avoid claims of official licensing without evidence.
+## Validation
 
-## Replacing the beta catalog
-
-The demo `wavelet-original:` scheme is a local provider abstraction and has no network endpoint. To add a separately cleared provider, build an explicit new adapter and rights validation gate at **API, playlist, Worker and audio-engine boundaries**. Do not allow remote catalog responses to self-assert licensing with a user-editable flag. A verified, allowlisted rights manifest must decide eligibility.
-
-Before launch, separately audit any nonmusic media or UX sound assets, as this registry is intentionally scoped only to trivia audio. Get qualified legal review before commercially licensing third-party recordings.
-
-## QA checklist
-
-- Unknown or legacy `https://audio-ssl.itunes.apple.com/...` preview URLs never play.
-- An old cached/song-account track without the right manifest can never enter a solo round or multiplayer match.
-- Offline catalog fallback only includes the original tracks.
-- Original loops are different between tracks, can replay and stop, and obey mute, volume and reduced-media policies.
-- All three enabled multiplayer modes have at least four distinct answer labels.
-- No Spotify OAuth, Apple Music playback, iTunes song search, or preview-caching traffic is needed to complete a game.
+- Original loops continue to require exact canonical metadata and original IDs.
+- Commercial records require a stable iTunes track ID and an allowlisted HTTPS preview URL; arbitrary URLs and missing previews are rejected.
+- Artist crates use provider identity, preventing tribute/cover artists from entering a selected artist’s crate.
+- Metadata is cached for an hour to reduce Search API requests. Audio stays outside the app’s service worker cache.
+- Buffering does not consume the selected snippet duration. Stop, replay, mute, volume, load timeouts, playback rejection and late playback promises are covered by focused tests.

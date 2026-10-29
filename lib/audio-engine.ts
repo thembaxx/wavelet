@@ -1,6 +1,7 @@
 import type { SongMoodProfile } from "./game-rules";
 import { getOriginalGroove, type OriginalGroove } from "./cleared-catalog.ts";
 import { diagnostics } from "./feedback.ts";
+import { isApplePreviewUrl } from "./preview-catalog.ts";
 
 export interface AudioSpectrumFrame {
   bass: number;
@@ -338,31 +339,72 @@ export class WaveletAudioEngine {
     durationSec: number;
     mood: SongMoodProfile;
     onEnded?: () => void;
+    onStarted?: () => void;
+    onError?: (message: string) => void;
   }) {
     this.stopSnippet();
-    // Never load arbitrary user/API previews. Original compositions are
-    // verified against the committed allowlist before touching audio playback.
     const groove = getOriginalGroove(params.previewUrl);
-    if (!groove) {
+    const remote = isApplePreviewUrl(params.previewUrl);
+    if (!groove && !remote) {
       diagnostics.record("audio_start", "failure", { code: "preview_rejected" });
       params.onEnded?.();
+      params.onError?.("This preview cannot be played. Choose another track.");
       return;
     }
     const ctx = this.ensureContext(true);
 
-    this.snippetTargetDuration = params.durationSec;
+    this.snippetTargetDuration = Math.min(30, Math.max(1, params.durationSec || 5));
     this.snippetStartTime = performance.now();
     this.isPlayingSnippet = true;
     this.currentBpm = params.mood.bpm || 120;
     this.onSnippetEndCallback = params.onEnded || null;
 
-    this.playNeedleDrop();
+    if (remote) {
+      const audio = new Audio();
+      this.audioEl = audio;
+      this.usingFallbackSynth = false;
+      audio.preload = "none";
+      audio.volume = this.volume * 0.85;
+      audio.muted = this.isMuted;
+      const fail = () => {
+        if (this.audioEl !== audio) return;
+        diagnostics.record("audio_start", "failure", { code: "preview_unavailable" });
+        this.stopSnippet(true);
+        params.onError?.("Preview unavailable. Check your connection, replay, or skip this track.");
+      };
+      audio.onerror = fail;
+      audio.onended = () => {
+        if (this.audioEl === audio) this.stopSnippet(true);
+      };
+      // A stalled load must not leave the UI spinning forever. Only begin the
+      // selected snippet clock after play() confirms actual playback.
+      this.snippetStopTimer = setTimeout(fail, 12000);
+      audio.src = params.previewUrl;
+      try {
+        void audio.play().then(() => {
+          if (this.audioEl !== audio) return;
+          if (this.snippetStopTimer) clearTimeout(this.snippetStopTimer);
+          this.snippetStartTime = performance.now();
+          diagnostics.record("audio_start", "success", { code: "preview_playing" });
+          this.snippetStopTimer = setTimeout(
+            () => this.stopSnippet(true),
+            this.snippetTargetDuration * 1000,
+          );
+          params.onStarted?.();
+        }, fail);
+      } catch {
+        fail();
+      }
+      return;
+    }
 
-    this.startOriginalGroove(ctx, groove);
+    this.playNeedleDrop();
+    this.startOriginalGroove(ctx, groove!);
+    params.onStarted?.();
 
     this.snippetStopTimer = setTimeout(() => {
       this.stopSnippet(true);
-    }, params.durationSec * 1000);
+    }, this.snippetTargetDuration * 1000);
   }
 
   private startOriginalGroove(ctx: AudioContext | null, groove: OriginalGroove) {
@@ -463,6 +505,8 @@ export class WaveletAudioEngine {
       this.synthBeatTimer = null;
     }
     if (this.audioEl) {
+      this.audioEl.onerror = null;
+      this.audioEl.onended = null;
       try {
         this.audioEl.pause();
         this.audioEl.src = "";
@@ -476,6 +520,7 @@ export class WaveletAudioEngine {
       this.onSnippetEndCallback = null;
       cb();
     }
+    this.onSnippetEndCallback = null;
   }
 
   public sampleSpectrum(timeSec: number): AudioSpectrumFrame {

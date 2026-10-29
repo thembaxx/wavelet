@@ -33,7 +33,9 @@ export function CratePicker(props: CratePickerProps) {
       ? props.artist?.name || props.value
       : props.mode === "account"
         ? "My music crate"
-        : props.customSearch || (props.value === "All" ? "Original mix" : props.value);
+        : props.customSearch ||
+          GENRE_PRESETS.find((preset) => preset.id === props.value)?.label ||
+          props.value;
   const select = (mode: FilterMode, value: string) => {
     audioEngine.playUiTick();
     props.onSelect(mode, value);
@@ -82,10 +84,10 @@ export function CratePicker(props: CratePickerProps) {
       </PopoverTrigger>
       <PopoverContent className="crate-popover" align="start" sideOffset={10}>
         <div className="crate-popover-heading">
-          <h3>Free original grooves</h3>
+          <h3>Find your next needle drop</h3>
           <p>
-            These are Wavelet-created demo loops, not recognizable commercial recordings. Choose a
-            mix or studio project.
+            Play real song previews. Choose a mix, search for music, or build a crate from one
+            artist.
           </p>
         </div>
         <Tabs value={tab} onValueChange={setTab}>
@@ -144,7 +146,8 @@ export function CratePicker(props: CratePickerProps) {
           </TabsContent>
         </Tabs>
         <p className="crate-picker-note">
-          Catalog is limited to original royalty-free demo compositions while Wavelet is free.
+          Commercial previews need a connection. Choose Offline originals for Wavelet’s synthesized
+          demos. Previews provided courtesy of iTunes.
         </p>
       </PopoverContent>
     </Popover>

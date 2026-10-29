@@ -79,6 +79,7 @@ import {
   type SharedChallenge,
 } from "@/lib/shared-challenge";
 import { isFreeGameTrack } from "@/lib/cleared-catalog";
+import { isPlayableTrack } from "@/lib/preview-catalog";
 import {
   signInWithGooglePopup,
   signOutUser,
@@ -394,7 +395,7 @@ export const WaveletGame: React.FC = () => {
 
   // Song catalog & loading state
   const [songPool, setSongPool] = useState<SongTrack[]>(CURATED_REAL_SONGS);
-  const [isLoadingSongs, setIsLoadingSongs] = useState<boolean>(false);
+  const [isLoadingSongs, setIsLoadingSongs] = useState<boolean>(true);
 
   // Active game session state
   const [session, setSession] = useState<GameSessionState>({
@@ -652,26 +653,38 @@ export const WaveletGame: React.FC = () => {
               : mode === "year"
                 ? `${value} music hits`
                 : value);
-          const query = new URLSearchParams({ term, limit: "50" });
-          if (mode === "artist") {
-            query.set("artist", value);
-            if (artist) query.set("artistId", artist.id);
+          const original =
+            value === "Originals" || (mode === "artist" && value.startsWith("Wavelet /"));
+          if (original) {
+            tracks = CURATED_REAL_SONGS;
+          } else {
+            const query = new URLSearchParams({
+              term,
+              limit: "50",
+              source: "itunes",
+            });
+            if (mode === "artist") {
+              query.set("artist", value);
+              if (artist) query.set("artistId", artist.id);
+            }
+            const response = await fetch(`/api/songs?${query}`, { signal: controller.signal });
+            if (!response.ok) throw new Error("Catalog unavailable");
+            const data = await response.json();
+            tracks = Array.isArray(data.tracks) ? data.tracks.filter(isPlayableTrack) : [];
           }
-          const response = await fetch(`/api/songs?${query}`, { signal: controller.signal });
-          if (!response.ok) throw new Error("Catalog unavailable");
-          const data = await response.json();
-          tracks = Array.isArray(data.tracks) ? data.tracks.filter(isFreeGameTrack) : [];
         }
       } catch {
         if (controller.signal.aborted) return [];
-        tracks =
-          mode === "artist"
-            ? artistOnlyTracks(CURATED_REAL_SONGS, value, artist?.id)
-            : CURATED_REAL_SONGS;
+        // Keep the chosen commercial crate honest: never silently swap in demos.
+        if (request === crateRequest.current) {
+          setSongPool([]);
+          setCrateError("Music previews are unavailable. Try again or choose Offline originals.");
+        }
+        return [];
       } finally {
         if (request === crateRequest.current) setIsLoadingSongs(false);
       }
-      tracks = tracks.filter(isFreeGameTrack);
+      tracks = tracks.filter(isPlayableTrack);
       if (mode === "artist") tracks = artistOnlyTracks(tracks, value, artist?.id);
       if (request === crateRequest.current) {
         setSongPool(tracks);
@@ -753,7 +766,7 @@ export const WaveletGame: React.FC = () => {
         GAME_CHALLENGE_MODES.find((m) => m.id === activeMode) || GAME_CHALLENGE_MODES[0];
 
       setSnippetProgress(0);
-      setIsPlayingSnippet(true);
+      setIsPlayingSnippet(false);
       setMascotState("listening");
       setMascotSpeech(`${modeDef.title} · Spinning ${durationSec}s cut · ${mood.bpm} BPM`);
 
@@ -761,6 +774,12 @@ export const WaveletGame: React.FC = () => {
         previewUrl: song.previewUrl,
         durationSec,
         mood,
+        onStarted: () => setIsPlayingSnippet(true),
+        onError: (message) => {
+          setIsPlayingSnippet(false);
+          setMascotState("idle");
+          setMascotSpeech(message);
+        },
         onEnded: () => {
           setIsPlayingSnippet(false);
           setSnippetProgress(0);
@@ -933,23 +952,28 @@ export const WaveletGame: React.FC = () => {
       }
       audioEngine.playUiTick(1.3, "medium");
 
-      let activePool = (overridePool || songPool).filter(isFreeGameTrack);
+      let activePool = (overridePool || songPool).filter(isPlayableTrack);
       let request = crateRequest.current;
       if (customSearchTerm.trim().length > 1 && !overridePool) {
         const pending = fetchLiveCrate(filterMode, filterValue, customSearchTerm);
         request = crateRequest.current;
-        activePool = (await pending).filter(isFreeGameTrack);
+        activePool = (await pending).filter(isPlayableTrack);
       }
       if (request !== crateRequest.current) {
         setIsStartingGame(false);
         return;
       }
 
-      const selectedPlaylist = (
-        filterMode === "artist"
+      const candidates = [
+        ...(filterMode === "artist"
           ? artistOnlyTracks(activePool, filterValue, selectedArtist?.id)
-          : activePool
-      ).slice(0, Math.max(1, songCount));
+          : activePool),
+      ];
+      for (let index = candidates.length - 1; index > 0; index--) {
+        const other = Math.floor(Math.random() * (index + 1));
+        [candidates[index], candidates[other]] = [candidates[other], candidates[index]];
+      }
+      const selectedPlaylist = candidates.slice(0, Math.max(1, songCount));
       if (!selectedPlaylist.length) {
         setCrateError("No songs in this crate yet. Choose another artist or mix.");
         setIsStartingGame(false);
@@ -1007,16 +1031,22 @@ export const WaveletGame: React.FC = () => {
   // Support ?autostart=1 query param
   const autostartFiredRef = useRef(false);
   useEffect(() => {
-    if (typeof window === "undefined" || autostartFiredRef.current) return;
+    if (
+      typeof window === "undefined" ||
+      autostartFiredRef.current ||
+      !crateRestored ||
+      isLoadingSongs
+    )
+      return;
     const params = new URLSearchParams(window.location.search);
     if (!params.has("challenge") && params.get("autostart") === "1") {
       autostartFiredRef.current = true;
       const timer = window.setTimeout(() => {
-        void startNewGame(CURATED_REAL_SONGS);
+        void startNewGame();
       }, 0);
       return () => window.clearTimeout(timer);
     }
-  }, [startNewGame]);
+  }, [startNewGame, crateRestored, isLoadingSongs]);
 
   // Power-Up 1: Mode-Aware Studio Clue
   const handleUseArtistHint = useCallback(() => {
@@ -1573,8 +1603,7 @@ export const WaveletGame: React.FC = () => {
                       </span>
                     </h1>
                     <p className="studio-intro-copy">
-                      Listen. Trust your ears. Explore free original studio grooves — no licensed
-                      chart hits yet.
+                      Real songs. Familiar artists. Listen to a little clip and trust your ears.
                     </p>
                   </div>
                   {preferences.danceVideo && !reducedMotion && (
@@ -1597,10 +1626,11 @@ export const WaveletGame: React.FC = () => {
                   className="pointer-events-auto my-4 space-y-3 rounded-2xl border border-primary/25 bg-card p-4"
                   aria-label="Shareable original music challenge"
                 >
-                  <h2 className="font-bold">Play the same challenge</h2>
+                  <h2 className="font-bold">Share an original challenge</h2>
                   <p className="text-sm text-muted-foreground">
                     Share the exact original tracks, round order and game settings. This is a
-                    practice challenge; scores are not remotely verified.
+                    practice challenge using the Offline originals crate; commercial previews are
+                    available in solo play.
                   </p>
                   {challengeToStart && (
                     <div className="space-y-2">
@@ -1618,7 +1648,12 @@ export const WaveletGame: React.FC = () => {
                   )}
                   <button
                     className="rounded-full border px-4 py-2 text-sm font-bold"
-                    disabled={isLoadingSongs || !songPool.length || challengeMode === "year"}
+                    disabled={
+                      isLoadingSongs ||
+                      !songPool.length ||
+                      !songPool.every(isFreeGameTrack) ||
+                      challengeMode === "year"
+                    }
                     onClick={() => {
                       try {
                         if (challengeMode === "year") return;
@@ -1724,7 +1759,7 @@ export const WaveletGame: React.FC = () => {
                   }}
                   onAccount={() => {
                     setCrateError(
-                      "Music account gameplay is unavailable until permissions for interactive trivia are cleared. Try an original mix.",
+                      "Commercial previews need no music account. Choose a mix or search for an artist.",
                     );
                   }}
                 />
@@ -2451,9 +2486,20 @@ export const WaveletGame: React.FC = () => {
                             </div>
                           </div>
 
-                          <span className="shrink-0 rounded-full border border-primary/25 px-2 py-1 text-[10px] font-semibold text-muted-foreground">
-                            Wavelet original
-                          </span>
+                          {item.song.source === "itunes" && item.song.appleMusicUrl ? (
+                            <a
+                              href={item.song.appleMusicUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 rounded-full border border-primary/25 px-2 py-1 text-[10px] font-semibold text-primary"
+                            >
+                              Apple Music ↗
+                            </a>
+                          ) : (
+                            <span className="shrink-0 rounded-full border border-primary/25 px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+                              Wavelet original
+                            </span>
+                          )}
                         </div>
                       );
                     })}

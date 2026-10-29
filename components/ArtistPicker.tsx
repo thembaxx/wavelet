@@ -14,7 +14,7 @@ import { ARTIST_PRESETS } from "@/lib/music-catalog";
 import type { ArtistChoice } from "@/lib/catalog-filters";
 
 const SUGGESTIONS: ArtistChoice[] = ARTIST_PRESETS.slice(0, 7).map((artist) => ({
-  id: `curated:${artist.id}`,
+  id: artist.id,
   name: artist.label,
   genre: artist.genre,
 }));
