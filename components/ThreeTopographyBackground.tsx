@@ -95,11 +95,12 @@ export function ThreeTopographyBackground({
     const pointer = new THREE.Vector2();
     let frame = 0,
       lastFrame = 0;
+    let inViewport = true;
     const start = performance.now();
     const draw = (now: number) => {
       frame = 0;
       const state = props.current;
-      if (document.hidden) return;
+      if (document.hidden || !inViewport) return;
       if (now - lastFrame >= 32 || state.reducedMotion || !state.enabled) {
         lastFrame = now;
         material.uniforms.uPaper.value.set(state.theme === "dark" ? "#102721" : "#f7f8f2");
@@ -116,11 +117,25 @@ export function ThreeTopographyBackground({
         );
         renderer.render(scene, camera);
       }
-      if (!state.reducedMotion && state.enabled) frame = requestAnimationFrame(draw);
+      if (!state.reducedMotion && state.enabled && inViewport) frame = requestAnimationFrame(draw);
     };
     const requestDraw = () => {
-      if (!frame) frame = requestAnimationFrame(draw);
+      if (!frame && !document.hidden && inViewport) frame = requestAnimationFrame(draw);
     };
+    // Preserve the last rendered frame while offscreen; resume from the current theme and motion settings.
+    const visibilityObserver =
+      typeof IntersectionObserver === "undefined"
+        ? null
+        : new IntersectionObserver(([entry]) => {
+            inViewport = entry.isIntersecting;
+            if (inViewport) {
+              requestDraw();
+            } else {
+              cancelAnimationFrame(frame);
+              frame = 0;
+            }
+          });
+    visibilityObserver?.observe(element);
     refresh.current = requestDraw;
     const resize = () => {
       const { width, height } = element.getBoundingClientRect();
@@ -131,6 +146,8 @@ export function ThreeTopographyBackground({
     const observer = new ResizeObserver(resize);
     observer.observe(element);
     const onPointer = (event: PointerEvent) => {
+      if (!inViewport || document.hidden || !props.current.enabled || props.current.reducedMotion)
+        return;
       pointer.set(event.clientX / innerWidth - 0.5, 0.5 - event.clientY / innerHeight);
     };
     window.addEventListener("pointermove", onPointer, { passive: true });
@@ -139,6 +156,7 @@ export function ThreeTopographyBackground({
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
+      visibilityObserver?.disconnect();
       window.removeEventListener("pointermove", onPointer);
       document.removeEventListener("visibilitychange", requestDraw);
       refresh.current = null;
