@@ -70,7 +70,10 @@ export function ThreeTopographyBackground({
     } catch {
       return;
     }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+    // The full-viewport decorative shader needs fewer pixels and updates on touch screens.
+    const touchLayout = window.matchMedia("(max-width: 760px), (pointer: coarse)").matches;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, touchLayout ? 1 : 1.25));
+    const frameInterval = touchLayout ? 55 : 34;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     element.appendChild(renderer.domElement);
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -93,17 +96,14 @@ export function ThreeTopographyBackground({
     const scene = new THREE.Scene();
     scene.add(new THREE.Mesh(geometry, material));
     const pointer = new THREE.Vector2();
-    let frame = 0,
-      lastFrame = 0;
-    let inViewport = true;
+    let frame = 0;
+    let pendingTimer: number | undefined;
     const start = performance.now();
     const draw = (now: number) => {
       frame = 0;
       const state = props.current;
-      if (document.hidden || !inViewport) return;
-      if (now - lastFrame >= 32 || state.reducedMotion || !state.enabled) {
-        lastFrame = now;
-        material.uniforms.uPaper.value.set(state.theme === "dark" ? "#102721" : "#f7f8f2");
+      if (document.hidden) return;
+      material.uniforms.uPaper.value.set(state.theme === "dark" ? "#102721" : "#f7f8f2");
         material.uniforms.uInk.value.set(state.theme === "dark" ? "#78b58e" : "#6b896a");
         material.uniforms.uOpacity.value = state.enabled
           ? state.theme === "dark"
@@ -116,26 +116,21 @@ export function ThreeTopographyBackground({
           0.035,
         );
         renderer.render(scene, camera);
+      if (!state.reducedMotion && state.enabled) {
+        pendingTimer = window.setTimeout(() => {
+          pendingTimer = undefined;
+          frame = requestAnimationFrame(draw);
+        }, frameInterval);
       }
-      if (!state.reducedMotion && state.enabled && inViewport) frame = requestAnimationFrame(draw);
     };
     const requestDraw = () => {
-      if (!frame && !document.hidden && inViewport) frame = requestAnimationFrame(draw);
+      if (document.hidden) return;
+      if (pendingTimer !== undefined) {
+        window.clearTimeout(pendingTimer);
+        pendingTimer = undefined;
+      }
+      if (!frame) frame = requestAnimationFrame(draw);
     };
-    // Preserve the last rendered frame while offscreen; resume from the current theme and motion settings.
-    const visibilityObserver =
-      typeof IntersectionObserver === "undefined"
-        ? null
-        : new IntersectionObserver(([entry]) => {
-            inViewport = entry.isIntersecting;
-            if (inViewport) {
-              requestDraw();
-            } else {
-              cancelAnimationFrame(frame);
-              frame = 0;
-            }
-          });
-    visibilityObserver?.observe(element);
     refresh.current = requestDraw;
     const resize = () => {
       const { width, height } = element.getBoundingClientRect();
@@ -146,8 +141,7 @@ export function ThreeTopographyBackground({
     const observer = new ResizeObserver(resize);
     observer.observe(element);
     const onPointer = (event: PointerEvent) => {
-      if (!inViewport || document.hidden || !props.current.enabled || props.current.reducedMotion)
-        return;
+      if (document.hidden || !props.current.enabled || props.current.reducedMotion) return;
       pointer.set(event.clientX / innerWidth - 0.5, 0.5 - event.clientY / innerHeight);
     };
     window.addEventListener("pointermove", onPointer, { passive: true });
@@ -155,8 +149,8 @@ export function ThreeTopographyBackground({
     resize();
     return () => {
       cancelAnimationFrame(frame);
+      if (pendingTimer !== undefined) window.clearTimeout(pendingTimer);
       observer.disconnect();
-      visibilityObserver?.disconnect();
       window.removeEventListener("pointermove", onPointer);
       document.removeEventListener("visibilitychange", requestDraw);
       refresh.current = null;
