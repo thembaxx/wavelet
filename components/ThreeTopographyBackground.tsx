@@ -70,10 +70,10 @@ export function ThreeTopographyBackground({
     } catch {
       return;
     }
-    // The full-viewport decorative shader needs fewer pixels and updates on touch screens.
+    // A full-screen decorative shader can use fewer pixels and updates on touch devices.
     const touchLayout = window.matchMedia("(max-width: 760px), (pointer: coarse)").matches;
+    const frameInterval = touchLayout ? 55 : 32;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, touchLayout ? 1 : 1.25));
-    const frameInterval = touchLayout ? 55 : 34;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     element.appendChild(renderer.domElement);
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -96,39 +96,32 @@ export function ThreeTopographyBackground({
     const scene = new THREE.Scene();
     scene.add(new THREE.Mesh(geometry, material));
     const pointer = new THREE.Vector2();
-    let frame = 0;
-    let pendingTimer: number | undefined;
+    let frame = 0,
+      lastFrame = 0;
     const start = performance.now();
     const draw = (now: number) => {
       frame = 0;
       const state = props.current;
       if (document.hidden) return;
-      material.uniforms.uPaper.value.set(state.theme === "dark" ? "#102721" : "#f7f8f2");
-      material.uniforms.uInk.value.set(state.theme === "dark" ? "#78b58e" : "#6b896a");
-      material.uniforms.uOpacity.value = state.enabled
-        ? state.theme === "dark"
-          ? 0.09
-          : 0.12
-        : 0;
-      material.uniforms.uTime.value = state.reducedMotion ? 0 : (now - start) / 1000;
-      material.uniforms.uPointer.value.lerp(
-        state.reducedMotion ? new THREE.Vector2() : pointer,
-        0.035,
-      );
-      renderer.render(scene, camera);
-      if (!state.reducedMotion && state.enabled) {
-        pendingTimer = window.setTimeout(() => {
-          pendingTimer = undefined;
-          frame = requestAnimationFrame(draw);
-        }, frameInterval);
+      if (now - lastFrame >= frameInterval || state.reducedMotion || !state.enabled) {
+        lastFrame = now;
+        material.uniforms.uPaper.value.set(state.theme === "dark" ? "#102721" : "#f7f8f2");
+        material.uniforms.uInk.value.set(state.theme === "dark" ? "#78b58e" : "#6b896a");
+        material.uniforms.uOpacity.value = state.enabled
+          ? state.theme === "dark"
+            ? 0.09
+            : 0.12
+          : 0;
+        material.uniforms.uTime.value = state.reducedMotion ? 0 : (now - start) / 1000;
+        material.uniforms.uPointer.value.lerp(
+          state.reducedMotion ? new THREE.Vector2() : pointer,
+          0.035,
+        );
+        renderer.render(scene, camera);
       }
+      if (!state.reducedMotion && state.enabled) frame = requestAnimationFrame(draw);
     };
     const requestDraw = () => {
-      if (document.hidden) return;
-      if (pendingTimer !== undefined) {
-        window.clearTimeout(pendingTimer);
-        pendingTimer = undefined;
-      }
       if (!frame) frame = requestAnimationFrame(draw);
     };
     refresh.current = requestDraw;
@@ -149,7 +142,6 @@ export function ThreeTopographyBackground({
     resize();
     return () => {
       cancelAnimationFrame(frame);
-      if (pendingTimer !== undefined) window.clearTimeout(pendingTimer);
       observer.disconnect();
       window.removeEventListener("pointermove", onPointer);
       document.removeEventListener("visibilitychange", requestDraw);
