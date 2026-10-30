@@ -70,7 +70,10 @@ export function ThreeTopographyBackground({
     } catch {
       return;
     }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+    // A full-screen decorative shader can use fewer pixels and updates on touch devices.
+    const touchLayout = window.matchMedia("(max-width: 760px), (pointer: coarse)").matches;
+    const frameInterval = touchLayout ? 55 : 32;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, touchLayout ? 1 : 1.25));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     element.appendChild(renderer.domElement);
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -100,7 +103,7 @@ export function ThreeTopographyBackground({
       frame = 0;
       const state = props.current;
       if (document.hidden) return;
-      if (now - lastFrame >= 32 || state.reducedMotion || !state.enabled) {
+      if (now - lastFrame >= frameInterval || state.reducedMotion || !state.enabled) {
         lastFrame = now;
         material.uniforms.uPaper.value.set(state.theme === "dark" ? "#102721" : "#f7f8f2");
         material.uniforms.uInk.value.set(state.theme === "dark" ? "#78b58e" : "#6b896a");
@@ -131,6 +134,7 @@ export function ThreeTopographyBackground({
     const observer = new ResizeObserver(resize);
     observer.observe(element);
     const onPointer = (event: PointerEvent) => {
+      if (document.hidden || !props.current.enabled || props.current.reducedMotion) return;
       pointer.set(event.clientX / innerWidth - 0.5, 0.5 - event.clientY / innerHeight);
     };
     window.addEventListener("pointermove", onPointer, { passive: true });
