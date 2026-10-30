@@ -104,18 +104,18 @@ export function ThreeTopographyBackground({
       const state = props.current;
       if (document.hidden) return;
       material.uniforms.uPaper.value.set(state.theme === "dark" ? "#102721" : "#f7f8f2");
-        material.uniforms.uInk.value.set(state.theme === "dark" ? "#78b58e" : "#6b896a");
-        material.uniforms.uOpacity.value = state.enabled
-          ? state.theme === "dark"
-            ? 0.09
-            : 0.12
-          : 0;
-        material.uniforms.uTime.value = state.reducedMotion ? 0 : (now - start) / 1000;
-        material.uniforms.uPointer.value.lerp(
-          state.reducedMotion ? new THREE.Vector2() : pointer,
-          0.035,
-        );
-        renderer.render(scene, camera);
+      material.uniforms.uInk.value.set(state.theme === "dark" ? "#78b58e" : "#6b896a");
+      material.uniforms.uOpacity.value = state.enabled
+        ? state.theme === "dark"
+          ? 0.09
+          : 0.12
+        : 0;
+      material.uniforms.uTime.value = state.reducedMotion ? 0 : (now - start) / 1000;
+      material.uniforms.uPointer.value.lerp(
+        state.reducedMotion ? new THREE.Vector2() : pointer,
+        0.035,
+      );
+      renderer.render(scene, camera);
       if (!state.reducedMotion && state.enabled) {
         pendingTimer = window.setTimeout(() => {
           pendingTimer = undefined;
