@@ -62,7 +62,6 @@ interface Props extends CratePickerProps {
 export function GameSetup(props: Props) {
   const { challenge, difficulty, duration, count } = props;
   const actualCount = Math.min(count, props.availableTracks);
-  const activeMode = GAME_CHALLENGE_MODES.find((mode) => mode.id === challenge)!;
   const select = (action: () => void) => {
     audioEngine.playUiTick();
     action();
@@ -79,8 +78,15 @@ export function GameSetup(props: Props) {
     >
       <motion.div variants={dockItem} className="setup-heading">
         <span>Choose a mode</span>
-        <button type="button" className="setup-share-trigger" onClick={props.onShareChallenge} aria-haspopup="dialog" aria-label="Share a challenge">
-          <ShareNetwork size={17} /> Share
+        <button
+          type="button"
+          className="setup-share-trigger"
+          onClick={props.onShareChallenge}
+          aria-haspopup="dialog"
+          aria-label="Share a challenge"
+        >
+          <ShareNetwork size={17} />
+          Share
         </button>
       </motion.div>
       <motion.div variants={dockItem}>
@@ -121,51 +127,49 @@ export function GameSetup(props: Props) {
           </span>
         </Button>
       </motion.div>
-      {(props.loading || props.error || props.mode === "artist") && <motion.p variants={dockItem} className="setup-description" role="status">
-        {props.loading ? (
-          <>
-            <CircleNotch size={14} className="animate-spin" /> Getting your crate ready…
-          </>
-        ) : props.error ? (
-          props.error
-        ) : props.mode === "artist" ? (
-          <>
-            <Headphones size={14} /> {props.availableTracks}{" "}
-            {props.availableTracks === 1 ? "song" : "songs"} · only{" "}
-            {props.artist?.name || props.value}
-            {actualCount < count && actualCount > 0 ? ` · ${actualCount}-song set` : ""}
-          </>
-        ) : (
-          <>
-            {activeMode.promptLabel} <span aria-hidden="true">·</span>{" "}
-            {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-          </>
-        )}
-      </motion.p>}
+      {(props.loading || props.error || props.mode === "artist") && (
+        <motion.p variants={dockItem} className="setup-description" role="status">
+          {props.loading ? (
+            <>
+              <CircleNotch size={14} className="animate-spin" /> Loading music…
+            </>
+          ) : props.error ? (
+            props.error
+          ) : (
+            <>
+              <Headphones size={14} /> {props.availableTracks}{" "}
+              {props.availableTracks === 1 ? "song" : "songs"} from{" "}
+              {props.artist?.name || props.value}
+            </>
+          )}
+        </motion.p>
+      )}
       <div className="setup-actions">
-      <motion.div variants={dockItem} className="play-spark">
-        <MagneticButton
-          data-spark
-          data-start="true"
-          reducedMotion={props.reducedMotion}
-          className="setup-play-button squircle bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-          disabled={props.loading || actualCount === 0}
-          onClick={props.onStart}
-        >
-          <span>
-            {props.loading ? (
-              <CircleNotch size={18} className="animate-spin" />
-            ) : (
-              <Play size={18} weight="fill" />
-            )}{" "}
-            Let’s play
-          </span>
-          <span className="setup-play-count">
-            {actualCount || count} {actualCount === 1 ? "song" : "songs"}
-          </span>
-        </MagneticButton>
-      </motion.div>
-      <motion.div variants={dockItem} className="setup-friends"><MultiplayerEntry /></motion.div>
+        <motion.div variants={dockItem} className="play-spark">
+          <MagneticButton
+            data-spark
+            data-start="true"
+            reducedMotion={props.reducedMotion}
+            className="setup-play-button squircle bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+            disabled={props.loading || actualCount === 0}
+            onClick={props.onStart}
+          >
+            <span>
+              {props.loading ? (
+                <CircleNotch size={18} className="animate-spin" />
+              ) : (
+                <Play size={18} weight="fill" />
+              )}{" "}
+              Let’s play
+            </span>
+            <span className="setup-play-count">
+              {actualCount || count} {actualCount === 1 ? "song" : "songs"}
+            </span>
+          </MagneticButton>
+        </motion.div>
+        <motion.div variants={dockItem} className="setup-friends">
+          <MultiplayerEntry />
+        </motion.div>
       </div>
 
       <StudioDialog
@@ -205,7 +209,6 @@ export function GameSetup(props: Props) {
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
-            <p>{DIFFICULTY_TIERS.find((tier) => tier.id === difficulty)?.description}</p>
           </fieldset>
           <fieldset className="round-field">
             <legend>Clip length</legend>
