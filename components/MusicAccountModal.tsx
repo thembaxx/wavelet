@@ -45,8 +45,8 @@ export function MusicAccountModal({
           account is required.
         </p>
         <p className="text-sm text-muted-foreground">
-          Offline originals work without internet. Personal library syncing and full tracks are
-          not available.
+          Offline originals work without internet. Personal library syncing and full tracks are not
+          available.
         </p>
         {connectedProfile && (
           <button
