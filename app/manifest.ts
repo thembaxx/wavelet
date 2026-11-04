@@ -14,7 +14,7 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["games", "music", "entertainment"],
     lang: "en",
     dir: "ltr",
-    display_override: ["standalone", "minimal-ui"],
+    display_override: ["fullscreen", "standalone", "minimal-ui"],
     prefer_related_applications: false,
     background_color: "#f7f8f2",
     theme_color: "#f7f8f2",
