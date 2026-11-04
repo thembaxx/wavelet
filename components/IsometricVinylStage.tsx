@@ -754,6 +754,29 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     const platterMesh = new THREE.Mesh(platterGeo, platterMat);
     platterGroup.add(platterMesh);
 
+    // Precision strobe marks are instanced: 48 machined details in one draw call.
+    const strobeGeo = new THREE.BoxGeometry(0.06, 0.009, 0.025);
+    const strobeMat = new THREE.MeshStandardMaterial({
+      color: 0x98a5ac,
+      metalness: 0.9,
+      roughness: 0.24,
+    });
+    const strobeMarks = new THREE.InstancedMesh(strobeGeo, strobeMat, 48);
+    const strobeMatrix = new THREE.Matrix4();
+    const strobePosition = new THREE.Vector3();
+    const strobeRotation = new THREE.Quaternion();
+    const strobeScale = new THREE.Vector3(1, 1, 1);
+    const strobeAxis = new THREE.Vector3(0, 1, 0);
+    for (let index = 0; index < 48; index++) {
+      const angle = (index / 48) * Math.PI * 2;
+      strobePosition.set(Math.cos(angle) * 1.49, 0.076, Math.sin(angle) * 1.49);
+      strobeRotation.setFromAxisAngle(strobeAxis, -angle);
+      strobeMatrix.compose(strobePosition, strobeRotation, strobeScale);
+      strobeMarks.setMatrixAt(index, strobeMatrix);
+    }
+    strobeMarks.instanceMatrix.needsUpdate = true;
+    platterGroup.add(strobeMarks);
+
     // Part 5: 12-Inch Micro-Grooved Vinyl Record Disc with Clearcoat
     const grooveTex = createVinylGrooveTexture(maxAnisotropy);
     const vinylGeo = new THREE.CylinderGeometry(1.44, 1.44, 0.042, 64);
@@ -789,6 +812,15 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     const labelMesh = new THREE.Mesh(labelGeo, labelMat);
     labelMesh.position.y = 0.091;
     platterGroup.add(labelMesh);
+
+    // A satin label border catches the warm studio light without extra texture fetches.
+    const labelEdge = new THREE.Mesh(
+      new THREE.TorusGeometry(0.45, 0.012, 8, 64),
+      brassTrimMat,
+    );
+    labelEdge.rotation.x = -Math.PI / 2;
+    labelEdge.position.y = 0.125;
+    platterGroup.add(labelEdge);
 
     // Part 7: Chrome Center Spindle & Record Clamp Weight
     const spindleGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.28, 20);
@@ -1176,6 +1208,28 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     headSphereMesh.castShadow = true;
     headGroup.add(headSphereMesh);
 
+    // BobaCat has a feline face silhouette, not merely a recoloured Pebble.
+    const catWhiskers = new THREE.Group();
+    const whiskerMat = new THREE.MeshStandardMaterial({
+      color: 0x483a32,
+      metalness: 0,
+      roughness: 0.72,
+    });
+    for (const side of [-1, 1]) {
+      for (let index = 0; index < 3; index++) {
+        const height = -0.15 + index * 0.095;
+        const curve = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(side * 0.43, height, 0.64),
+          new THREE.Vector3(side * 0.63, height + 0.024, 0.62),
+          new THREE.Vector3(side * 0.84, height + (index - 1) * 0.06, 0.54),
+        ]);
+        catWhiskers.add(
+          new THREE.Mesh(new THREE.TubeGeometry(curve, 12, 0.008, 5, false), whiskerMat),
+        );
+      }
+    }
+    headGroup.add(catWhiskers);
+
     const faceCanvas = document.createElement("canvas");
     faceCanvas.width = 512;
     faceCanvas.height = 512;
@@ -1330,6 +1384,19 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     rightLowerWing.position.set(0.78, -0.08, 0.02);
     bowGroup.add(rightLowerWing);
 
+    // Pebble's miniature enamel record pin gives the outfit a recognizable motif.
+    const pebblePin = new THREE.Group();
+    pebblePin.position.set(0.25, 0.17, 0.67);
+    const pinFace = new THREE.Mesh(new THREE.CircleGeometry(0.11, 28), darkWheelMat);
+    pebblePin.add(pinFace);
+    const pinTrim = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.012, 8, 28), brassTrimMat);
+    pinTrim.position.z = 0.008;
+    pebblePin.add(pinTrim);
+    const pinCenter = new THREE.Mesh(new THREE.CircleGeometry(0.026, 16), scooterMintMat);
+    pinCenter.position.z = 0.016;
+    pebblePin.add(pinCenter);
+    torsoGroup.add(pebblePin);
+
     // Floppy Bunny Ears for Sprout (IMG_5583 right!)
     const bunnyEarsGroup = new THREE.Group();
     bunnyEarsGroup.position.set(0, 0.22, 0.05);
@@ -1366,6 +1433,25 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     crownMesh.position.y = 0.34;
     crownMesh.castShadow = true;
     bucketHatGroup.add(crownMesh);
+
+    // Sprout's small paired leaf crest stays attached as the bucket hat sways.
+    const sproutLeaves = new THREE.Group();
+    sproutLeaves.position.set(0, 0.71, 0.02);
+    const leafMat = new THREE.MeshPhysicalMaterial({
+      color: 0x4c9c6d,
+      roughness: 0.44,
+      clearcoat: 0.18,
+    });
+    const leafGeo = new THREE.SphereGeometry(0.18, 20, 16);
+    for (const side of [-1, 1]) {
+      const leaf = new THREE.Mesh(leafGeo, leafMat);
+      leaf.scale.set(0.7, 1.65, 0.45);
+      leaf.position.set(side * 0.13, 0.12, 0);
+      leaf.rotation.z = -side * 0.6;
+      leaf.castShadow = true;
+      sproutLeaves.add(leaf);
+    }
+    bucketHatGroup.add(sproutLeaves);
 
     const catBeanieGroup = new THREE.Group();
     catBeanieGroup.position.y = 0.58;
@@ -1795,6 +1881,9 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         catTailGroup.visible = false;
         scooterProp.visible = true;
         leftPointingFinger.visible = true;
+        catWhiskers.visible = false;
+        pebblePin.visible = true;
+        sproutLeaves.visible = false;
         leftTeardrop3D.visible = true;
         rightTeardrop3D.visible = true;
         _targetSuitColor.set(0xe6b87d);
@@ -1812,6 +1901,9 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         catTailGroup.visible = true;
         scooterProp.visible = false;
         leftPointingFinger.visible = false;
+        catWhiskers.visible = true;
+        pebblePin.visible = false;
+        sproutLeaves.visible = false;
         leftTeardrop3D.visible = true;
         rightTeardrop3D.visible = currentProps.mascotState === "sympathy";
         _targetSuitColor.set(0xfcead8);
@@ -1829,6 +1921,9 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         catTailGroup.visible = false;
         scooterProp.visible = true;
         leftPointingFinger.visible = true;
+        catWhiskers.visible = false;
+        pebblePin.visible = false;
+        sproutLeaves.visible = true;
         leftTeardrop3D.visible = currentProps.mascotState === "sympathy";
         rightTeardrop3D.visible = currentProps.mascotState === "sympathy";
         _targetSuitColor.set(0x5cb896);
@@ -2055,6 +2150,8 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       // 4-Lobed Plush Pink Bow Follow-Through
       bowGroup.rotation.z = Math.sin(elapsed * beatFreq * 2 - 0.4) * 0.13 * danceIntensity;
       bowGroup.scale.setScalar(1 + Math.sin(elapsed * beatFreq * 2) * 0.04 * danceIntensity);
+      sproutLeaves.rotation.z =
+        currentProps.reducedMotion ? 0 : Math.sin(elapsed * 1.8) * 0.07;
 
       // 3D Teardrop Quiver on Cheeks
       const tearQuiver =
@@ -2150,7 +2247,15 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       ribbedBumpTex.dispose();
       peanutBumpTex.dispose();
       faceTex.dispose();
+      scene.traverse((object) => {
+        if (!(object instanceof THREE.Mesh)) return;
+        object.geometry.dispose();
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        for (const material of materials) material.dispose();
+      });
+      scene.environment?.dispose();
       renderer.dispose();
+      renderer.domElement.remove();
     };
   }, []);
 
