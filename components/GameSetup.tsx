@@ -176,8 +176,7 @@ export function GameSetup(props: Props) {
       >
         <div className="round-options-heading">
           <div>
-            <p className="studio-eyebrow">A set, your way</p>
-            <h2 id="round-options-title">Set the tempo.</h2>
+            <h2 id="round-options-title">Round settings</h2>
           </div>
           <button
             type="button"
@@ -209,7 +208,7 @@ export function GameSetup(props: Props) {
             <p>{DIFFICULTY_TIERS.find((tier) => tier.id === difficulty)?.description}</p>
           </fieldset>
           <fieldset className="round-field">
-            <legend>How much can you guess from?</legend>
+            <legend>Clip length</legend>
             <div className="round-duration-options">
               {([1, 3, 5, 10, 15, 30] as const).map((seconds) => (
                 <Button
@@ -224,7 +223,7 @@ export function GameSetup(props: Props) {
             </div>
           </fieldset>
           <fieldset className="round-field">
-            <legend>Songs in your set</legend>
+            <legend>Rounds</legend>
             <ToggleGroup
               type="single"
               value={String(count)}
@@ -240,7 +239,6 @@ export function GameSetup(props: Props) {
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
-            <p>Artist sets use the songs available, up to your chosen length.</p>
           </fieldset>
           <fieldset className="round-field">
             <legend>Answer style</legend>
@@ -256,7 +254,6 @@ export function GameSetup(props: Props) {
               <ToggleGroupItem value="quiz-4choice">Four choices</ToggleGroupItem>
               <ToggleGroupItem value="party-30s">Self-scored</ToggleGroupItem>
             </ToggleGroup>
-            <p>Self-scored lets you reveal the answer and judge your guess.</p>
           </fieldset>
         </div>
         <div className="round-options-footer">
@@ -268,7 +265,7 @@ export function GameSetup(props: Props) {
               props.onRulesOpen(false);
             }}
           >
-            Ready to spin
+            Done
           </Button>
         </div>
       </StudioDialog>
