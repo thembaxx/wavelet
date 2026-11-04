@@ -1,0 +1,29 @@
+/* An installed Wavelet uses the available viewport without hiding game controls. */
+:root {
+  --wavelet-safe-top: env(safe-area-inset-top, 0px);
+  --wavelet-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  html,
+  body {
+    min-height: 100dvh;
+  }
+  .wavelet-app {
+    min-height: 100dvh;
+  }
+  .wavelet-shell {
+    min-height: 100dvh;
+    padding-top: max(14px, var(--wavelet-safe-top));
+    padding-bottom: max(14px, var(--wavelet-safe-bottom));
+    padding-left: max(14px, env(safe-area-inset-left, 0px));
+    padding-right: max(14px, env(safe-area-inset-right, 0px));
+  }
+  .studio-dialog-panel {
+    max-height: calc(100dvh - 24px - var(--wavelet-safe-top) - var(--wavelet-safe-bottom));
+  }
+}
+@media (max-height: 560px) and (orientation: landscape) {
+  .studio-dialog-panel {
+    max-height: calc(100dvh - 12px - var(--wavelet-safe-top) - var(--wavelet-safe-bottom));
+  }
+}
