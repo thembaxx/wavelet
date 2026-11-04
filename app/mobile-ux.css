@@ -66,3 +66,164 @@ html {
     transition: none;
   }
 }
+
+/* Wavelet home simplification: actions flow in one dock, never float above Play. */
+.wavelet-app {
+  min-height: 100svh;
+  height: 100dvh;
+  background: var(--background);
+  overscroll-behavior: contain;
+}
+.wavelet-app[data-state="title"] .wavelet-shell {
+  min-height: 100%;
+}
+.wavelet-app[data-state="title"] .studio-intro {
+  margin-top: clamp(10px, 2dvh, 20px);
+}
+.wavelet-app[data-state="title"] .studio-intro h1 {
+  max-width: none;
+  font-size: clamp(30px, 7.4vw, 48px);
+  line-height: 1.08;
+  text-wrap: balance;
+}
+.wavelet-app[data-state="title"] [data-testid="vinyl-3d-stage"] {
+  top: clamp(146px, 22dvh, 225px);
+  bottom: clamp(265px, 36dvh, 350px);
+}
+.studio-game-dock.setup-panel {
+  gap: 12px;
+  margin-top: 8px;
+  padding: clamp(13px, 3.2vw, 18px);
+}
+.setup-heading {font-size: 14px;}
+.setup-share-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 0 9px;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 650;
+  border-radius: 12px;
+}
+.setup-share-trigger:hover {background: var(--muted);}
+.setup-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: 9px;
+  min-width: 0;
+}
+.setup-friends,.play-spark {min-width: 0;}
+.setup-multiplayer-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 54px;
+  padding: 0 10px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 180ms ease, transform 180ms ease;
+}
+.setup-multiplayer-link:hover {background: var(--secondary);}
+.setup-multiplayer-link:active {transform: scale(.98);}
+.setup-play-button {padding-inline: 14px; font-size: 14px; min-width: 0;}
+.setup-play-button > span:first-child {gap: 7px; white-space: nowrap;}
+.shared-challenge-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px auto 0;
+  padding: 10px 14px;
+  width: min(100%, 510px);
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 16px;
+  font-size: 14px;
+}
+.shared-challenge-prompt button {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.shared-challenge-error {font-size: 14px; text-align: center;}
+.share-challenge-dialog .studio-dialog-panel {
+  width: min(100%, 430px);
+  max-width: 430px;
+  height: auto;
+}
+.share-challenge-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.share-challenge-header h2 {font-size: 19px; font-weight: 750; letter-spacing: -.025em;}
+.share-challenge-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+}
+.share-challenge-body label {font-size: 14px; font-weight: 600;}
+.share-challenge-body input {
+  width: 100%;
+  min-width: 0;
+  height: 46px;
+  font-size: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--background);
+}
+.share-challenge-body p {font-size: 14px; color: var(--muted-foreground);}
+.share-challenge-primary {
+  min-height: 48px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: 13px;
+  font-weight: 700;
+}
+.share-challenge-secondary {
+  min-height: 44px;
+  font-weight: 650;
+  color: var(--primary);
+}
+@media (max-width: 640px) {
+  .wavelet-app[data-state="title"] .studio-cameo {display: none;}
+  .studio-game-dock.setup-panel {gap: 10px;}
+  .studio-game-dock.setup-panel .guess-mode-tabs {height: 58px;}
+  .studio-game-dock.setup-panel .guess-mode-tabs button {height: 50px;}
+  .studio-game-dock.setup-panel .crate-trigger,
+  .studio-game-dock.setup-panel .round-options-trigger {height: 54px;}
+  .studio-game-dock.setup-panel .setup-play-count {display: none;}
+  .wavelet-app[data-state="title"] .studio-header {min-height: 44px;}
+}
+@media (max-width: 350px) {
+  .setup-actions {grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 6px;}
+  .setup-multiplayer-link {padding-inline: 7px; font-size: 13px;}
+  .setup-play-button {padding-inline: 10px;}
+}
+@media (max-height: 700px) and (orientation: portrait) {
+  .wavelet-app[data-state="title"] [data-testid="vinyl-3d-stage"] {top: 135px; bottom: 275px;}
+}
+@media (prefers-reduced-motion: reduce) {
+  .setup-multiplayer-link {transition: none;}
+}
+/* Preserve at least 16px editable text at every breakpoint (including desktop). */
+.wavelet-app :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  font-size: 16px;
+}
