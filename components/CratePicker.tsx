@@ -63,7 +63,6 @@ export function CratePicker(props: CratePickerProps) {
             <VinylRecord size={21} />
           </span>
           <span>
-            <small>Your music</small>
             <span className="crate-animated-label">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.strong
@@ -84,11 +83,7 @@ export function CratePicker(props: CratePickerProps) {
       </PopoverTrigger>
       <PopoverContent className="crate-popover" align="start" sideOffset={10}>
         <div className="crate-popover-heading">
-          <h3>Find your next needle drop</h3>
-          <p>
-            Play real song previews. Choose a mix, search for music, or build a crate from one
-            artist.
-          </p>
+          <h3>Choose music</h3>
         </div>
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="crate-tabs">
@@ -138,7 +133,6 @@ export function CratePicker(props: CratePickerProps) {
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="An artist, genre, year, or mood…"
               />
-              <p>For songs exclusively by one artist, choose the Artists tab.</p>
               <Button type="submit" disabled={search.trim().length < 2}>
                 Find music
               </Button>
