@@ -223,3 +223,7 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .setup-multiplayer-link {transition: none;}
 }
+/* Preserve at least 16px editable text at every breakpoint (including desktop). */
+.wavelet-app :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  font-size: 16px;
+}
