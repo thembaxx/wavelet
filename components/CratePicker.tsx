@@ -126,7 +126,7 @@ export function CratePicker(props: CratePickerProps) {
                 }
               }}
             >
-              <label htmlFor="catalog-search">Search the whole catalog</label>
+              <label htmlFor="catalog-search">Search songs</label>
               <input
                 id="catalog-search"
                 value={search}
@@ -140,8 +140,7 @@ export function CratePicker(props: CratePickerProps) {
           </TabsContent>
         </Tabs>
         <p className="crate-picker-note">
-          Commercial previews need a connection. Choose Offline originals for Wavelet’s synthesized
-          demos. Previews provided courtesy of iTunes.
+          Previews need internet. Offline originals are synthesized for practice.
         </p>
       </PopoverContent>
     </Popover>
