@@ -37,7 +37,6 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
     title: BRAND.name,
   },
   // File-based icon.png and apple-icon.png provide sized, fingerprinted PNGs.
