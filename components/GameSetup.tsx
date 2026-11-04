@@ -8,6 +8,7 @@ import {
   MusicNotes,
   Play,
   SlidersHorizontal,
+  ShareNetwork,
   VinylRecord,
   X,
 } from "@phosphor-icons/react";
@@ -24,7 +25,7 @@ import {
   type SnippetDuration,
 } from "@/lib/game-rules";
 import { audioEngine } from "@/lib/audio-engine";
-import { BloomShape } from "./react-bits/BloomShape";
+import { MultiplayerEntry } from "./MultiplayerEntry";
 import { motion } from "motion/react";
 import { AnimatedTabs } from "./easyui/AnimatedTabs";
 import { MagneticButton } from "./easyui/MagneticButton";
@@ -55,6 +56,7 @@ interface Props extends CratePickerProps {
   availableTracks: number;
   error: string | null;
   onStart: () => void;
+  onShareChallenge: () => void;
 }
 
 export function GameSetup(props: Props) {
@@ -76,8 +78,10 @@ export function GameSetup(props: Props) {
       variants={{ visible: { transition: { staggerChildren: 0.055, delayChildren: 0.06 } } }}
     >
       <motion.div variants={dockItem} className="setup-heading">
-        <span>What are we guessing?</span>
-        <BloomShape key={challenge} className="setup-bloom" />
+        <span>Choose a mode</span>
+        <button type="button" className="setup-share-trigger" onClick={props.onShareChallenge} aria-haspopup="dialog" aria-label="Share a challenge">
+          <ShareNetwork size={17} /> Share
+        </button>
       </motion.div>
       <motion.div variants={dockItem}>
         <AnimatedTabs
@@ -117,7 +121,7 @@ export function GameSetup(props: Props) {
           </span>
         </Button>
       </motion.div>
-      <motion.p variants={dockItem} className="setup-description" role="status">
+      {(props.loading || props.error || props.mode === "artist") && <motion.p variants={dockItem} className="setup-description" role="status">
         {props.loading ? (
           <>
             <CircleNotch size={14} className="animate-spin" /> Getting your crate ready…
@@ -137,7 +141,8 @@ export function GameSetup(props: Props) {
             {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
           </>
         )}
-      </motion.p>
+      </motion.p>}
+      <div className="setup-actions">
       <motion.div variants={dockItem} className="play-spark">
         <MagneticButton
           data-spark
@@ -160,6 +165,8 @@ export function GameSetup(props: Props) {
           </span>
         </MagneticButton>
       </motion.div>
+      <motion.div variants={dockItem} className="setup-friends"><MultiplayerEntry /></motion.div>
+      </div>
 
       <StudioDialog
         open={props.rulesOpen}
