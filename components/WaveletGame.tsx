@@ -364,7 +364,6 @@ export const WaveletGame: React.FC = () => {
 
   // Game configuration state (including Distinct Challenge Modes & Difficulty Scaling)
   const [challengeMode, setChallengeMode] = useState<GuessChallengeMode>("track");
-  const [incomingChallenge, setIncomingChallenge] = useState<SharedChallenge | null>(null);
   const [sharedSession, setSharedSession] = useState<SharedChallenge | null>(null);
   const [challengeLink, setChallengeLink] = useState("");
   const [shareChallengeOpen, setShareChallengeOpen] = useState(false);
@@ -379,7 +378,7 @@ export const WaveletGame: React.FC = () => {
     () => (challengeToken ? decodeSharedChallenge(challengeToken) : null),
     [challengeToken],
   );
-  const challengeToStart = incomingChallenge ?? (sharedSession ? null : receivedChallenge);
+  const challengeToStart = sharedSession ? null : receivedChallenge;
 
   const [difficulty, setDifficulty] = useState<DifficultyTier>("club");
   const [filterMode, setFilterMode] = useState<FilterMode>("genre");
@@ -889,7 +888,6 @@ export const WaveletGame: React.FC = () => {
       setIsDockCollapsed(false);
       setIsRulesDrawerOpen(false);
       setSharedSession(challenge);
-      setIncomingChallenge(null);
       setSession({
         status: "playing",
         config: {
@@ -1711,7 +1709,6 @@ export const WaveletGame: React.FC = () => {
                               difficulty, playMode, count: Math.min(songCount, songPool.length),
                             });
                             setChallengeLink(sharedChallengeUrl(challenge, window.location.href));
-                            setIncomingChallenge(challenge);
                             setChallengeNotice("");
                           } catch {
                             setChallengeNotice("Couldn't create a challenge. Try another mix.");
