@@ -4,8 +4,13 @@
   --wavelet-safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 @media (display-mode: standalone), (display-mode: fullscreen) {
-  html, body { min-height: 100dvh; }
-  .wavelet-app { min-height: 100dvh; }
+  html,
+  body {
+    min-height: 100dvh;
+  }
+  .wavelet-app {
+    min-height: 100dvh;
+  }
   .wavelet-shell {
     min-height: 100dvh;
     padding-top: max(14px, var(--wavelet-safe-top));
