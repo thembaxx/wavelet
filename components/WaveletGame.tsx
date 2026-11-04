@@ -367,6 +367,7 @@ export const WaveletGame: React.FC = () => {
   const [incomingChallenge, setIncomingChallenge] = useState<SharedChallenge | null>(null);
   const [sharedSession, setSharedSession] = useState<SharedChallenge | null>(null);
   const [challengeLink, setChallengeLink] = useState("");
+  const [shareChallengeOpen, setShareChallengeOpen] = useState(false);
   const [challengeNotice, setChallengeNotice] = useState("");
   const challengeSearch = useSyncExternalStore(
     subscribeChallengeUrl,
@@ -1593,19 +1594,7 @@ export const WaveletGame: React.FC = () => {
                       </button>
                     </nav>
                   </header>
-                  <div ref={introRef} className="studio-intro">
-                    <p className="studio-eyebrow studio-intro-copy">The music guessing game</p>
-                    <h1 className="max-w-md">
-                      <span className="studio-intro-word">Little clips.</span>
-                      <br />
-                      <span className="studio-intro-word studio-intro-accent">
-                        Big music energy.
-                      </span>
-                    </h1>
-                    <p className="studio-intro-copy">
-                      Real songs. Familiar artists. Listen to a little clip and trust your ears.
-                    </p>
-                  </div>
+                  <div ref={introRef} className="studio-intro"><h1>Guess the music.</h1></div>
                   {preferences.danceVideo && !reducedMotion && (
                     <video
                       src="/assets/aistudio/gemini_generated_video_7AE59D01_39556c31.mp4"
@@ -1622,99 +1611,13 @@ export const WaveletGame: React.FC = () => {
                 {/* Unobstructed 3D Center Stage */}
                 <div className="pointer-events-none flex-1" />
 
-                <section
-                  className="pointer-events-auto my-4 space-y-3 rounded-2xl border border-primary/25 bg-card p-4"
-                  aria-label="Shareable original music challenge"
-                >
-                  <h2 className="font-bold">Share an original challenge</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Share the exact original tracks, round order and game settings. This is a
-                    practice challenge using the Offline originals crate; commercial previews are
-                    available in solo play.
-                  </p>
-                  {challengeToStart && (
-                    <div className="space-y-2">
-                      <p>
-                        {challengeToStart.trackIds.length} tracks · {challengeToStart.mode} ·{" "}
-                        {challengeToStart.difficulty} · {challengeToStart.snippet}s clips
-                      </p>
-                      <button
-                        className="rounded-full bg-primary px-4 py-2 font-bold text-primary-foreground"
-                        onClick={() => startSharedRound(challengeToStart)}
-                      >
-                        Start shared challenge
-                      </button>
-                    </div>
-                  )}
-                  <button
-                    className="rounded-full border px-4 py-2 text-sm font-bold"
-                    disabled={
-                      isLoadingSongs ||
-                      !songPool.length ||
-                      !songPool.every(isFreeGameTrack) ||
-                      challengeMode === "year"
-                    }
-                    onClick={() => {
-                      try {
-                        if (challengeMode === "year") return;
-                        const seed = crypto.getRandomValues(new Uint32Array(1))[0] || 1;
-                        const challenge = createSharedChallenge({
-                          pool: songPool,
-                          seed,
-                          snippet: snippetDuration,
-                          mode: challengeMode,
-                          difficulty,
-                          playMode,
-                          count: Math.min(songCount, songPool.length),
-                        });
-                        const link = sharedChallengeUrl(challenge, window.location.href);
-                        setChallengeLink(link);
-                        setIncomingChallenge(challenge);
-                        setChallengeNotice(
-                          "Challenge created. Copy the link, or start it here. Your account and scores are not included.",
-                        );
-                      } catch {
-                        setChallengeNotice(
-                          "A challenge could not be created. Choose a playable original mix and try again.",
-                        );
-                      }
-                    }}
-                  >
-                    Create challenge link
-                  </button>
-                  {challengeLink && (
-                    <div className="space-y-2">
-                      <label className="block text-sm">
-                        Challenge link
-                        <input
-                          className="mt-1 w-full rounded-lg border bg-transparent p-2"
-                          readOnly
-                          value={challengeLink}
-                          onFocus={(event) => event.target.select()}
-                        />
-                      </label>
-                      <button
-                        className="rounded-full border px-4 py-2 text-sm"
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(challengeLink);
-                            setChallengeNotice("Challenge link copied.");
-                          } catch {
-                            setChallengeNotice("Select and copy the challenge link above.");
-                          }
-                        }}
-                      >
-                        Copy challenge link
-                      </button>
-                    </div>
-                  )}
-                  {(challengeNotice || (challengeToken && !receivedChallenge)) && (
-                    <p role="status" className="text-sm">
-                      {challengeNotice ||
-                        "This challenge link is invalid or uses an unsupported catalogue. Choose a new original mix."}
-                    </p>
-                  )}
-                </section>
+                {challengeToStart && (
+                  <section className="shared-challenge-prompt pointer-events-auto" aria-label="Shared challenge">
+                    <span>{challengeToStart.trackIds.length} song challenge</span>
+                    <button type="button" onClick={() => startSharedRound(challengeToStart)}>Play challenge</button>
+                  </section>
+                )}
+                {challengeToken && !receivedChallenge && <p role="alert" className="shared-challenge-error">This challenge link is invalid.</p>}
                 <GameSetup
                   challenge={challengeMode}
                   onChallenge={handleSelectChallengeMode}
@@ -1735,6 +1638,7 @@ export const WaveletGame: React.FC = () => {
                   onStart={() => {
                     void startNewGame();
                   }}
+                   onShareChallenge={() => setShareChallengeOpen(true)}
                   mode={filterMode}
                   value={filterValue}
                   artist={selectedArtist}
@@ -1763,6 +1667,66 @@ export const WaveletGame: React.FC = () => {
                     );
                   }}
                 />
+                <StudioDialog
+                  open={shareChallengeOpen}
+                  onClose={() => setShareChallengeOpen(false)}
+                  labelledBy="share-challenge-title"
+                  reducedMotion={reducedMotion}
+                  className="share-challenge-dialog pointer-events-auto"
+                >
+                  <div className="share-challenge-header">
+                    <h2 id="share-challenge-title">Share a challenge</h2>
+                    <button type="button" className="studio-icon-button" aria-label="Close share challenge" onClick={() => setShareChallengeOpen(false)}>
+                      <X size={20} />
+                    </button>
+                  </div>
+                  <div className="share-challenge-body">
+                    {challengeLink ? (
+                      <>
+                        <label htmlFor="shared-challenge-link">Challenge link</label>
+                        <input id="shared-challenge-link" readOnly value={challengeLink} onFocus={(event) => event.target.select()} />
+                        <button type="button" className="share-challenge-primary" onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(challengeLink);
+                            setChallengeNotice("Link copied");
+                          } catch {
+                            setChallengeNotice("Select the link above to copy.");
+                          }
+                        }}>Copy link</button>
+                        <button type="button" className="share-challenge-secondary" onClick={() => {
+                          setChallengeLink("");
+                          setChallengeNotice("");
+                        }}>New challenge</button>
+                      </>
+                    ) : (
+                      isLoadingSongs || songPool.length === 0 || !songPool.every(isFreeGameTrack) || challengeMode === "year" ? (
+                        <>
+                          <p>Shared challenges use Offline originals.</p>
+                          <button type="button" className="share-challenge-primary" onClick={() => {
+                            setChallengeMode("track");
+                            void handleSelectFilterValue("genre", "Originals");
+                          }}>Choose Offline originals</button>
+                        </>
+                      ) : (
+                        <button type="button" className="share-challenge-primary" onClick={() => {
+                          try {
+                            const seed = crypto.getRandomValues(new Uint32Array(1))[0] || 1;
+                            const challenge = createSharedChallenge({
+                              pool: songPool, seed, snippet: snippetDuration, mode: challengeMode,
+                              difficulty, playMode, count: Math.min(songCount, songPool.length),
+                            });
+                            setChallengeLink(sharedChallengeUrl(challenge, window.location.href));
+                            setIncomingChallenge(challenge);
+                            setChallengeNotice("");
+                          } catch {
+                            setChallengeNotice("Couldn't create a challenge. Try another mix.");
+                          }
+                        }}>Create link</button>
+                      )
+                    )}
+                    {challengeNotice && <p role="status">{challengeNotice}</p>}
+                  </div>
+                </StudioDialog>
               </>
             )}
 
