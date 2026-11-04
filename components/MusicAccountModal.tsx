@@ -38,20 +38,20 @@ export function MusicAccountModal({
     >
       <div className="space-y-4 p-6">
         <h2 id="account-modal-title" className="text-xl font-bold">
-          Real music, no account needed
+          Music previews, no sign-in
         </h2>
         <p className="text-sm leading-relaxed">
-          Commercial song previews are available in solo play. Choose Commercial Mix or search for
-          an artist under Your music. No Spotify or Apple Music sign-in is needed.
+          Play Commercial Mix or search for an artist in Your music. No Spotify or Apple Music
+          account is required.
         </p>
         <p className="text-sm text-muted-foreground">
-          Personal library syncing and full-track playback are not connected. Offline originals
-          remain available when you don’t have an internet connection.
+          Offline originals work without internet. Personal library syncing and full tracks are
+          not available.
         </p>
         {connectedProfile && (
           <button
             type="button"
-            className="rounded-xl border px-4 py-2 text-sm"
+            className="min-h-11 rounded-xl border px-4 py-2 text-sm"
             onClick={onDisconnect}
           >
             Disconnect old music profile
@@ -59,7 +59,7 @@ export function MusicAccountModal({
         )}
         <button
           type="button"
-          className="rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground"
+          className="min-h-11 rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground"
           onClick={onClose}
         >
           Back to Wavelet
