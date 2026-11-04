@@ -1,0 +1,65 @@
+/* Wavelet mobile playing surface: legible settings and touch-first controls.
+   Keep existing EasyUI transitions, companion and interactive vinyl gestures. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+.studio-game-dock {
+  position: relative;
+  z-index: 4;
+  min-width: 0;
+}
+.studio-header,
+.studio-header-actions,
+.settings-body,
+.studio-dialog-panel {
+  min-width: 0;
+}
+:is(.setting-label, .setting-description, .artist-result-name, .crate-picker-note) {
+  overflow-wrap: anywhere;
+}
+:is(.artist-command input, .crate-custom-search input, .setting-row select, .round-field input) {
+  font-size: 16px;
+}
+.studio-dialog-panel,
+.studio-rules-scroll {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+@media (pointer: coarse), (max-width: 767px) {
+  :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+    font-size: 16px !important; /* Avoid iOS input focus zoom. */
+  }
+  :is(.crate-choice-list button, .studio-text-button, .studio-segmented button, .round-segmented button) {
+    min-height: 44px;
+  }
+}
+@media (max-width: 640px) {
+  .studio-header {
+    gap: 8px;
+  }
+  .studio-header-actions {
+    gap: 8px;
+  }
+  .studio-intro h1 {
+    font-size: clamp(28px, 6.7vw, 40px);
+    text-wrap: balance;
+  }
+  .studio-dialog {
+    padding: max(12px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
+  }
+  .studio-dialog-panel {
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-icon-button,
+  .crate-choice-list button {
+    animation: none;
+    transition: none;
+  }
+}
