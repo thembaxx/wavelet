@@ -1409,14 +1409,9 @@ export const WaveletGame: React.FC = () => {
     () => {
       if (session.status !== "title" || reducedMotion) return;
       gsap.fromTo(
-        ".studio-intro-word",
-        { y: 14, opacity: 0.2 },
-        { y: 0, opacity: 1, duration: 0.75, stagger: 0.08, ease: "power3.out" },
-      );
-      gsap.fromTo(
-        ".studio-intro-copy",
-        { opacity: 0.2 },
-        { opacity: 1, duration: 0.8, delay: 0.25 },
+        ".studio-intro h1",
+        { y: 12, opacity: 0.2 },
+        { y: 0, opacity: 1, duration: 0.65, ease: "power3.out" },
       );
     },
     { dependencies: [session.status, reducedMotion], scope: introRef, revertOnUpdate: true },
