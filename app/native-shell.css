@@ -27,3 +27,20 @@
     max-height: calc(100dvh - 12px - var(--wavelet-safe-top) - var(--wavelet-safe-bottom));
   }
 }
+
+/* Wavelet home simplification: respect native cutouts without letterboxing. */
+html, body {width: 100%; min-height: 100%; background: var(--background);}
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  html, body, .wavelet-app {background: var(--background);}
+  .wavelet-app {height: 100dvh; min-height: 100dvh;}
+  .wavelet-shell {
+    min-height: 100dvh;
+    padding-top: calc(var(--wavelet-safe-top) + 12px);
+    padding-bottom: calc(var(--wavelet-safe-bottom) + 16px);
+    padding-left: max(14px, env(safe-area-inset-left, 0px));
+    padding-right: max(14px, env(safe-area-inset-right, 0px));
+  }
+  .share-challenge-dialog .studio-dialog-panel {
+    max-height: calc(100dvh - var(--wavelet-safe-top) - var(--wavelet-safe-bottom) - 24px);
+  }
+}
