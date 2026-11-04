@@ -5,6 +5,7 @@ import { BRAND, getSiteUrl } from "@/lib/brand";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 import "./mobile-ux.css";
+import "./native-shell.css";
 
 const satoshi = localFont({
   src: "../public/fonts/Satoshi-Variable.woff2",
