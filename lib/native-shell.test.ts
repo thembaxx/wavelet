@@ -18,4 +18,7 @@ test("immersive Wavelet respects viewport and safe area insets", () => {
   assert.ok(css.includes("100dvh"));
   assert.ok(css.includes("safe-area-inset-top"));
   assert.ok(css.includes("safe-area-inset-bottom"));
+  const layout = read("app/layout.tsx");
+  assert.match(layout, /viewportFit:\s*["\x27]cover["\x27]/);
+  assert.doesNotMatch(layout, /black-translucent/);
 });
