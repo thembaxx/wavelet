@@ -9,7 +9,6 @@ import {
   CalendarBlank,
   Check,
   Desktop,
-  Hand,
   Headphones,
   MicrophoneStage,
   Moon,
@@ -31,24 +30,18 @@ import type { StudioPreferences } from "@/lib/studio-preferences";
 const STEPS = [
   {
     name: "Listen",
-    eyebrow: "A little spin to begin",
-    title: ["Small clip.", "Big feeling."],
-    description:
-      "Every round starts with a tiny piece of a song. A few seconds is all it takes to find your groove.",
+    title: ["Hear the clip.", "Find the song."],
+    description: "Listen to a short clip, then guess what you hear.",
   },
   {
     name: "Guess",
-    eyebrow: "Let your music memory take over",
-    title: ["You know", "that feeling."],
-    description:
-      "Guess the track, artist, genre, or year. Shorter clips earn more points. Which will you try first?",
+    title: ["Choose your", "challenge."],
+    description: "Guess the track, artist, genre, or year. Shorter clips earn more points.",
   },
   {
     name: "Make it yours",
-    eyebrow: "A studio that feels like you",
-    title: ["Your music.", "Your little world."],
-    description:
-      "Go all-in on one artist or explore a mix. Find sound, motion, and your listening buddy in Settings.",
+    title: ["Your music.", "Your way."],
+    description: "Choose a theme now. Change sound and motion anytime in Settings.",
   },
 ] as const;
 const MODES = [
@@ -157,14 +150,6 @@ export default function Onboarding(props: Props) {
               onReady={ready}
             />
           )}
-          <div className="onboarding-object-note" aria-hidden="true">
-            <Hand size={14} />{" "}
-            {step === 0
-              ? "Give it a spin"
-              : step === 1
-                ? "A little listening magic"
-                : "A crate full of possibilities"}
-          </div>
           <button
             type="button"
             className="onboarding-spin"
@@ -181,13 +166,13 @@ export default function Onboarding(props: Props) {
             }
           >
             <ArrowClockwise size={16} />
-            <span>{step === 0 ? "Spin it" : "Take a look"}</span>
+            <span>{step === 0 ? "Spin record" : "Rotate object"}</span>
           </button>
         </div>
         <div className="onboarding-content">
           <div ref={copy} className="onboarding-copy">
             <p className="onboarding-eyebrow onboarding-reveal">
-              <span>{String(step + 1).padStart(2, "0")} / 03</span> {current.eyebrow}
+              <span>{String(step + 1).padStart(2, "0")} / 03</span> {current.name}
             </p>
             <h2 id="onboarding-title" ref={heading} tabIndex={-1} className="onboarding-reveal">
               {current.title[0]}
@@ -204,7 +189,7 @@ export default function Onboarding(props: Props) {
                     </>
                   ) : (
                     <>
-                      <Headphones size={16} /> Tiny clips. Big “I know this one” energy.
+                      <Headphones size={16} /> Drag the record or tap Spin record.
                     </>
                   )}
                 </p>
@@ -298,9 +283,6 @@ export default function Onboarding(props: Props) {
                 <ArrowRight size={18} />
               </Button>
             </div>
-            <p className="onboarding-footnote">
-              Just three little steps. Replay anytime in Settings.
-            </p>
           </footer>
         </div>
       </div>
