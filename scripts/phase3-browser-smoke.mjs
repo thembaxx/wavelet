@@ -57,7 +57,9 @@ try {
   await dialog.waitFor({ state: "hidden" });
 
   assert.equal(await dock.isVisible(), true);
-  console.log(`PASS ${mobile ? "mobile" : "desktop"}: dock, accessible dialog and live motion preference`);
+  console.log(
+    `PASS ${mobile ? "mobile" : "desktop"}: dock, accessible dialog and live motion preference`,
+  );
   await context.close();
 } finally {
   await browser.close();
