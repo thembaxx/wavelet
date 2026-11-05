@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { audioEngine } from "@/lib/audio-engine";
+import { createBeatParticleHalo } from "@/lib/beat-particle-halo";
 import { type SongMoodProfile, type ThemeMode, type MascotCharacterId } from "@/lib/game-rules";
 
 export type MascotMoodState = "idle" | "listening" | "celebrating" | "sympathy" | "hyped";
@@ -1033,6 +1034,9 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
     mascotGroup.scale.setScalar(0.84);
     stageGroup.add(mascotGroup);
 
+    const beatHalo = createBeatParticleHalo(width <= 760 || window.matchMedia("(pointer: coarse)").matches);
+    mascotGroup.add(beatHalo.points);
+
     // Soft Contact Shadow under Mascot
     const shadowGeo = new THREE.CircleGeometry(1.08, 36);
     shadowGeo.rotateX(-Math.PI / 2);
@@ -1822,6 +1826,13 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
         ? stillSpectrum
         : audioEngine.sampleSpectrum(elapsed);
       const isLight = currentProps.themeMode === "light";
+      beatHalo.update(
+        elapsed,
+        spectrum.energy,
+        currentProps.isPlayingSnippet || currentProps.mascotState === "celebrating" || currentProps.mascotState === "hyped",
+        !!currentProps.reducedMotion,
+        isLight,
+      );
 
       if (!currentProps.reducedMotion && !isHeadless) {
         if (nowMs >= nextBlinkMs) {
@@ -2247,6 +2258,7 @@ export const IsometricVinylStage: React.FC<IsometricVinylStageProps> = ({
       ribbedBumpTex.dispose();
       peanutBumpTex.dispose();
       faceTex.dispose();
+      beatHalo.dispose();
       scene.traverse((object) => {
         if (!(object instanceof THREE.Mesh)) return;
         object.geometry.dispose();
