@@ -1,0 +1,40 @@
+name: Phase 3 motion browser QA
+on:
+  pull_request:
+    paths:
+      - "lib/motion-intents.ts"
+      - "components/GameSetup.tsx"
+      - "components/StudioDialog.tsx"
+      - "components/RoundAnswerFeedback.tsx"
+      - "scripts/phase3-browser-smoke.mjs"
+      - ".github/workflows/phase3-motion-browser.yml"
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        viewport: [desktop, mobile]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile --ignore-scripts
+      # Browser-only dependency is isolated from the application's Bun lockfile.
+      - run: npm install --prefix .phase3-browser --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.64.1
+      - run: ./.phase3-browser/node_modules/.bin/playwright install --with-deps chromium
+      - run: bun run build
+      - name: Verify real home and dialog interactions
+        run: |
+          bunx next start --port 4173 >/tmp/wavelet-phase3-next.log 2>&1 &
+          for i in $(seq 1 90); do
+            if curl -fsS -o /dev/null http://127.0.0.1:4173/; then break; fi
+            sleep 2
+          done
+          curl -fsS -o /dev/null http://127.0.0.1:4173/ || { cat /tmp/wavelet-phase3-next.log; exit 1; }
+          node scripts/phase3-browser-smoke.mjs "${{ matrix.viewport }}"
