@@ -29,10 +29,22 @@
 }
 
 /* Wavelet home simplification: respect native cutouts without letterboxing. */
-html, body {width: 100%; min-height: 100%; background: var(--background);}
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  background: var(--background);
+}
 @media (display-mode: standalone), (display-mode: fullscreen) {
-  html, body, .wavelet-app {background: var(--background);}
-  .wavelet-app {height: 100dvh; min-height: 100dvh;}
+  html,
+  body,
+  .wavelet-app {
+    background: var(--background);
+  }
+  .wavelet-app {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
   .wavelet-shell {
     min-height: 100dvh;
     padding-top: calc(var(--wavelet-safe-top) + 12px);

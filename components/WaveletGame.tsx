@@ -1587,7 +1587,9 @@ export const WaveletGame: React.FC = () => {
                       </button>
                     </nav>
                   </header>
-                  <div ref={introRef} className="studio-intro"><h1>Guess the music.</h1></div>
+                  <div ref={introRef} className="studio-intro">
+                    <h1>Guess the music.</h1>
+                  </div>
                   {preferences.danceVideo && !reducedMotion && (
                     <video
                       src="/assets/aistudio/gemini_generated_video_7AE59D01_39556c31.mp4"
@@ -1605,12 +1607,21 @@ export const WaveletGame: React.FC = () => {
                 <div className="pointer-events-none flex-1" />
 
                 {challengeToStart && (
-                  <section className="shared-challenge-prompt pointer-events-auto" aria-label="Shared challenge">
+                  <section
+                    className="shared-challenge-prompt pointer-events-auto"
+                    aria-label="Shared challenge"
+                  >
                     <span>{challengeToStart.trackIds.length} song challenge</span>
-                    <button type="button" onClick={() => startSharedRound(challengeToStart)}>Play challenge</button>
+                    <button type="button" onClick={() => startSharedRound(challengeToStart)}>
+                      Play challenge
+                    </button>
                   </section>
                 )}
-                {challengeToken && !receivedChallenge && <p role="alert" className="shared-challenge-error">This challenge link is invalid.</p>}
+                {challengeToken && !receivedChallenge && (
+                  <p role="alert" className="shared-challenge-error">
+                    This challenge link is invalid.
+                  </p>
+                )}
                 <GameSetup
                   challenge={challengeMode}
                   onChallenge={handleSelectChallengeMode}
@@ -1631,7 +1642,7 @@ export const WaveletGame: React.FC = () => {
                   onStart={() => {
                     void startNewGame();
                   }}
-                   onShareChallenge={() => setShareChallengeOpen(true)}
+                  onShareChallenge={() => setShareChallengeOpen(true)}
                   mode={filterMode}
                   value={filterValue}
                   artist={selectedArtist}
@@ -1669,7 +1680,12 @@ export const WaveletGame: React.FC = () => {
                 >
                   <div className="share-challenge-header">
                     <h2 id="share-challenge-title">Share a challenge</h2>
-                    <button type="button" className="studio-icon-button" aria-label="Close share challenge" onClick={() => setShareChallengeOpen(false)}>
+                    <button
+                      type="button"
+                      className="studio-icon-button"
+                      aria-label="Close share challenge"
+                      onClick={() => setShareChallengeOpen(false)}
+                    >
                       <X size={20} />
                     </button>
                   </div>
@@ -1677,44 +1693,79 @@ export const WaveletGame: React.FC = () => {
                     {challengeLink ? (
                       <>
                         <label htmlFor="shared-challenge-link">Challenge link</label>
-                        <input id="shared-challenge-link" readOnly value={challengeLink} onFocus={(event) => event.target.select()} />
-                        <button type="button" className="share-challenge-primary" onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(challengeLink);
-                            setChallengeNotice("Link copied");
-                          } catch {
-                            setChallengeNotice("Select the link above to copy.");
-                          }
-                        }}>Copy link</button>
-                        <button type="button" className="share-challenge-secondary" onClick={() => {
-                          setChallengeLink("");
-                          setChallengeNotice("");
-                        }}>New challenge</button>
+                        <input
+                          id="shared-challenge-link"
+                          readOnly
+                          value={challengeLink}
+                          onFocus={(event) => event.target.select()}
+                        />
+                        <button
+                          type="button"
+                          className="share-challenge-primary"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(challengeLink);
+                              setChallengeNotice("Link copied");
+                            } catch {
+                              setChallengeNotice("Select the link above to copy.");
+                            }
+                          }}
+                        >
+                          Copy link
+                        </button>
+                        <button
+                          type="button"
+                          className="share-challenge-secondary"
+                          onClick={() => {
+                            setChallengeLink("");
+                            setChallengeNotice("");
+                          }}
+                        >
+                          New challenge
+                        </button>
                       </>
-                    ) : (
-                      isLoadingSongs || songPool.length === 0 || !songPool.every(isFreeGameTrack) || challengeMode === "year" ? (
-                        <>
-                          <p>Shared challenges use Offline originals.</p>
-                          <button type="button" className="share-challenge-primary" onClick={() => {
+                    ) : isLoadingSongs ||
+                      songPool.length === 0 ||
+                      !songPool.every(isFreeGameTrack) ||
+                      challengeMode === "year" ? (
+                      <>
+                        <p>Shared challenges use Offline originals.</p>
+                        <button
+                          type="button"
+                          className="share-challenge-primary"
+                          onClick={() => {
                             setChallengeMode("track");
                             void handleSelectFilterValue("genre", "Originals");
-                          }}>Choose Offline originals</button>
-                        </>
-                      ) : (
-                        <button type="button" className="share-challenge-primary" onClick={() => {
+                          }}
+                        >
+                          Choose Offline originals
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        className="share-challenge-primary"
+                        onClick={() => {
                           try {
                             const seed = crypto.getRandomValues(new Uint32Array(1))[0] || 1;
                             const challenge = createSharedChallenge({
-                              pool: songPool, seed, snippet: snippetDuration, mode: challengeMode,
-                              difficulty, playMode, count: Math.min(songCount, songPool.length),
+                              pool: songPool,
+                              seed,
+                              snippet: snippetDuration,
+                              mode: challengeMode,
+                              difficulty,
+                              playMode,
+                              count: Math.min(songCount, songPool.length),
                             });
                             setChallengeLink(sharedChallengeUrl(challenge, window.location.href));
                             setChallengeNotice("");
                           } catch {
                             setChallengeNotice("Couldn't create a challenge. Try another mix.");
                           }
-                        }}>Create link</button>
-                      )
+                        }}
+                      >
+                        Create link
+                      </button>
                     )}
                     {challengeNotice && <p role="status">{challengeNotice}</p>}
                   </div>
