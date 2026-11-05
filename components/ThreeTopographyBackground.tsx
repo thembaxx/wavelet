@@ -63,7 +63,8 @@ export function ThreeTopographyBackground({
 
   useEffect(() => {
     const element = mount.current;
-    if (!element) return;
+    // Do not reserve a second GPU context when the visitor turns effects off.
+    if (!element || !enabled) return;
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "low-power" });
@@ -98,11 +99,12 @@ export function ThreeTopographyBackground({
     const pointer = new THREE.Vector2();
     let frame = 0,
       lastFrame = 0;
+    let contextLost = false;
     const start = performance.now();
     const draw = (now: number) => {
       frame = 0;
       const state = props.current;
-      if (document.hidden) return;
+      if (document.hidden || contextLost) return;
       if (now - lastFrame >= frameInterval || state.reducedMotion || !state.enabled) {
         lastFrame = now;
         material.uniforms.uPaper.value.set(state.theme === "dark" ? "#102721" : "#f7f8f2");
@@ -122,8 +124,20 @@ export function ThreeTopographyBackground({
       if (!state.reducedMotion && state.enabled) frame = requestAnimationFrame(draw);
     };
     const requestDraw = () => {
-      if (!frame) frame = requestAnimationFrame(draw);
+      if (!frame && !contextLost) frame = requestAnimationFrame(draw);
     };
+    const onContextLost = (event: Event) => {
+      event.preventDefault();
+      contextLost = true;
+      cancelAnimationFrame(frame);
+      frame = 0;
+    };
+    const onContextRestored = () => {
+      contextLost = false;
+      requestDraw();
+    };
+    renderer.domElement.addEventListener("webglcontextlost", onContextLost);
+    renderer.domElement.addEventListener("webglcontextrestored", onContextRestored);
     refresh.current = requestDraw;
     const resize = () => {
       const { width, height } = element.getBoundingClientRect();
@@ -142,6 +156,8 @@ export function ThreeTopographyBackground({
     resize();
     return () => {
       cancelAnimationFrame(frame);
+      renderer.domElement.removeEventListener("webglcontextlost", onContextLost);
+      renderer.domElement.removeEventListener("webglcontextrestored", onContextRestored);
       observer.disconnect();
       window.removeEventListener("pointermove", onPointer);
       document.removeEventListener("visibilitychange", requestDraw);
@@ -151,7 +167,7 @@ export function ThreeTopographyBackground({
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, []);
+  }, [enabled]);
 
   return (
     <div
