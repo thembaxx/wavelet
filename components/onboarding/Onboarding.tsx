@@ -24,6 +24,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { StudioDialog } from "@/components/StudioDialog";
 import { OnboardingScene } from "./OnboardingScene";
 import { audioEngine } from "@/lib/audio-engine";
+import { onboardingHaptic } from "@/lib/onboarding-haptics";
 import type { GuessChallengeMode, ThemeMode } from "@/lib/game-rules";
 import type { StudioPreferences } from "@/lib/studio-preferences";
 
@@ -81,6 +82,7 @@ export default function Onboarding(props: Props) {
   const ready = useCallback(() => setSceneReady(true), []);
   const interact = useCallback(() => {
     audioEngine.playUiTick(1.05, "selection");
+    onboardingHaptic();
     setInteracted(true);
   }, []);
 
