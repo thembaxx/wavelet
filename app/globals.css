@@ -1528,7 +1528,7 @@ html[data-motion="reduced"] *::after {
   min-height: 44px;
   padding: 8px 0 8px 12px;
   color: var(--muted-foreground);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
 }
 .onboarding-layout {
@@ -1599,14 +1599,14 @@ html[data-motion="reduced"] *::after {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 16px;
   color: var(--primary);
   background: color-mix(in srgb, var(--card) 65%, transparent);
   border: 1px solid var(--border);
   border-radius: 14px;
   corner-shape: squircle;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   backdrop-filter: blur(8px);
 }
@@ -1620,7 +1620,7 @@ html[data-motion="reduced"] *::after {
   flex-direction: column;
   justify-content: center;
   min-width: 0;
-  padding: 52px 40px 32px 8px;
+  padding: 52px 40px 32px 20px;
 }
 .onboarding-copy {
   min-height: 290px;
@@ -1631,13 +1631,13 @@ html[data-motion="reduced"] *::after {
   gap: 10px;
   margin-bottom: 16px;
   color: var(--muted-foreground);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 .onboarding-eyebrow > span {
   color: var(--primary);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   white-space: nowrap;
 }
 .onboarding-copy h2 {
@@ -1656,8 +1656,8 @@ html[data-motion="reduced"] *::after {
   max-width: 360px;
   margin-top: 20px;
   color: var(--muted-foreground);
-  font-size: 14px;
-  line-height: 1.75;
+  font-size: 16px;
+  line-height: 1.55;
 }
 .onboarding-choices {
   margin-top: 24px;
@@ -1668,7 +1668,7 @@ html[data-motion="reduced"] *::after {
   align-items: center;
   gap: 8px;
   color: var(--primary);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.6;
 }
 .onboarding-interaction-status svg {
@@ -1693,7 +1693,7 @@ html[data-motion="reduced"] *::after {
   corner-shape: squircle;
   color: var(--muted-foreground);
   background: var(--card);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
 }
 .onboarding-modes button[data-state="on"],
@@ -1715,8 +1715,8 @@ html[data-motion="reduced"] *::after {
 .onboarding-footer ol button {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
 }
 .onboarding-footer ol button > span {
   width: 32px;
@@ -1747,7 +1747,7 @@ html[data-motion="reduced"] *::after {
   justify-content: space-between;
   height: 50px;
   padding: 0 20px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   border-radius: 16px;
 }
@@ -1802,15 +1802,15 @@ html[data-motion="reduced"] *::after {
     padding: 20px 28px max(20px, env(safe-area-inset-bottom));
   }
   .onboarding-copy {
-    min-height: 250px;
+    min-height: 0;
   }
   .onboarding-copy h2 {
     font-size: clamp(34px, 8.5vw, 44px);
   }
   .onboarding-description {
-    font-size: 13px;
+    font-size: 15px;
     margin-top: 16px;
-    line-height: 1.7;
+    line-height: 1.55;
   }
   .onboarding-eyebrow {
     margin-bottom: 12px;
@@ -1838,7 +1838,7 @@ html[data-motion="reduced"] *::after {
   }
   .onboarding-spin {
     bottom: 0;
-    min-height: 32px;
+    min-height: 44px;
     padding: 6px 12px;
   }
   .onboarding-content {
@@ -1856,7 +1856,7 @@ html[data-motion="reduced"] *::after {
     gap: 8px;
   }
   .onboarding-description {
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.6;
     margin-top: 12px;
   }
@@ -1905,7 +1905,7 @@ html[data-motion="reduced"] *::after {
     font-size: 34px;
   }
   .onboarding-description {
-    font-size: 12px;
+    font-size: 14px;
     margin-top: 12px;
   }
   .onboarding-choices {
