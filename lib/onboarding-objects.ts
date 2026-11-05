@@ -158,31 +158,114 @@ export function createWelcomeRecord() {
 
 export function createWelcomeHeadphones() {
   const group = new THREE.Group();
+  group.name = "wavelet-headphones";
+
+  // Powder-coated metal crown and soft underside, both following a real arc.
   const band = new THREE.Mesh(
-    new THREE.TorusGeometry(1.02, 0.145, 20, 80, Math.PI),
-    material("#176b56", 0.28),
+    new THREE.TorusGeometry(1.04, 0.12, 20, 100, Math.PI),
+    material("#176b56", 0.54, 0.27),
   );
+  band.name = "headphone-headband";
   group.add(band);
-  const padding = new THREE.Mesh(
-    new THREE.TorusGeometry(0.98, 0.08, 12, 60, Math.PI),
-    material("#deedc5", 0.05, 0.6),
+  const lining = new THREE.Mesh(
+    new THREE.TorusGeometry(0.95, 0.074, 12, 100, Math.PI),
+    material("#c9d7b8", 0.04, 0.87),
   );
-  padding.position.z = 0.08;
-  group.add(padding);
-  for (const direction of [-1, 1]) {
-    const stem = rounded(0.13, 0.7, 0.16, "#bbcec0", 0.05);
-    stem.position.set(direction * 1.02, -0.24, 0);
+  lining.position.z = 0.07;
+  group.add(lining);
+
+  for (const direction of [-1, 1] as const) {
+    const stem = rounded(0.14, 0.66, 0.12, "#b8cabf", 0.045);
+    stem.name = "headphone-height-slider";
+    stem.position.set(direction * 1.04, -0.22, 0);
     group.add(stem);
-    const cup = rounded(0.59, 0.87, 0.5, "#176b56", 0.22);
-    cup.position.set(direction * 1.05, -0.64, 0);
-    cup.rotation.z = direction * -0.08;
-    group.add(cup);
-    const cushion = rounded(0.22, 0.67, 0.42, "#102721", 0.1);
-    cushion.position.set(direction * 0.78, -0.64, 0.01);
-    group.add(cushion);
-    const detail = rounded(0.27, 0.04, 0.03, "#deedc5", 0.015);
-    detail.position.set(direction * 1.05, -0.64, 0.265);
-    group.add(detail);
+
+    // The hinge owns every shell, grille and ear pad: they move as one assembly.
+    const hinge = new THREE.Group();
+    hinge.name = direction < 0 ? "wavelet-headphones-left-earcup" : "wavelet-headphones-right-earcup";
+    hinge.position.set(direction * 1.06, -0.63, 0);
+    group.add(hinge);
+
+    const shell = new THREE.Mesh(
+      new RoundedBoxGeometry(0.6, 0.91, 0.48, 5, 0.23),
+      new THREE.MeshPhysicalMaterial({
+        color: "#176b56",
+        metalness: 0.32,
+        roughness: 0.24,
+        clearcoat: 0.9,
+        clearcoatRoughness: 0.2,
+      }),
+    );
+    shell.name = "headphone-acoustic-shell";
+    shell.rotation.z = direction * -0.06;
+    hinge.add(shell);
+
+    const rim = new THREE.Mesh(
+      new THREE.TorusGeometry(0.31, 0.012, 8, 80),
+      material("#aec7b5", 0.82, 0.19),
+    );
+    rim.scale.set(0.73, 1.15, 1);
+    rim.position.z = 0.258;
+    hinge.add(rim);
+
+    const grill = rounded(0.41, 0.7, 0.035, "#234f3d", 0.16);
+    grill.name = "headphone-speaker-grille";
+    grill.position.z = 0.26;
+    hinge.add(grill);
+
+    // One GPU instanced grille per cup keeps the perforations crisp up close.
+    const holes: { x: number; y: number }[] = [];
+    for (let y = -0.28; y <= 0.28; y += 0.055) {
+      for (let x = -0.16; x <= 0.16; x += 0.055) {
+        if ((x / 0.19) ** 2 + (y / 0.315) ** 2 < 0.92) holes.push({ x, y });
+      }
+    }
+    const grille = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(0.012, 8, 6),
+      new THREE.MeshStandardMaterial({
+        color: "#142c25",
+        metalness: 0.25,
+        roughness: 0.82,
+      }),
+      holes.length,
+    );
+    grille.name = "headphone-batched-grille";
+    const transform = new THREE.Matrix4();
+    holes.forEach((hole, index) => {
+      transform.makeTranslation(hole.x, hole.y, 0.282);
+      grille.setMatrixAt(index, transform);
+    });
+    grille.instanceMatrix.needsUpdate = true;
+    hinge.add(grille);
+
+    // The inward-facing cushion is distinct from the polished exterior.
+    const cushion = new THREE.Mesh(
+      new RoundedBoxGeometry(0.22, 0.7, 0.46, 4, 0.1),
+      new THREE.MeshPhysicalMaterial({
+        color: "#102721",
+        roughness: 0.92,
+        metalness: 0,
+        clearcoat: 0,
+      }),
+    );
+    cushion.name = "headphone-memory-foam-pad";
+    cushion.position.set(-direction * 0.265, 0, 0.015);
+    hinge.add(cushion);
+
+    const hingePin = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.065, 0.065, 0.2, 24),
+      material("#cedbcf", 0.8, 0.24),
+    );
+    hingePin.rotation.z = Math.PI / 2;
+    hingePin.position.set(0, 0.46, 0);
+    hinge.add(hingePin);
+
+    const cableJack = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.048, 0.048, 0.13, 16),
+      material("#a3bdae", 0.75, 0.24),
+    );
+    cableJack.position.set(0, -0.45, 0.08);
+    hinge.add(cableJack);
   }
   return group;
 }
