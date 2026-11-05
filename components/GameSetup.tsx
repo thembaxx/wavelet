@@ -27,6 +27,7 @@ import {
 import { audioEngine } from "@/lib/audio-engine";
 import { MultiplayerEntry } from "./MultiplayerEntry";
 import { motion } from "motion/react";
+import { getMotionIntent } from "@/lib/motion-intents";
 import { AnimatedTabs } from "./easyui/AnimatedTabs";
 import { MagneticButton } from "./easyui/MagneticButton";
 
@@ -36,7 +37,6 @@ const MODE_ICONS = {
   genre: VinylRecord,
   year: CalendarBlank,
 };
-const dockItem = { hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } };
 
 interface Props extends CratePickerProps {
   challenge: GuessChallengeMode;
@@ -62,6 +62,11 @@ interface Props extends CratePickerProps {
 export function GameSetup(props: Props) {
   const { challenge, difficulty, duration, count } = props;
   const actualCount = Math.min(count, props.availableTracks);
+  const setupMotion = getMotionIntent("setup", props.reducedMotion);
+  const dockItem = {
+    hidden: { opacity: 0, y: setupMotion.y },
+    visible: { opacity: 1, y: 0, transition: { duration: setupMotion.duration } },
+  };
   const select = (action: () => void) => {
     audioEngine.playUiTick();
     action();
@@ -71,10 +76,16 @@ export function GameSetup(props: Props) {
     <motion.section
       aria-label="Game Configuration Dock"
       data-testid="game-configuration"
+      data-motion-intent="setup"
+      data-motion-reduced={props.reducedMotion ? "true" : "false"}
       className="studio-game-dock setup-panel squircle"
       initial={props.reducedMotion ? false : "hidden"}
       animate="visible"
-      variants={{ visible: { transition: { staggerChildren: 0.055, delayChildren: 0.06 } } }}
+      variants={{
+        visible: {
+          transition: { staggerChildren: setupMotion.stagger, delayChildren: setupMotion.delay },
+        },
+      }}
     >
       <motion.div variants={dockItem} className="setup-heading">
         <span>Choose a mode</span>
