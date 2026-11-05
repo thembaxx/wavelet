@@ -66,6 +66,8 @@ export function StudioDialog({
     <dialog
       ref={dialog}
       className={`studio-dialog ${className}`}
+      data-motion-intent="dialog"
+      data-motion-reduced={reducedMotion ? "true" : "false"}
       aria-labelledby={labelledBy}
       onClose={onAfterClose}
       onCancel={(event) => {
