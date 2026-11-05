@@ -76,6 +76,8 @@ export function GameSetup(props: Props) {
     <motion.section
       aria-label="Game Configuration Dock"
       data-testid="game-configuration"
+      data-motion-intent="setup"
+      data-motion-reduced={props.reducedMotion ? "true" : "false"}
       className="studio-game-dock setup-panel squircle"
       initial={props.reducedMotion ? false : "hidden"}
       animate="visible"
