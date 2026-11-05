@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import gsap from "gsap";
+import { isSoftwareWebGL, onboardingRenderQuality } from "@/lib/onboarding-render-quality";
 import {
   createWelcomeCrate,
   createWelcomeHeadphones,
@@ -31,17 +32,28 @@ export function OnboardingScene(props: Props) {
   useEffect(() => {
     const element = mount.current;
     if (!element) return;
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({
         alpha: true,
-        antialias: true,
-        powerPreference: "low-power",
+        antialias: !coarse,
+        powerPreference: coarse ? "low-power" : "high-performance",
       });
     } catch {
       return;
     }
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+    const context = renderer.getContext();
+    const debug = context.getExtension("WEBGL_debug_renderer_info");
+    const rendererName = context.getParameter(
+      debug ? debug.UNMASKED_RENDERER_WEBGL : context.RENDERER,
+    );
+    const quality = onboardingRenderQuality(
+      window.devicePixelRatio || 1,
+      coarse,
+      isSoftwareWebGL(String(rendererName)),
+    );
+    renderer.setPixelRatio(quality.dpr);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
