@@ -182,7 +182,8 @@ export function createWelcomeHeadphones() {
 
     // The hinge owns every shell, grille and ear pad: they move as one assembly.
     const hinge = new THREE.Group();
-    hinge.name = direction < 0 ? "wavelet-headphones-left-earcup" : "wavelet-headphones-right-earcup";
+    hinge.name =
+      direction < 0 ? "wavelet-headphones-left-earcup" : "wavelet-headphones-right-earcup";
     hinge.position.set(direction * 1.06, -0.63, 0);
     group.add(hinge);
 
