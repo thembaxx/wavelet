@@ -16,50 +16,143 @@ function rounded(width: number, height: number, depth: number, color: string, ra
 
 export function createWelcomeRecord() {
   const group = new THREE.Group();
+  group.name = "wavelet-vinyl-studio";
+  const vinyl = new THREE.Group();
+  vinyl.name = "wavelet-vinyl-spin";
+
+  // A machined platter stays stationary while the record and label rotate.
+  const platter = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.39, 1.39, 0.14, 96),
+    material("#a3b4a8", 0.78, 0.24),
+  );
+  platter.rotation.x = Math.PI / 2;
+  platter.position.z = -0.095;
+  group.add(platter);
+
+  const underside = new THREE.Mesh(
+    new THREE.TorusGeometry(1.385, 0.025, 10, 120),
+    material("#243e36", 0.72, 0.26),
+  );
+  underside.position.z = -0.05;
+  group.add(underside);
+
   const disc = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.34, 1.34, 0.13, 96),
-    material("#102721", 0.45, 0.24),
+    new THREE.CylinderGeometry(1.3, 1.3, 0.12, 128),
+    new THREE.MeshPhysicalMaterial({
+      color: "#11231e",
+      metalness: 0.28,
+      roughness: 0.22,
+      clearcoat: 0.82,
+      clearcoatRoughness: 0.16,
+    }),
   );
   disc.rotation.x = Math.PI / 2;
-  group.add(disc);
-  for (let index = 0; index < 22; index++) {
-    const groove = new THREE.Mesh(
-      new THREE.TorusGeometry(0.53 + index * 0.033, 0.004, 4, 96),
-      material(index % 6 === 0 ? "#608773" : "#315747", 0.65, 0.25),
-    );
-    groove.position.z = 0.071;
-    group.add(groove);
-  }
-  const rim = new THREE.Mesh(
-    new THREE.TorusGeometry(1.34, 0.027, 12, 100),
-    material("#b4dda4", 0.5),
+  vinyl.add(disc);
+
+  // A single instanced draw call replaces dozens of separate groove meshes.
+  const grooveCount = 43;
+  const grooveMesh = new THREE.InstancedMesh(
+    new THREE.TorusGeometry(1, 0.003, 4, 128),
+    new THREE.MeshStandardMaterial({
+      color: "#aecbb4",
+      metalness: 0.64,
+      roughness: 0.28,
+      vertexColors: false,
+    }),
+    grooveCount,
   );
-  group.add(rim);
+  const transform = new THREE.Matrix4();
+  for (let index = 0; index < grooveCount; index++) {
+    const radius = 0.53 + index * 0.016;
+    transform.makeScale(radius, radius, 1);
+    transform.setPosition(0, 0, 0.068);
+    grooveMesh.setMatrixAt(index, transform);
+    grooveMesh.setColorAt(
+      index,
+      new THREE.Color(index % 8 === 0 ? "#8ab59d" : index % 3 === 0 ? "#456b59" : "#24463a"),
+    );
+  }
+  grooveMesh.instanceMatrix.needsUpdate = true;
+  vinyl.add(grooveMesh);
+
+  const runout = new THREE.Mesh(
+    new THREE.TorusGeometry(0.485, 0.006, 6, 96),
+    material("#658d77", 0.52, 0.28),
+  );
+  runout.position.z = 0.073;
+  vinyl.add(runout);
+
   const label = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.45, 0.45, 0.145, 64),
-    material("#deedc5", 0.1),
+    new THREE.CylinderGeometry(0.44, 0.44, 0.14, 72),
+    material("#deedc5", 0.08, 0.44),
   );
   label.rotation.x = Math.PI / 2;
-  group.add(label);
-  const pin = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.067, 0.067, 0.155, 32),
-    material("#102721", 0.6),
+  vinyl.add(label);
+
+  const labelRing = new THREE.Mesh(
+    new THREE.TorusGeometry(0.375, 0.009, 8, 96),
+    material("#176b56", 0.22, 0.32),
   );
-  pin.rotation.x = Math.PI / 2;
-  group.add(pin);
-  // A small branded ribbon, modeled in 3D rather than rendered as an interface icon.
-  const curve = new THREE.CatmullRomCurve3(
+  labelRing.position.z = 0.073;
+  vinyl.add(labelRing);
+
+  // The logo is part of the rotating record rather than a screen-space decal.
+  const logoCurve = new THREE.CatmullRomCurve3(
     [
-      [-0.28, 0.13, 0.1],
-      [-0.17, -0.16, 0.1],
-      [0, 0.2, 0.1],
-      [0.17, -0.16, 0.1],
-      [0.28, 0.13, 0.1],
+      [-0.27, 0.12, 0.078],
+      [-0.17, -0.15, 0.078],
+      [0, 0.19, 0.078],
+      [0.17, -0.15, 0.078],
+      [0.27, 0.12, 0.078],
     ].map((point) => new THREE.Vector3(...(point as [number, number, number]))),
   );
-  group.add(
-    new THREE.Mesh(new THREE.TubeGeometry(curve, 40, 0.025, 8, false), material("#176b56")),
+  vinyl.add(
+    new THREE.Mesh(new THREE.TubeGeometry(logoCurve, 40, 0.024, 8, false), material("#176b56")),
   );
+  group.add(vinyl);
+
+  // The spindle and stylus are fixed parts; they must not spin with the vinyl.
+  const spindle = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.043, 0.055, 0.22, 24),
+    material("#bdcbc0", 0.89, 0.18),
+  );
+  spindle.rotation.x = Math.PI / 2;
+  spindle.position.z = 0.1;
+  group.add(spindle);
+
+  const pivot = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.1, 0.1, 0.18, 32),
+    material("#bdcbc0", 0.88, 0.19),
+  );
+  pivot.rotation.x = Math.PI / 2;
+  pivot.position.set(1.3, 1.13, 0.13);
+  group.add(pivot);
+
+  const arm = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(1.3, 1.12, 0.24),
+    new THREE.Vector3(1.27, 0.86, 0.23),
+    new THREE.Vector3(1.04, 0.61, 0.24),
+    new THREE.Vector3(0.84, 0.39, 0.24),
+  ]);
+  group.add(
+    new THREE.Mesh(
+      new THREE.TubeGeometry(arm, 32, 0.033, 10, false),
+      material("#d7ded5", 0.8, 0.2),
+    ),
+  );
+  const cartridge = rounded(0.22, 0.13, 0.14, "#263c34", 0.035);
+  cartridge.name = "wavelet-vinyl-cartridge";
+  cartridge.position.set(0.81, 0.35, 0.26);
+  cartridge.rotation.z = -0.38;
+  group.add(cartridge);
+
+  const stylus = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.008, 0.012, 0.12, 8),
+    material("#9faea5", 0.76, 0.22),
+  );
+  stylus.rotation.x = Math.PI / 2;
+  stylus.position.set(0.81, 0.35, 0.17);
+  group.add(stylus);
   return group;
 }
 
