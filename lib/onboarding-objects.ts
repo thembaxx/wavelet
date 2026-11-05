@@ -136,6 +136,7 @@ export function createWelcomeRecord() {
   ]);
   group.add(new THREE.Mesh(new THREE.TubeGeometry(arm, 32, 0.033, 10, false), material("#d7ded5", 0.8, 0.2)));
   const cartridge = rounded(0.22, 0.13, 0.14, "#263c34", 0.035);
+  cartridge.name = "wavelet-vinyl-cartridge";
   cartridge.position.set(0.81, 0.35, 0.26);
   cartridge.rotation.z = -0.38;
   group.add(cartridge);
