@@ -28,6 +28,7 @@ import { audioEngine } from "@/lib/audio-engine";
 import { MultiplayerEntry } from "./MultiplayerEntry";
 import { motion } from "motion/react";
 import { getMotionIntent } from "@/lib/motion-intents";
+import { tactileFeedback } from "@/lib/tactile-feedback";
 import { AnimatedTabs } from "./easyui/AnimatedTabs";
 import { MagneticButton } from "./easyui/MagneticButton";
 
@@ -68,6 +69,7 @@ export function GameSetup(props: Props) {
     visible: { opacity: 1, y: 0, transition: { duration: setupMotion.duration } },
   };
   const select = (action: () => void) => {
+    tactileFeedback("tap");
     audioEngine.playUiTick();
     action();
   };
@@ -163,7 +165,10 @@ export function GameSetup(props: Props) {
             reducedMotion={props.reducedMotion}
             className="setup-play-button squircle bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
             disabled={props.loading || actualCount === 0}
-            onClick={props.onStart}
+            onClick={() => {
+              tactileFeedback("success");
+              props.onStart();
+            }}
           >
             <span>
               {props.loading ? (
