@@ -79,7 +79,11 @@ export function GameSetup(props: Props) {
       className="studio-game-dock setup-panel squircle"
       initial={props.reducedMotion ? false : "hidden"}
       animate="visible"
-      variants={{ visible: { transition: { staggerChildren: setupMotion.stagger, delayChildren: setupMotion.delay } } }}
+      variants={{
+        visible: {
+          transition: { staggerChildren: setupMotion.stagger, delayChildren: setupMotion.delay },
+        },
+      }}
     >
       <motion.div variants={dockItem} className="setup-heading">
         <span>Choose a mode</span>
