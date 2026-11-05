@@ -131,6 +131,8 @@ export function RoundAnswerFeedback({
       ref={rootRef}
       key={roundIndex}
       aria-label={correct ? "Correct guess" : "Incorrect guess"}
+      data-motion-intent="result"
+      data-motion-reduced={reducedMotion ? "true" : "false"}
       role="status"
       aria-live="polite"
       aria-atomic="true"
