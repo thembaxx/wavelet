@@ -4,6 +4,7 @@ import { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { motion } from "motion/react";
+import { getMotionIntent } from "@/lib/motion-intents";
 import { ArrowRight, Check, Sparkle, X } from "@phosphor-icons/react";
 
 interface RoundAnswerFeedbackProps {
@@ -44,6 +45,7 @@ export function RoundAnswerFeedback({
   onNext,
 }: RoundAnswerFeedbackProps) {
   const rootRef = useRef<HTMLElement>(null);
+  const resultMotion = getMotionIntent("result", reducedMotion);
 
   useGSAP(
     () => {
@@ -132,9 +134,9 @@ export function RoundAnswerFeedback({
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      initial={reducedMotion ? false : { opacity: 0, y: 12, scale: 0.97 }}
+      initial={reducedMotion ? false : { opacity: 0, y: resultMotion.y, scale: resultMotion.scale }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: reducedMotion ? 0 : 0.34, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: resultMotion.duration, ease: [0.16, 1, 0.3, 1] }}
       className={
         "relative isolate overflow-hidden rounded-[24px] border-2 p-3.5 shadow-lg sm:p-4 " + surface
       }
