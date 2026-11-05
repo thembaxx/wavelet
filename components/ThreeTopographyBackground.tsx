@@ -165,6 +165,9 @@ export function ThreeTopographyBackground({
       geometry.dispose();
       material.dispose();
       renderer.dispose();
+      // Explicitly surrender the browser context, not just GPU allocations.
+      // Settings can toggle this decorative canvas repeatedly on mobile.
+      renderer.forceContextLoss();
       renderer.domElement.remove();
     };
   }, [enabled]);
