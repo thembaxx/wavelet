@@ -3,6 +3,7 @@
 import { useRef, type ReactNode } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { getMotionIntent } from "@/lib/motion-intents";
 
 gsap.registerPlugin(useGSAP);
 
@@ -32,16 +33,17 @@ export function StudioDialog({
     () => {
       const element = dialog.current;
       if (!element) return;
+      const motion = getMotionIntent("dialog", reducedMotion);
       if (open) {
         if (!element.open) element.showModal();
         gsap.fromTo(
           panel.current,
-          { opacity: 0, y: reducedMotion ? 0 : 24, scale: reducedMotion ? 1 : 0.98 },
+          { opacity: reducedMotion ? 1 : 0, y: motion.y, scale: motion.scale },
           {
             opacity: 1,
             y: 0,
             scale: 1,
-            duration: reducedMotion ? 0 : 0.42,
+            duration: motion.duration,
             ease: "power3.out",
             overwrite: true,
           },
@@ -49,8 +51,8 @@ export function StudioDialog({
       } else if (element.open) {
         gsap.to(panel.current, {
           opacity: 0,
-          y: reducedMotion ? 0 : 12,
-          duration: reducedMotion ? 0 : 0.18,
+          y: reducedMotion ? 0 : motion.y / 2,
+          duration: motion.exitDuration,
           ease: "power2.in",
           overwrite: true,
           onComplete: () => element.close(),
