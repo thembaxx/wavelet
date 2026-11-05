@@ -4,6 +4,7 @@ import { useEffect, useRef, type PointerEvent } from "react";
 import Image from "next/image";
 import gsap from "gsap";
 import type { MascotCharacterProfile } from "@/lib/game-rules";
+import { tactileFeedback } from "@/lib/tactile-feedback";
 
 interface CompanionPortraitProps {
   character: MascotCharacterProfile;
@@ -98,6 +99,7 @@ export function CompanionPortrait({
 
   const reactToTouch = () => {
     if (reducedMotion || !reactionRef.current) return;
+    tactileFeedback("tap");
     gsap
       .timeline({ defaults: { overwrite: "auto" } })
       .to(reactionRef.current, {
