@@ -31,20 +31,17 @@ const STEPS = [
   {
     name: "Listen",
     title: ["Hear the clip.", "Find the song."],
-    description:
-      "Listen to a short clip, then guess what you hear.",
+    description: "Listen to a short clip, then guess what you hear.",
   },
   {
     name: "Guess",
     title: ["Choose your", "challenge."],
-    description:
-      "Guess the track, artist, genre, or year. Shorter clips earn more points.",
+    description: "Guess the track, artist, genre, or year. Shorter clips earn more points.",
   },
   {
     name: "Make it yours",
     title: ["Your music.", "Your way."],
-    description:
-      "Choose a theme now. Change sound and motion anytime in Settings.",
+    description: "Choose a theme now. Change sound and motion anytime in Settings.",
   },
 ] as const;
 const MODES = [
