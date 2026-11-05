@@ -1578,19 +1578,6 @@ html[data-motion="reduced"] *::after {
   place-items: center;
   color: var(--primary);
 }
-.onboarding-object-note {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  pointer-events: none;
-  color: var(--muted-foreground);
-  font-size: 11px;
-}
 .onboarding-spin {
   position: absolute;
   bottom: 32px;
@@ -1751,11 +1738,6 @@ html[data-motion="reduced"] *::after {
   font-weight: 700;
   border-radius: 16px;
 }
-.onboarding-footnote {
-  margin-top: 14px;
-  color: var(--muted-foreground);
-  font-size: 10px;
-}
 @media (max-width: 700px) {
   .onboarding-dialog {
     padding: 0;
@@ -1787,9 +1769,6 @@ html[data-motion="reduced"] *::after {
     height: clamp(200px, 36dvh, 380px);
     flex: 1;
     max-height: 420px;
-  }
-  .onboarding-object-note {
-    top: 16px;
   }
   .onboarding-spin {
     bottom: 12px;
@@ -1832,10 +1811,6 @@ html[data-motion="reduced"] *::after {
     height: 150px;
     flex: 0 0 150px;
   }
-  .onboarding-object-note {
-    top: 4px;
-    font-size: 10px;
-  }
   .onboarding-spin {
     bottom: 0;
     min-height: 44px;
@@ -1876,10 +1851,6 @@ html[data-motion="reduced"] *::after {
   .onboarding-footer ol {
     margin-bottom: 8px;
   }
-  .onboarding-footnote {
-    margin-top: 10px;
-    font-size: 9px;
-  }
 }
 @media (min-width: 701px) and (max-height: 650px) {
   .onboarding-dialog {
@@ -1919,10 +1890,6 @@ html[data-motion="reduced"] *::after {
   .onboarding-appearance button {
     height: 56px;
     padding: 8px 4px;
-  }
-  .onboarding-footnote {
-    font-size: 9px;
-    margin-top: 10px;
   }
 }
 
