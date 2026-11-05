@@ -268,6 +268,13 @@ export function OnboardingScene(props: Props) {
             // The record rotates under a fixed tonearm, just like a physical turntable.
             const disc = object.getObjectByName("wavelet-vinyl-spin");
             if (disc) disc.rotation.z = spin + (reduced ? 0 : elapsed * 0.16);
+          } else if (step === 1) {
+            object.rotation.y += Math.sin(spin) * 0.5;
+            // Real articulated earcups react gently to the user's rotation.
+            const left = object.getObjectByName("wavelet-headphones-left-earcup");
+            const right = object.getObjectByName("wavelet-headphones-right-earcup");
+            if (left) left.rotation.y = Math.sin(spin * 0.5) * 0.12;
+            if (right) right.rotation.y = -Math.sin(spin * 0.5) * 0.12;
           } else object.rotation.y += Math.sin(spin) * 0.5;
         }
       });
