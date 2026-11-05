@@ -264,8 +264,11 @@ export function OnboardingScene(props: Props) {
         if (index === step) {
           object.position.y = reduced ? 0 : Math.sin(elapsed * 1.3) * 0.055;
           object.rotation.x += tilt.y;
-          if (step === 0) object.rotation.z += spin + (reduced ? 0 : elapsed * 0.16);
-          else object.rotation.y += Math.sin(spin) * 0.5;
+          if (step === 0) {
+            // The record rotates under a fixed tonearm, just like a physical turntable.
+            const disc = object.getObjectByName("wavelet-vinyl-spin");
+            if (disc) disc.rotation.z = spin + (reduced ? 0 : elapsed * 0.16);
+          } else object.rotation.y += Math.sin(spin) * 0.5;
         }
       });
       constellation.rotation.z = reduced ? 0 : Math.sin(elapsed * 0.15) * 0.1;
