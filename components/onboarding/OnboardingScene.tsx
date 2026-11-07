@@ -18,6 +18,8 @@ interface Props {
   theme: "light" | "dark";
   onInteract: () => void;
   onReady: () => void;
+  /** Optional 0–1 teardown scrub for the current turntable/headphone study. */
+  inspectionProgress?: number;
 }
 
 export function OnboardingScene(props: Props) {
@@ -130,6 +132,10 @@ export function OnboardingScene(props: Props) {
     const synchronize = () => {
       dirty = true;
       const current = latest.current;
+      const inspect = objects[step]?.userData.setExplodedView as
+        | ((progress: number) => number)
+        | undefined;
+      inspect?.(current.inspectionProgress ?? 0);
       if (step !== current.step) {
         transitions.splice(0).forEach((tween) => tween.kill());
         step = current.step;
