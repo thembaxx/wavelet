@@ -146,7 +146,6 @@ export function createWelcomeRecord() {
   tonearm.name = "wavelet-tonearm";
   group.add(tonearm);
   const cartridge = rounded(0.22, 0.13, 0.14, "#263c34", 0.035);
-  cartridge.name = "wavelet-turntable-cartridge";
   cartridge.name = "wavelet-vinyl-cartridge";
   cartridge.position.set(0.81, 0.35, 0.26);
   cartridge.rotation.z = -0.38;
@@ -166,7 +165,7 @@ export function createWelcomeRecord() {
     { name: "wavelet-turntable-spindle", direction: new THREE.Vector3(0, 1, 0), distance: 0.5 },
     { name: "wavelet-tonearm-pivot", direction: new THREE.Vector3(1, 0.4, 0), distance: 0.4 },
     { name: "wavelet-tonearm", direction: new THREE.Vector3(1, 0.6, 0), distance: 0.56 },
-    { name: "wavelet-turntable-cartridge", direction: new THREE.Vector3(1, 0, 0), distance: 0.62 },
+    { name: "wavelet-vinyl-cartridge", direction: new THREE.Vector3(1, 0, 0), distance: 0.62 },
     { name: "wavelet-turntable-stylus", direction: new THREE.Vector3(0.6, -1, 0), distance: 0.5 },
   ]);
   group.userData.setExplodedView = (progress: number) => setAudioObjectExplodedView(group, progress);
