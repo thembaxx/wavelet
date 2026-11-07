@@ -286,6 +286,13 @@ export function createWelcomeHeadphones() {
     cableJack.position.set(0, -0.45, 0.08);
     hinge.add(cableJack);
   }
+  prepareAudioObjectInspection(group, [
+    { name: "wavelet-headphones-left-earcup", direction: new THREE.Vector3(-1, -0.2, 0), distance: 0.48 },
+    { name: "wavelet-headphones-right-earcup", direction: new THREE.Vector3(1, -0.2, 0), distance: 0.48 },
+    { name: "headphone-headband", direction: new THREE.Vector3(0, 1, 0), distance: 0.36 },
+  ]);
+  group.userData.setExplodedView = (progress: number) => setAudioObjectExplodedView(group, progress);
+  group.userData.restoreAssembly = () => restoreAudioObject(group);
   return group;
 }
 
