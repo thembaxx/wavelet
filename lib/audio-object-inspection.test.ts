@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as THREE from "three";
-import { prepareAudioObjectInspection, restoreAudioObject, setAudioObjectExplodedView } from "./audio-object-inspection.ts";
+import {
+  prepareAudioObjectInspection,
+  restoreAudioObject,
+  setAudioObjectExplodedView,
+} from "./audio-object-inspection.ts";
 
 test("audio object teardown separates named components and restores them", () => {
   const root = new THREE.Group();
