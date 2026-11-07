@@ -200,7 +200,8 @@ export function createWelcomeRecord() {
       distance: 0.5,
     },
   ]);
-  group.userData.setExplodedView = (progress: number) => setAudioObjectExplodedView(group, progress);
+  group.userData.setExplodedView = (progress: number) =>
+    setAudioObjectExplodedView(group, progress);
   group.userData.restoreAssembly = () => restoreAudioObject(group);
   return group;
 }
