@@ -1,6 +1,10 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
-import { prepareAudioObjectInspection, setAudioObjectExplodedView, restoreAudioObject } from "./audio-object-inspection";
+import {
+  prepareAudioObjectInspection,
+  restoreAudioObject,
+  setAudioObjectExplodedView,
+} from "./audio-object-inspection.ts";
 
 const material = (color: string, metalness = 0.18, roughness = 0.3) =>
   new THREE.MeshPhysicalMaterial({
@@ -160,13 +164,41 @@ export function createWelcomeRecord() {
   stylus.name = "wavelet-turntable-stylus";
   group.add(stylus);
   prepareAudioObjectInspection(group, [
-    { name: "wavelet-turntable-platter", direction: new THREE.Vector3(0, -1, 0), distance: 0.34 },
-    { name: "wavelet-vinyl-spin", direction: new THREE.Vector3(0, 0.65, 0), distance: 0.42 },
-    { name: "wavelet-turntable-spindle", direction: new THREE.Vector3(0, 1, 0), distance: 0.5 },
-    { name: "wavelet-tonearm-pivot", direction: new THREE.Vector3(1, 0.4, 0), distance: 0.4 },
-    { name: "wavelet-tonearm", direction: new THREE.Vector3(1, 0.6, 0), distance: 0.56 },
-    { name: "wavelet-vinyl-cartridge", direction: new THREE.Vector3(1, 0, 0), distance: 0.62 },
-    { name: "wavelet-turntable-stylus", direction: new THREE.Vector3(0.6, -1, 0), distance: 0.5 },
+    {
+      name: "wavelet-turntable-platter",
+      direction: new THREE.Vector3(0, -1, 0),
+      distance: 0.34,
+    },
+    {
+      name: "wavelet-vinyl-spin",
+      direction: new THREE.Vector3(0, 0.65, 0),
+      distance: 0.42,
+    },
+    {
+      name: "wavelet-turntable-spindle",
+      direction: new THREE.Vector3(0, 1, 0),
+      distance: 0.5,
+    },
+    {
+      name: "wavelet-tonearm-pivot",
+      direction: new THREE.Vector3(1, 0.4, 0),
+      distance: 0.4,
+    },
+    {
+      name: "wavelet-tonearm",
+      direction: new THREE.Vector3(1, 0.6, 0),
+      distance: 0.56,
+    },
+    {
+      name: "wavelet-vinyl-cartridge",
+      direction: new THREE.Vector3(1, 0, 0),
+      distance: 0.62,
+    },
+    {
+      name: "wavelet-turntable-stylus",
+      direction: new THREE.Vector3(0.6, -1, 0),
+      distance: 0.5,
+    },
   ]);
   group.userData.setExplodedView = (progress: number) => setAudioObjectExplodedView(group, progress);
   group.userData.restoreAssembly = () => restoreAudioObject(group);
@@ -286,9 +318,21 @@ export function createWelcomeHeadphones() {
     hinge.add(cableJack);
   }
   prepareAudioObjectInspection(group, [
-    { name: "wavelet-headphones-left-earcup", direction: new THREE.Vector3(-1, -0.2, 0), distance: 0.48 },
-    { name: "wavelet-headphones-right-earcup", direction: new THREE.Vector3(1, -0.2, 0), distance: 0.48 },
-    { name: "headphone-headband", direction: new THREE.Vector3(0, 1, 0), distance: 0.36 },
+    {
+      name: "wavelet-headphones-left-earcup",
+      direction: new THREE.Vector3(-1, -0.2, 0),
+      distance: 0.48,
+    },
+    {
+      name: "wavelet-headphones-right-earcup",
+      direction: new THREE.Vector3(1, -0.2, 0),
+      distance: 0.48,
+    },
+    {
+      name: "headphone-headband",
+      direction: new THREE.Vector3(0, 1, 0),
+      distance: 0.36,
+    },
   ]);
   group.userData.setExplodedView = (progress: number) => setAudioObjectExplodedView(group, progress);
   group.userData.restoreAssembly = () => restoreAudioObject(group);
