@@ -335,7 +335,8 @@ export function createWelcomeHeadphones() {
       distance: 0.36,
     },
   ]);
-  group.userData.setExplodedView = (progress: number) => setAudioObjectExplodedView(group, progress);
+  group.userData.setExplodedView = (progress: number) =>
+    setAudioObjectExplodedView(group, progress);
   group.userData.restoreAssembly = () => restoreAudioObject(group);
   return group;
 }
