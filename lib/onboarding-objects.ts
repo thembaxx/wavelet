@@ -1,5 +1,10 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import {
+  prepareAudioObjectInspection,
+  restoreAudioObject,
+  setAudioObjectExplodedView,
+} from "./audio-object-inspection.ts";
 
 const material = (color: string, metalness = 0.18, roughness = 0.3) =>
   new THREE.MeshPhysicalMaterial({
@@ -27,6 +32,7 @@ export function createWelcomeRecord() {
   );
   platter.rotation.x = Math.PI / 2;
   platter.position.z = -0.095;
+  platter.name = "wavelet-turntable-platter";
   group.add(platter);
 
   const underside = new THREE.Mesh(
@@ -34,6 +40,7 @@ export function createWelcomeRecord() {
     material("#243e36", 0.72, 0.26),
   );
   underside.position.z = -0.05;
+  underside.name = "wavelet-turntable-platter-trim";
   group.add(underside);
 
   const disc = new THREE.Mesh(
@@ -118,6 +125,7 @@ export function createWelcomeRecord() {
   );
   spindle.rotation.x = Math.PI / 2;
   spindle.position.z = 0.1;
+  spindle.name = "wavelet-turntable-spindle";
   group.add(spindle);
 
   const pivot = new THREE.Mesh(
@@ -126,6 +134,7 @@ export function createWelcomeRecord() {
   );
   pivot.rotation.x = Math.PI / 2;
   pivot.position.set(1.3, 1.13, 0.13);
+  pivot.name = "wavelet-tonearm-pivot";
   group.add(pivot);
 
   const arm = new THREE.CatmullRomCurve3([
@@ -134,12 +143,12 @@ export function createWelcomeRecord() {
     new THREE.Vector3(1.04, 0.61, 0.24),
     new THREE.Vector3(0.84, 0.39, 0.24),
   ]);
-  group.add(
-    new THREE.Mesh(
-      new THREE.TubeGeometry(arm, 32, 0.033, 10, false),
-      material("#d7ded5", 0.8, 0.2),
-    ),
+  const tonearm = new THREE.Mesh(
+    new THREE.TubeGeometry(arm, 32, 0.033, 10, false),
+    material("#d7ded5", 0.8, 0.2),
   );
+  tonearm.name = "wavelet-tonearm";
+  group.add(tonearm);
   const cartridge = rounded(0.22, 0.13, 0.14, "#263c34", 0.035);
   cartridge.name = "wavelet-vinyl-cartridge";
   cartridge.position.set(0.81, 0.35, 0.26);
@@ -152,7 +161,48 @@ export function createWelcomeRecord() {
   );
   stylus.rotation.x = Math.PI / 2;
   stylus.position.set(0.81, 0.35, 0.17);
+  stylus.name = "wavelet-turntable-stylus";
   group.add(stylus);
+  prepareAudioObjectInspection(group, [
+    {
+      name: "wavelet-turntable-platter",
+      direction: new THREE.Vector3(0, -1, 0),
+      distance: 0.34,
+    },
+    {
+      name: "wavelet-vinyl-spin",
+      direction: new THREE.Vector3(0, 0.65, 0),
+      distance: 0.42,
+    },
+    {
+      name: "wavelet-turntable-spindle",
+      direction: new THREE.Vector3(0, 1, 0),
+      distance: 0.5,
+    },
+    {
+      name: "wavelet-tonearm-pivot",
+      direction: new THREE.Vector3(1, 0.4, 0),
+      distance: 0.4,
+    },
+    {
+      name: "wavelet-tonearm",
+      direction: new THREE.Vector3(1, 0.6, 0),
+      distance: 0.56,
+    },
+    {
+      name: "wavelet-vinyl-cartridge",
+      direction: new THREE.Vector3(1, 0, 0),
+      distance: 0.62,
+    },
+    {
+      name: "wavelet-turntable-stylus",
+      direction: new THREE.Vector3(0.6, -1, 0),
+      distance: 0.5,
+    },
+  ]);
+  group.userData.setExplodedView = (progress: number) =>
+    setAudioObjectExplodedView(group, progress);
+  group.userData.restoreAssembly = () => restoreAudioObject(group);
   return group;
 }
 
@@ -268,6 +318,26 @@ export function createWelcomeHeadphones() {
     cableJack.position.set(0, -0.45, 0.08);
     hinge.add(cableJack);
   }
+  prepareAudioObjectInspection(group, [
+    {
+      name: "wavelet-headphones-left-earcup",
+      direction: new THREE.Vector3(-1, -0.2, 0),
+      distance: 0.48,
+    },
+    {
+      name: "wavelet-headphones-right-earcup",
+      direction: new THREE.Vector3(1, -0.2, 0),
+      distance: 0.48,
+    },
+    {
+      name: "headphone-headband",
+      direction: new THREE.Vector3(0, 1, 0),
+      distance: 0.36,
+    },
+  ]);
+  group.userData.setExplodedView = (progress: number) =>
+    setAudioObjectExplodedView(group, progress);
+  group.userData.restoreAssembly = () => restoreAudioObject(group);
   return group;
 }
 

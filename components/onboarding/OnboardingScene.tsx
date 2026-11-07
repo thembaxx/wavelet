@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import gsap from "gsap";
@@ -18,16 +18,22 @@ interface Props {
   theme: "light" | "dark";
   onInteract: () => void;
   onReady: () => void;
+  /** Optional 0–1 teardown scrub for the current turntable/headphone study. */
+  inspectionProgress?: number;
 }
 
 export function OnboardingScene(props: Props) {
   const mount = useRef<HTMLDivElement>(null);
   const latest = useRef(props);
   const sync = useRef<(() => void) | null>(null);
+  const [localInspectionProgress, setLocalInspectionProgress] = useState(0);
+  latest.current = {
+    ...props,
+    inspectionProgress: props.inspectionProgress ?? localInspectionProgress,
+  };
   useEffect(() => {
-    latest.current = props;
     sync.current?.();
-  }, [props]);
+  }, [props, localInspectionProgress]);
 
   useEffect(() => {
     const element = mount.current;
@@ -163,6 +169,10 @@ export function OnboardingScene(props: Props) {
           );
         });
       }
+      const inspect = objects[step]?.userData.setExplodedView as
+        | ((progress: number) => number)
+        | undefined;
+      inspect?.(current.inspectionProgress ?? 0);
       orbitMaterial.opacity = current.theme === "dark" ? 0.35 : 0.24;
       if (lastImpulse !== current.impulse) {
         lastImpulse = current.impulse;
@@ -317,11 +327,46 @@ export function OnboardingScene(props: Props) {
   }, []);
 
   return (
-    <div
-      ref={mount}
-      className="onboarding-canvas"
-      data-testid="onboarding-3d-scene"
-      aria-hidden="true"
-    />
+    <div className="onboarding-scene-shell" style={{ position: "relative" }}>
+      <div
+        ref={mount}
+        className="onboarding-canvas"
+        data-testid="onboarding-3d-scene"
+        aria-hidden="true"
+      />
+      {props.step < 2 && (
+        <label
+          className="onboarding-inspection-control"
+          style={{
+            position: "absolute",
+            zIndex: 4,
+            left: 12,
+            bottom: 12,
+            display: "grid",
+            gap: 4,
+            padding: "8px 10px",
+            borderRadius: 12,
+            background: "rgba(18, 30, 24, .86)",
+            color: "#fff",
+            fontSize: 12,
+          }}
+        >
+          <span>Inspect components</span>
+          <input
+            aria-label="Audio hardware teardown progress"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={props.inspectionProgress ?? localInspectionProgress}
+            disabled={props.inspectionProgress !== undefined}
+            onChange={(event) => setLocalInspectionProgress(Number(event.target.value))}
+          />
+          <output>
+            {Math.round((props.inspectionProgress ?? localInspectionProgress) * 100)}%
+          </output>
+        </label>
+      )}
+    </div>
   );
 }

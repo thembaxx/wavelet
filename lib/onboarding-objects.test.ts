@@ -58,3 +58,33 @@ test("left and right earcups pivot independently without moving the headband", (
   const after = band.getWorldPosition(new Vector3());
   assert.ok(before.distanceTo(after) < 0.00001);
 });
+
+test("turntable teardown is deterministic and restores the authored assembly", () => {
+  const record = createWelcomeRecord();
+  const platter = record.getObjectByName("wavelet-turntable-platter");
+  const vinyl = record.getObjectByName("wavelet-vinyl-spin");
+  assert.ok(platter && vinyl);
+  const originalPlatter = platter.position.clone();
+  const originalVinyl = vinyl.position.clone();
+  record.userData.setExplodedView(1);
+  assert.ok(platter.position.distanceTo(originalPlatter) > 0.1);
+  assert.ok(vinyl.position.distanceTo(originalVinyl) > 0.1);
+  record.userData.restoreAssembly();
+  assert.ok(platter.position.distanceTo(originalPlatter) < 1e-8);
+  assert.ok(vinyl.position.distanceTo(originalVinyl) < 1e-8);
+});
+
+test("headphone teardown separates earcups without detaching their acoustic parts", () => {
+  const headphones = createWelcomeHeadphones();
+  const left = headphones.getObjectByName("wavelet-headphones-left-earcup");
+  const right = headphones.getObjectByName("wavelet-headphones-right-earcup");
+  assert.ok(left && right);
+  const originalLeft = left.position.clone();
+  const originalRight = right.position.clone();
+  headphones.userData.setExplodedView(1);
+  assert.ok(left.position.distanceTo(originalLeft) > 0.1);
+  assert.ok(right.position.distanceTo(originalRight) > 0.1);
+  headphones.userData.restoreAssembly();
+  assert.ok(left.position.distanceTo(originalLeft) < 1e-8);
+  assert.ok(right.position.distanceTo(originalRight) < 1e-8);
+});
