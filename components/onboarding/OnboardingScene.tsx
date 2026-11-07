@@ -132,10 +132,6 @@ export function OnboardingScene(props: Props) {
     const synchronize = () => {
       dirty = true;
       const current = latest.current;
-      const inspect = objects[step]?.userData.setExplodedView as
-        | ((progress: number) => number)
-        | undefined;
-      inspect?.(current.inspectionProgress ?? 0);
       if (step !== current.step) {
         transitions.splice(0).forEach((tween) => tween.kill());
         step = current.step;
@@ -169,6 +165,10 @@ export function OnboardingScene(props: Props) {
           );
         });
       }
+      const inspect = objects[step]?.userData.setExplodedView as
+        | ((progress: number) => number)
+        | undefined;
+      inspect?.(current.inspectionProgress ?? 0);
       orbitMaterial.opacity = current.theme === "dark" ? 0.35 : 0.24;
       if (lastImpulse !== current.impulse) {
         lastImpulse = current.impulse;
