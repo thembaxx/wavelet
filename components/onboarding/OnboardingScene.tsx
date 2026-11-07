@@ -362,7 +362,9 @@ export function OnboardingScene(props: Props) {
             disabled={props.inspectionProgress !== undefined}
             onChange={(event) => setLocalInspectionProgress(Number(event.target.value))}
           />
-          <output>{Math.round((props.inspectionProgress ?? localInspectionProgress) * 100)}%</output>
+          <output>
+            {Math.round((props.inspectionProgress ?? localInspectionProgress) * 100)}%
+          </output>
         </label>
       )}
     </div>
