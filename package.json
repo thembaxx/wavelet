@@ -19,7 +19,7 @@
     "lint:rules": "eslint --config eslint.rules.config.mjs firestore.rules"
   },
   "dependencies": {
-    "@google/genai": "^2.32.0",
+    "@google/genai": "^3.6.1",
     "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^7.0.7",
     "@phosphor-icons/react": "^2.1.10",
